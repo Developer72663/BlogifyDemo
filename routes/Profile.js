@@ -7,8 +7,7 @@ const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
 
 router.use(restrictToLoggedInUserOnly);
 
-// ====================== GET USER PROFILE ======================
-// ====================== VIEW PROFILE ======================
+// ====================== GET USER PROFILE (Own Profile) ======================
 router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
     try {
         // This is the fix: actively populating followers and following data fields
@@ -25,15 +24,20 @@ router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
             .sort({ createdAt: -1 });
 
         // Render profile view with the fully populated data structures
+        // isOwner is true because this is the user's own profile
         res.render("profile", {
             user: fullUser,
-            blogs: blogs || []
+            blogs: blogs || [],
+            isOwner: true,
+            isMutualFollow: false,
+            canViewFullProfile: true
         });
     } catch (error) {
         console.error("🚨 Profile Route Error:", error.message);
         res.status(500).send("Internal Server Error");
     }
 });
+
 // ====================== GET EDIT PROFILE PAGE ======================
 router.get("/edit", async (req, res) => {
     try {
@@ -59,9 +63,9 @@ router.put("/update", async (req, res) => {
 
         const user = await User.findById(req.user._id);
         if (!user) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "User not found" 
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
             });
         }
 
@@ -74,16 +78,16 @@ router.put("/update", async (req, res) => {
         // Save user
         await user.save();
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: "Profile updated successfully",
             user: user
         });
     } catch (error) {
         console.error("Update Profile Error:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message || "Failed to update profile" 
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to update profile"
         });
     }
 });
@@ -92,9 +96,9 @@ router.put("/update", async (req, res) => {
 router.post("/upload-image", cloudinaryUpload.single("profileImage"), async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "No image uploaded" 
+            return res.status(400).json({
+                success: false,
+                message: "No image uploaded"
             });
         }
 
@@ -102,16 +106,16 @@ router.post("/upload-image", cloudinaryUpload.single("profileImage"), async (req
         user.profileImageURL = req.file.path;
         await user.save();
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: "Profile image updated",
             imageURL: req.file.path
         });
     } catch (error) {
         console.error("Upload Image Error:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Failed to upload image" 
+        res.status(500).json({
+            success: false,
+            message: "Failed to upload image"
         });
     }
 });
@@ -122,26 +126,26 @@ router.post("/change-password", async (req, res) => {
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Current and new passwords are required" 
+            return res.status(400).json({
+                success: false,
+                message: "Current and new passwords are required"
             });
         }
 
         if (newPassword.length < 6) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "New password must be at least 6 characters" 
+            return res.status(400).json({
+                success: false,
+                message: "New password must be at least 6 characters"
             });
         }
 
         // Verify current password
         const user = await User.findById(req.user._id);
-        
+
         if (user.googleId && !user.password) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "This account uses Google Sign-In. Cannot change password." 
+            return res.status(400).json({
+                success: false,
+                message: "This account uses Google Sign-In. Cannot change password."
             });
         }
 
@@ -151,9 +155,9 @@ router.post("/change-password", async (req, res) => {
             .digest("hex");
 
         if (user.password !== currentHash) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Current password is incorrect" 
+            return res.status(401).json({
+                success: false,
+                message: "Current password is incorrect"
             });
         }
 
@@ -161,15 +165,15 @@ router.post("/change-password", async (req, res) => {
         user.password = newPassword;
         await user.save();
 
-        res.json({ 
-            success: true, 
-            message: "Password changed successfully" 
+        res.json({
+            success: true,
+            message: "Password changed successfully"
         });
     } catch (error) {
         console.error("Change Password Error:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Failed to change password" 
+        res.status(500).json({
+            success: false,
+            message: "Failed to change password"
         });
     }
 });
@@ -188,15 +192,15 @@ router.delete("/delete-account", async (req, res) => {
         // Clear auth cookie
         res.clearCookie("token");
 
-        res.json({ 
-            success: true, 
-            message: "Account deleted successfully" 
+        res.json({
+            success: true,
+            message: "Account deleted successfully"
         });
     } catch (error) {
         console.error("Delete Account Error:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Failed to delete account" 
+        res.status(500).json({
+            success: false,
+            message: "Failed to delete account"
         });
     }
 });
