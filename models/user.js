@@ -38,10 +38,6 @@ const UserSchema = new Schema({
         type: String, 
         default: "" 
     },
-    location: { 
-        type: String, 
-        default: "" 
-    },
     
     role: { 
         type: String, 
@@ -53,12 +49,6 @@ const UserSchema = new Schema({
         type: String,
         enum: ["light", "dark"],
         default: "light"
-    },
-    
-    // Privacy Settings
-    isPrivate: {
-        type: Boolean,
-        default: false // false = public, true = private
     },
     
     // Social Features
@@ -138,12 +128,14 @@ UserSchema.static("findOrCreateGoogleUser", async function (profile) {
             user = await this.findOne({ email });
 
             if (user) {
+                // Link Google to existing account
                 user.googleId = googleId;
                 if (profile.photos?.[0]?.value) {
                     user.profileImageURL = profile.photos[0].value;
                 }
                 await user.save();
             } else {
+                // Create new user
                 user = await this.create({
                     fullName: profile.displayName || "Google User",
                     email: email,
