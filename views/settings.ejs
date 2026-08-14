@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include("./partials/head") %>
+    <title>Settings | Blogify</title>
+    <style>
+        .settings-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+
+        .settings-header {
+            margin-bottom: 32px;
+        }
+
+        .settings-header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .settings-header p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 32px;
+            margin-top: 32px;
+        }
+
+        .settings-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .settings-nav-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: left;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .settings-nav-item:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .settings-nav-item.active {
+            background: #e0e7ff;
+            color: #6366f1;
+        }
+
+        .settings-content {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .settings-section {
+            display: none;
+        }
+
+        .settings-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #0f172a;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-control.error {
+            border-color: #dc2626;
+        }
+
+        .form-error {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .form-help {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .profile-pic-section {
+            text-align: center;
+            padding: 32px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px dashed #e2e8f0;
+            margin-bottom: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .profile-pic-section:hover {
+            border-color: #6366f1;
+            background: #eef2ff;
+        }
+
+        .profile-pic-section img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 16px;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .profile-pic-section p {
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .profile-pic-section .edit-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #6366f1;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        #profileImageInput {
+            display: none;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #6366f1;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-row .toggle-label {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .toggle-row .toggle-help {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            border: 1px solid #6ee7b7;
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+        }
+
+        .danger-zone {
+            background: #fef2f2;
+            border: 2px solid #fecaca;
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+
+        .danger-zone-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #991b1b;
+            margin-bottom: 8px;
+        }
+
+        .danger-zone-desc {
+            color: #7c2d12;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .settings-sidebar {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .settings-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include("./partials/nave") %>
+
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1>Settings</h1>
+            <p>Manage your account preferences and settings</p>
+        </div>
+
+        <div class="settings-grid">
+            <!-- Sidebar Navigation -->
+            <div class="settings-sidebar">
+                <button class="settings-nav-item active" onclick="switchSection('profile')">
+                    <i class="fas fa-user"></i> Profile Settings
+                </button>
+                <button class="settings-nav-item" onclick="switchSection('privacy')">
+                    <i class="fas fa-lock"></i> Privacy
+                </button>
+                <button class="settings-nav-item" onclick="switchSection('notifications')">
+                    <i class="fas fa-bell"></i> Notifications
+                </button>
+                <button class="settings-nav-item" onclick="switchSection('password')">
+                    <i class="fas fa-key"></i> Password
+                </button>
+                <button class="settings-nav-item" onclick="switchSection('account')">
+                    <i class="fas fa-cog"></i> Account
+                </button>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="settings-content">
+                <!-- Profile Settings Section -->
+                <div id="profile" class="settings-section active">
+                    <div class="section-title">
+                        <i class="fas fa-user"></i> Profile Settings
+                    </div>
+
+                    <div class="alert" id="profileAlert"></div>
+
+                    <!-- Profile Picture -->
+                    <div class="profile-pic-section" onclick="document.getElementById('profileImageInput').click()">
+                        <img src="<%= user.profileImageURL || '/imgs/default.png' %>" 
+                             alt="Profile Picture"
+                             id="profilePreview"
+                             onerror="this.src='/imgs/default.png';">
+                        <div class="edit-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <p><strong>Click to change profile picture</strong></p>
+                        <small style="color: #94a3b8;">JPG, PNG or GIF (Max 5MB)</small>
+                    </div>
+                    <input type="file" id="profileImageInput" accept="image/*" onchange="uploadProfileImage()">
+
+                    <!-- Full Name -->
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="fullName" class="form-control" value="<%= user.fullName %>" placeholder="Your full name">
+                        <div class="form-error" id="fullNameError"></div>
+                    </div>
+
+                    <!-- Bio -->
+                    <div class="form-group">
+                        <label class="form-label">Bio</label>
+                        <textarea id="bio" class="form-control" rows="3" placeholder="Tell us about yourself" maxlength="500"><%= user.bio || '' %></textarea>
+                        <div class="form-help"><span id="bioCount"><%= (user.bio || '').length %></span>/500</div>
+                    </div>
+
+                    <!-- Website -->
+                    <div class="form-group">
+                        <label class="form-label">Website</label>
+                        <input type="url" id="website" class="form-control" value="<%= user.website || '' %>" placeholder="https://yourwebsite.com">
+                        <div class="form-help">Optional: Link to your personal website or blog</div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" id="location" class="form-control" value="<%= user.location || '' %>" placeholder="City, Country">
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="updateProfile()">Save Changes</button>
+                        <button class="btn btn-secondary" onclick="resetProfile()">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Privacy Section -->
+                <div id="privacy" class="settings-section">
+                    <div class="section-title">
+                        <i class="fas fa-lock"></i> Privacy Settings
+                    </div>
+
+                    <div class="alert" id="privacyAlert"></div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Account Privacy</div>
+                            <div class="toggle-help">When public, anyone can view your blogs and followers list. When private, only followers can see your content.</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="privacyToggle" <%= user.isPrivate ? 'checked' : '' %> onchange="updatePrivacy()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 16px;">
+                        <p style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">
+                            <i class="fas fa-info-circle" style="color: #6366f1;"></i> Privacy Info
+                        </p>
+                        <ul style="list-style: none; padding: 0; color: #64748b; font-size: 0.9rem;">
+                            <li style="margin-bottom: 8px;"><strong>🌐 Public Account:</strong> Anyone can view your blogs, followers, and following list</li>
+                            <li><strong>🔒 Private Account:</strong> Only approved followers can view your content and followers list</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div id="notifications" class="settings-section">
+                    <div class="section-title">
+                        <i class="fas fa-bell"></i> Notification Preferences
+                    </div>
+
+                    <div class="alert" id="notificationsAlert"></div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Email on New Comment</div>
+                            <div class="toggle-help">Get notified when someone comments on your blog</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="emailOnComment" <%= user.notificationSettings?.emailOnComment ? 'checked' : '' %> onchange="updateNotifications()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Email on New Follower</div>
+                            <div class="toggle-help">Get notified when someone follows you</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="emailOnNewFollower" <%= user.notificationSettings?.emailOnNewFollower ? 'checked' : '' %> onchange="updateNotifications()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Weekly Email Digest</div>
+                            <div class="toggle-help">Receive a weekly summary of your account activity</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="emailDigest" <%= user.notificationSettings?.emailDigest ? 'checked' : '' %> onchange="updateNotifications()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Password Section -->
+                <div id="password" class="settings-section">
+                    <div class="section-title">
+                        <i class="fas fa-key"></i> Change Password
+                    </div>
+
+                    <div class="alert" id="passwordAlert"></div>
+
+                    <% if (user.googleId) { %>
+                        <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; color: #92400e;">
+                            <i class="fas fa-info-circle"></i> <strong>Google Sign-In Account:</strong> You're using Google Sign-In, so you cannot change password here. Manage your Google account password in your Google settings.
+                        </div>
+                    <% } else { %>
+                        <div class="form-group">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" id="currentPassword" class="form-control" placeholder="Enter your current password">
+                            <div class="form-error" id="currentPasswordError"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            <input type="password" id="newPassword" class="form-control" placeholder="Enter new password (min 6 characters)">
+                            <div class="form-error" id="newPasswordError"></div>
+                            <div class="form-help">Must be at least 6 characters long</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm new password">
+                            <div class="form-error" id="confirmPasswordError"></div>
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- Account Section (Delete Account) -->
+                <div id="account" class="settings-section">
+                    <div class="section-title">
+                        <i class="fas fa-cog"></i> Account Management
+                    </div>
+
+                    <div class="alert" id="accountAlert"></div>
+
+                    <div class="danger-zone">
+                        <div class="danger-zone-title">
+                            <i class="fas fa-exclamation-triangle"></i> Danger Zone - Delete Account
+                        </div>
+                        <div class="danger-zone-desc">
+                            Once you delete your account, there is no going back. Please be certain.
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Enter your password to confirm deletion</label>
+                            <input type="password" id="deletePassword" class="form-control" placeholder="Password">
+                            <div class="form-error" id="deletePasswordError"></div>
+                        </div>
+                        <button class="btn btn-danger" onclick="deleteAccount()">
+                            <i class="fas fa-trash"></i> Delete My Account Permanently
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include("./partials/scripts") %>
+
+    <script>
+        function switchSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.settings-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.settings-nav-item').forEach(el => el.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById(section).classList.add('active');
+            event.target.closest('.settings-nav-item').classList.add('active');
+        }
+
+        function showAlert(containerId, message, type) {
+            const alert = document.getElementById(containerId);
+            alert.className = `alert show alert-${type}`;
+            alert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            setTimeout(() => alert.classList.remove('show'), 4000);
+        }
+
+        // Bio character counter
+        document.getElementById('bio').addEventListener('input', function() {
+            document.getElementById('bioCount').textContent = this.value.length;
+        });
+
+        // Upload Profile Image
+        async function uploadProfileImage() {
+            const fileInput = document.getElementById('profileImageInput');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('profilePreview').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload
+            const formData = new FormData();
+            formData.append('profileImage', file);
+            
+            try {
+                const res = await fetch('/user/profile/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showAlert('profileAlert', 'Profile picture updated successfully!', 'success');
+                } else {
+                    showAlert('profileAlert', data.message || 'Failed to upload image', 'error');
+                }
+            } catch (error) {
+                showAlert('profileAlert', 'Error uploading image', 'error');
+            }
+        }
+
+        // Update Profile
+        async function updateProfile() {
+            const fullName = document.getElementById('fullName').value;
+            const bio = document.getElementById('bio').value;
+            const website = document.getElementById('website').value;
+            const location = document.getElementById('location').value;
+            
+            if (!fullName) {
+                showAlert('profileAlert', 'Full name is required', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/user/profile/update', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName, bio, website, location })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showAlert('profileAlert', 'Profile updated successfully!', 'success');
+                } else {
+                    showAlert('profileAlert', data.message || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showAlert('profileAlert', 'Error updating profile', 'error');
+            }
+        }
+
+        // Reset Profile Form
+        function resetProfile() {
+            location.reload();
+        }
+
+        // Update Privacy
+        async function updatePrivacy() {
+            const isPrivate = document.getElementById('privacyToggle').checked;
+            
+            try {
+                const res = await fetch('/user/profile/privacy', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isPrivate })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showAlert('privacyAlert', `Account is now ${isPrivate ? 'private' : 'public'}!`, 'success');
+                } else {
+                    showAlert('privacyAlert', data.message || 'Failed to update privacy', 'error');
+                }
+            } catch (error) {
+                showAlert('privacyAlert', 'Error updating privacy settings', 'error');
+            }
+        }
+
+        // Update Notifications
+        async function updateNotifications() {
+            const emailOnComment = document.getElementById('emailOnComment').checked;
+            const emailOnNewFollower = document.getElementById('emailOnNewFollower').checked;
+            const emailDigest = document.getElementById('emailDigest').checked;
+            
+            try {
+                const res = await fetch('/user/profile/notifications', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emailOnComment, emailOnNewFollower, emailDigest })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showAlert('notificationsAlert', 'Notification settings updated!', 'success');
+                } else {
+                    showAlert('notificationsAlert', data.message || 'Failed to update notifications', 'error');
+                }
+            } catch (error) {
+                showAlert('notificationsAlert', 'Error updating settings', 'error');
+            }
+        }
+
+        // Change Password
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Clear errors
+            document.getElementById('currentPasswordError').textContent = '';
+            document.getElementById('newPasswordError').textContent = '';
+            document.getElementById('confirmPasswordError').textContent = '';
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showAlert('passwordAlert', 'All fields are required', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                document.getElementById('newPasswordError').textContent = 'Password must be at least 6 characters';
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                document.getElementById('confirmPasswordError').textContent = 'Passwords do not match';
+                return;
+            }
+            
+            try {
+                const res = await fetch('/user/profile/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showAlert('passwordAlert', 'Password changed successfully!', 'success');
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                } else {
+                    showAlert('passwordAlert', data.message || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                showAlert('passwordAlert', 'Error changing password', 'error');
+            }
+        }
+
+        // Delete Account
+        async function deleteAccount() {
+            const password = document.getElementById('deletePassword').value;
+            
+            if (!password) {
+                showAlert('accountAlert', 'Please enter your password to confirm', 'error');
+                return;
+            }
+            
+            if (!confirm('⚠️ This action cannot be undone. Your account and all your data will be permanently deleted. Are you sure?')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch('/user/profile/delete-account', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showAlert('accountAlert', 'Account deleted successfully. Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    showAlert('accountAlert', data.message || 'Failed to delete account', 'error');
+                }
+            } catch (error) {
+                showAlert('accountAlert', 'Error deleting account', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -10,7 +10,6 @@ router.use(restrictToLoggedInUserOnly);
 // ====================== GET USER PROFILE (Own Profile) ======================
 router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
     try {
-        // This is the fix: actively populating followers and following data fields
         const fullUser = await User.findById(req.user._id)
             .populate("followers", "fullName email profileImageURL bio")
             .populate("following", "fullName email profileImageURL bio");
@@ -19,12 +18,9 @@ router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
             return res.status(404).send("User not found");
         }
 
-        // Fetch blogs authored by this specific user
         const blogs = await Blog.find({ createdBy: req.user._id, isDeleted: false })
             .sort({ createdAt: -1 });
 
-        // Render profile view with the fully populated data structures
-        // isOwner is true because this is the user's own profile
         res.render("profile", {
             user: fullUser,
             blogs: blogs || [],
@@ -38,20 +34,20 @@ router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
     }
 });
 
-// ====================== GET EDIT PROFILE PAGE ======================
-router.get("/edit", async (req, res) => {
+// ====================== GET SETTINGS PAGE ======================
+router.get("/settings", async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
             .populate("followers", "fullName profileImageURL")
             .populate("following", "fullName profileImageURL");
 
-        res.render("editProfile", {
+        res.render("settings", {
             user: user,
             success: null,
             error: null
         });
     } catch (error) {
-        console.error("Edit Profile Page Error:", error);
+        console.error("Settings Page Error:", error);
         res.status(500).render("error", { error: error.message });
     }
 });
@@ -123,12 +119,19 @@ router.post("/upload-image", cloudinaryUpload.single("profileImage"), async (req
 // ====================== CHANGE PASSWORD ======================
 router.post("/change-password", async (req, res) => {
     try {
-        const { currentPassword, newPassword } = req.body;
+        const { currentPassword, newPassword, confirmPassword } = req.body;
 
-        if (!currentPassword || !newPassword) {
+        if (!currentPassword || !newPassword || !confirmPassword) {
             return res.status(400).json({
                 success: false,
-                message: "Current and new passwords are required"
+                message: "All fields are required"
+            });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Passwords do not match"
             });
         }
 
@@ -139,7 +142,6 @@ router.post("/change-password", async (req, res) => {
             });
         }
 
-        // Verify current password
         const user = await User.findById(req.user._id);
 
         if (user.googleId && !user.password) {
@@ -161,7 +163,6 @@ router.post("/change-password", async (req, res) => {
             });
         }
 
-        // Update password (will be hashed by pre-save hook)
         user.password = newPassword;
         await user.save();
 
@@ -178,10 +179,98 @@ router.post("/change-password", async (req, res) => {
     }
 });
 
+// ====================== UPDATE ACCOUNT PRIVACY ======================
+router.put("/privacy", async (req, res) => {
+    try {
+        const { isPrivate } = req.body;
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        user.isPrivate = isPrivate;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: `Account is now ${isPrivate ? 'private' : 'public'}`,
+            user: user
+        });
+    } catch (error) {
+        console.error("Privacy Update Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update privacy settings"
+        });
+    }
+});
+
+// ====================== UPDATE NOTIFICATION SETTINGS ======================
+router.put("/notifications", async (req, res) => {
+    try {
+        const { emailOnComment, emailOnNewFollower, emailDigest } = req.body;
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        user.notificationSettings = {
+            emailOnComment: emailOnComment || false,
+            emailOnNewFollower: emailOnNewFollower || false,
+            emailDigest: emailDigest || false
+        };
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "Notification settings updated",
+            user: user
+        });
+    } catch (error) {
+        console.error("Notification Settings Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update notification settings"
+        });
+    }
+});
+
 // ====================== DELETE ACCOUNT ======================
 router.delete("/delete-account", async (req, res) => {
     try {
+        const { password } = req.body;
         const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // Verify password before deletion
+        if (!user.googleId && user.password) {
+            const { createHmac } = require("crypto");
+            const passwordHash = createHmac("sha256", user.salt)
+                .update(password)
+                .digest("hex");
+
+            if (user.password !== passwordHash) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Incorrect password. Account deletion cancelled."
+                });
+            }
+        }
 
         // Delete all user's blogs
         await Blog.deleteMany({ createdBy: userId });
