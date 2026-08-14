@@ -7,9 +7,11 @@ const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
 
 router.use(restrictToLoggedInUserOnly);
 
-// ====================== GET USER PROFILE (Own Profile) ======================
+// ====================== GET USER PROFILE ======================
+// ====================== VIEW PROFILE ======================
 router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
     try {
+        // This is the fix: actively populating followers and following data fields
         const fullUser = await User.findById(req.user._id)
             .populate("followers", "fullName email profileImageURL bio")
             .populate("following", "fullName email profileImageURL bio");
@@ -18,36 +20,34 @@ router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
             return res.status(404).send("User not found");
         }
 
+        // Fetch blogs authored by this specific user
         const blogs = await Blog.find({ createdBy: req.user._id, isDeleted: false })
             .sort({ createdAt: -1 });
 
+        // Render profile view with the fully populated data structures
         res.render("profile", {
             user: fullUser,
-            blogs: blogs || [],
-            isOwner: true,
-            isMutualFollow: false,
-            canViewFullProfile: true
+            blogs: blogs || []
         });
     } catch (error) {
         console.error("🚨 Profile Route Error:", error.message);
         res.status(500).send("Internal Server Error");
     }
 });
-
-// ====================== GET SETTINGS PAGE ======================
-router.get("/settings", async (req, res) => {
+// ====================== GET EDIT PROFILE PAGE ======================
+router.get("/edit", async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
             .populate("followers", "fullName profileImageURL")
             .populate("following", "fullName profileImageURL");
 
-        res.render("settings", {
+        res.render("editProfile", {
             user: user,
             success: null,
             error: null
         });
     } catch (error) {
-        console.error("Settings Page Error:", error);
+        console.error("Edit Profile Page Error:", error);
         res.status(500).render("error", { error: error.message });
     }
 });
@@ -59,9 +59,9 @@ router.put("/update", async (req, res) => {
 
         const user = await User.findById(req.user._id);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
             });
         }
 
@@ -74,16 +74,16 @@ router.put("/update", async (req, res) => {
         // Save user
         await user.save();
 
-        res.json({
-            success: true,
+        res.json({ 
+            success: true, 
             message: "Profile updated successfully",
             user: user
         });
     } catch (error) {
         console.error("Update Profile Error:", error);
-        res.status(500).json({
-            success: false,
-            message: error.message || "Failed to update profile"
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to update profile" 
         });
     }
 });
@@ -92,9 +92,9 @@ router.put("/update", async (req, res) => {
 router.post("/upload-image", cloudinaryUpload.single("profileImage"), async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: "No image uploaded"
+            return res.status(400).json({ 
+                success: false, 
+                message: "No image uploaded" 
             });
         }
 
@@ -102,16 +102,16 @@ router.post("/upload-image", cloudinaryUpload.single("profileImage"), async (req
         user.profileImageURL = req.file.path;
         await user.save();
 
-        res.json({
-            success: true,
+        res.json({ 
+            success: true, 
             message: "Profile image updated",
             imageURL: req.file.path
         });
     } catch (error) {
         console.error("Upload Image Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to upload image"
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to upload image" 
         });
     }
 });
@@ -119,35 +119,29 @@ router.post("/upload-image", cloudinaryUpload.single("profileImage"), async (req
 // ====================== CHANGE PASSWORD ======================
 router.post("/change-password", async (req, res) => {
     try {
-        const { currentPassword, newPassword, confirmPassword } = req.body;
+        const { currentPassword, newPassword } = req.body;
 
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required"
-            });
-        }
-
-        if (newPassword !== confirmPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "Passwords do not match"
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Current and new passwords are required" 
             });
         }
 
         if (newPassword.length < 6) {
-            return res.status(400).json({
-                success: false,
-                message: "New password must be at least 6 characters"
+            return res.status(400).json({ 
+                success: false, 
+                message: "New password must be at least 6 characters" 
             });
         }
 
+        // Verify current password
         const user = await User.findById(req.user._id);
-
+        
         if (user.googleId && !user.password) {
-            return res.status(400).json({
-                success: false,
-                message: "This account uses Google Sign-In. Cannot change password."
+            return res.status(400).json({ 
+                success: false, 
+                message: "This account uses Google Sign-In. Cannot change password." 
             });
         }
 
@@ -157,88 +151,25 @@ router.post("/change-password", async (req, res) => {
             .digest("hex");
 
         if (user.password !== currentHash) {
-            return res.status(401).json({
-                success: false,
-                message: "Current password is incorrect"
+            return res.status(401).json({ 
+                success: false, 
+                message: "Current password is incorrect" 
             });
         }
 
+        // Update password (will be hashed by pre-save hook)
         user.password = newPassword;
         await user.save();
 
-        res.json({
-            success: true,
-            message: "Password changed successfully"
+        res.json({ 
+            success: true, 
+            message: "Password changed successfully" 
         });
     } catch (error) {
         console.error("Change Password Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to change password"
-        });
-    }
-});
-
-// ====================== UPDATE ACCOUNT PRIVACY ======================
-router.put("/privacy", async (req, res) => {
-    try {
-        const { isPrivate } = req.body;
-
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        user.isPrivate = isPrivate;
-        await user.save();
-
-        res.json({
-            success: true,
-            message: `Account is now ${isPrivate ? 'private' : 'public'}`,
-            user: user
-        });
-    } catch (error) {
-        console.error("Privacy Update Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to update privacy settings"
-        });
-    }
-});
-
-// ====================== UPDATE NOTIFICATION SETTINGS ======================
-router.put("/notifications", async (req, res) => {
-    try {
-        const { emailOnComment, emailOnNewFollower, emailDigest } = req.body;
-
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        user.notificationSettings = {
-            emailOnComment: emailOnComment || false,
-            emailOnNewFollower: emailOnNewFollower || false,
-            emailDigest: emailDigest || false
-        };
-        await user.save();
-
-        res.json({
-            success: true,
-            message: "Notification settings updated",
-            user: user
-        });
-    } catch (error) {
-        console.error("Notification Settings Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to update notification settings"
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to change password" 
         });
     }
 });
@@ -246,31 +177,7 @@ router.put("/notifications", async (req, res) => {
 // ====================== DELETE ACCOUNT ======================
 router.delete("/delete-account", async (req, res) => {
     try {
-        const { password } = req.body;
         const userId = req.user._id;
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        // Verify password before deletion
-        if (!user.googleId && user.password) {
-            const { createHmac } = require("crypto");
-            const passwordHash = createHmac("sha256", user.salt)
-                .update(password)
-                .digest("hex");
-
-            if (user.password !== passwordHash) {
-                return res.status(401).json({
-                    success: false,
-                    message: "Incorrect password. Account deletion cancelled."
-                });
-            }
-        }
 
         // Delete all user's blogs
         await Blog.deleteMany({ createdBy: userId });
@@ -281,15 +188,15 @@ router.delete("/delete-account", async (req, res) => {
         // Clear auth cookie
         res.clearCookie("token");
 
-        res.json({
-            success: true,
-            message: "Account deleted successfully"
+        res.json({ 
+            success: true, 
+            message: "Account deleted successfully" 
         });
     } catch (error) {
         console.error("Delete Account Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to delete account"
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to delete account" 
         });
     }
 });
