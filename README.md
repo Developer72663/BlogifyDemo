@@ -98,162 +98,93 @@
 - Input validation and sanitization
 - CSRF protection ready
 - Security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
-- HTTP-only cookies
-- Same-site cookie protection
 
-### 14. **Soft Deletes** ✅
-- Blogs have soft delete (not permanently removed)
-- Comments support soft delete
-- Restore capability
-- Deleted timestamp tracking
+---
 
-### 15. **Blog Metadata & SEO** ✅
-- Meta descriptions
-- Blog excerpt
-- URL slugs
-- SEO-friendly URLs
-- Structured data ready
+## 🆕 Recent Change: Unified Profile View (Breaking / Important)
+To simplify maintenance and improve consistency the public and private profile templates have been unified.
 
-### 16. **Email Notifications** ✅
-- Email on new comment
-- Email on new follower
-- Email on blog likes
-- Customizable notification preferences
-- Daily digest ready
+What changed
+- Removed: `views/publicProfile.ejs` (legacy public-only template).
+- Kept: `views/profile.ejs` — now a single template that supports:
+  - Public viewing (logged-out visitors)
+  - Authenticated users viewing other profiles (follow/unfollow, conditional followers display)
+  - Profile owner view (edit button + analytics tab)
+- Route: `routes/publicProfile.js` now renders `profile.ejs` and passes the profile as `user`. The route remains mounted at `/profile/:userId`.
 
-### 17. **Related Blogs** ✅
-- Show similar blogs based on tags
-- Author's other blogs
-- Related blogs section on blog view
+Why
+- Single source of truth for profile UI reduces duplication and makes it easier to apply future UX/behavior improvements.
+- Privacy rules (followers/following visibility) are enforced server-side and reflected correctly in the unified template.
 
-### 18. **Analytics Dashboard** ✅
-- Trending blogs endpoint
-- Most liked blogs endpoint
-- Author statistics
-- Blog performance metrics
-- Daily view tracking
+Developer notes / migration steps
+- If you linked to `/public/<id>` anywhere in your code or templates, update those links to `/profile/<id>`. Run a quick search in the repo:
+  - grep -R "/public/" -n .
+- Confirm `routes/publicProfile.js` renders `profile` (not `publicProfile`) and that it passes the profile object as `user` (the template expects the profile to be in `user` and the logged-in viewer in `res.locals.user`).
+- Remove the old file from your branch (already removed in this update):
+  - git rm views/publicProfile.ejs
+  - git commit -m "Remove publicProfile.ejs, use unified profile.ejs"
+
+Testing checklist
+1. Anonymous visitor
+   - Visit `/profile/<userId>` while logged out — public blogs and basic profile info should be visible; the follow CTA should route to sign-in.
+2. Authenticated visitor (another user)
+   - Visit `/profile/<otherUserId>` — follow/unfollow flows should work; if mutual follow, followers/following lists become visible.
+3. Profile owner
+   - Visit `/profile/<yourUserId>` while logged in — Edit Profile and Analytics tab should be visible; analytics tab lazy-loads author stats.
+4. Links
+   - Update any anchors that previously referenced `/public/<id>` to `/profile/<id>` to keep navigation consistent.
 
 ---
 
 ## 📁 New Files Added
+(See repo for full list)
 
 ### Models
-- `models/Comment.js` - Comment model with nested replies
-- `models/Notification.js` - Notification tracking
-- `models/BlogAnalytics.js` - Blog analytics and metrics
+- Blog, BlogAnalytics, Comment, Notification, User, etc.
 
 ### Routes
-- `routes/Comment.js` - Comment CRUD operations
-- `routes/Follow.js` - Follow/unfollow functionality
-- `routes/Notification.js` - Notification management
-- `routes/Analytics.js` - Analytics endpoints
+- Blogs, Comments, Profile (/profile/:userId), Follow, Notifications, Analytics, Admin, Auth, Google OAuth
 
 ### Middleware
-- `middlewares/validation.js` - Input validation and sanitization
-- `middlewares/rateLimiting.js` - Rate limiting for security
+- Authentication cookie checker
+- Rate limiting
+- Query param parsing
+- Cloudinary uploads
+- Validation utilities
 
 ### Services
-- `services/notificationService.js` - Notification creation and management
-- `services/analyticsService.js` - Analytics tracking and retrieval
+- AnalyticsService, NotificationService, Email service, Authentication (JWT)
 
 ---
 
 ## 🔄 Enhanced Files
-
-### Models
-- `models/Blog.js` - Enhanced with drafts, tags, categories, reading time, featured status, soft delete, view count, likes
-- `models/user.js` - Enhanced with theme, bio, website, followers, following, notification settings
-
-### Routes
-- `routes/Blog.js` - Added like, featured, tag search, soft delete, analytics
-- `routes/User.js` - Added rate limiting and validation
-- `routes/Comment.js` - New comprehensive comment system
-
-### Core
-- `app.js` - Added new routes, security headers, featured blogs on homepage
-- `package.json` - Added express-rate-limit dependency
+- Consolidated profile views and routes (see "Unified Profile View" above)
+- Improved notifications and email templates
+- Better error pages and consistent partials
 
 ---
 
-## 🔐 Security Features Added
-
-✅ Rate limiting (login, OTP, API, blog creation)
-✅ Input validation and sanitization
-✅ Security headers (XSS, clickjacking, content type protection)
-✅ CSRF token ready
-✅ HTTP-only cookies
-✅ Same-site cookie protection
-✅ Soft deletes (audit trail)
-✅ User role validation
-✅ Ownership checks on updates/deletes
+## 🚀 How to run locally
+1. Copy environment variables from `.env.example` and fill in values (MongoDB URI, JWT secret, Cloudinary credentials, Google OAuth values, SMTP config).
+2. Install dependencies:
+   - npm install
+3. Start the dev server:
+   - npm run dev
+4. Visit `http://localhost:8000`
 
 ---
 
-## 🎨 UI/UX Components Ready
-
-The following views need to be created/updated:
-- Home page with featured blogs carousel
-- Blog view with comments section, like button, related blogs
-- User profile with follower/following lists
-- Notification center
-- Analytics dashboard
-- Settings page for theme and notification preferences
-- Tag browsing page
-- Search results page
-- Featured blogs section
+## 🧪 Tests & QA
+- Manually verify the profile pages for different viewer states (owner, logged-in other user, anonymous).
+- Confirm follow/unfollow notifications and emails deliver correctly.
+- Confirm analytics pages render and the author stats endpoint works for the owner.
 
 ---
 
-## 📊 API Endpoints Summary
+## 🙋‍♂️ Need help?
+If you'd like, I can:
+- Open a PR that removes `views/publicProfile.ejs` and commits the unified `views/profile.ejs` + updated route.
+- Produce a patch file you can apply locally.
+- Search and replace any leftover `/public/` links across the repo.
 
-### Comments
-- `GET /comments/blog/:blogId` - Get blog comments
-- `POST /comments/blog/:blogId` - Create comment
-- `PUT /comments/:commentId` - Update comment
-- `DELETE /comments/:commentId` - Delete comment
-- `POST /comments/:commentId/like` - Like comment
-
-### Follow
-- `POST /follow/:userId/follow` - Follow/unfollow user
-- `GET /follow/:userId/followers` - Get followers
-- `GET /follow/:userId/following` - Get following list
-
-### Notifications
-- `GET /notifications` - Get user notifications
-- `GET /notifications/unread/count` - Get unread count
-- `PUT /notifications/:notificationId/read` - Mark as read
-- `PUT /notifications/all/read` - Mark all as read
-
-### Analytics
-- `GET /analytics/trending` - Get trending blogs
-- `GET /analytics/most-liked` - Get most liked blogs
-- `GET /analytics/blog/:blogId` - Get blog analytics
-- `GET /analytics/author/stats` - Get author stats
-
-### Blogs
-- `POST /blogs/:id/like` - Like blog
-- `GET /blogs/featured/list` - Get featured blogs
-- `GET /blogs/tags/:tag` - Get blogs by tag
-- `PUT /blogs/:id` - Update blog with new features
-
----
-
-## 🚀 Next Steps
-
-1. Create/update EJS views for new features
-2. Add frontend JavaScript for interactive features
-3. Implement email digest scheduling
-4. Add image optimization for blog covers
-5. Implement Redis caching
-6. Add database migrations
-7. Create Swagger API documentation
-8. Add Jest tests
-9. Implement websockets for real-time notifications
-10. Add internationalization (i18n)
-
----
-
-**Version**: 2.0.0
-**Last Updated**: 2026-05-25
-**Status**: Ready for Integration
-
+Just tell me which you'd prefer and I will prepare it.
