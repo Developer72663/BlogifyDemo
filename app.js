@@ -99,46 +99,6 @@ app.locals.formatDate = function(date) {
     });
 };
 
-/**
- * Global Helper Engine
- * Clears database formatting flags, stabilizes code block segments, 
- * escapes raw symbols safely, and returns syntactically styled HTML strings.
- */
-app.locals.renderMarkdown = function(rawContent) {
-    if (!rawContent) return '';
-    
-    let contentString = String(rawContent);
-
-    // 1. ISOLATE CODE BLOCKS: Extract all backtick sections to protect code contents from debris filters
-    const codeBlocks = [];
-    contentString = contentString.replace(/```([\s\S]*?)```/g, (match) => {
-        codeBlocks.push(match);
-        return `__BLOGIFY_CODE_BLOCK_PLACEHOLDER_${codeBlocks.length - 1}__`;
-    });
-
-    // 2. CLEAN SYSTEMIC DEBRIS: Safe execution only applied to markdown body text structure
-    contentString = contentString
-        .replace(/\/ppbr\/pp/g, '\n\n')
-        .replace(/\/ppbr\/ph2/g, '\n\n## ')
-        .replace(/\/ppbr\/ph/g, '\n\n# ')
-        .replace(/\/pp/g, '\n')
-        .replace(/\/h2pbr\/pp/g, '\n## ')
-        .replace(/\/strongpbr\/ph2/g, '\n\n## ')
-        .replace(/\/li\/ul/g, '')
-        .replace(/\/li/g, '\n* ')
-        .replace(/pbr\/pul/g, '\n\n')
-        .replace(/pbr\/p/g, '\n')
-        .replace(/<<\/strong>/g, '**')
-        .replace(/<<strong>/g, '**');
-
-    // 3. RESTORE CODE BLOCKS: Re-insert pure unescaped code snippets back into place for Marked + Highlight.js
-    contentString = contentString.replace(/__BLOGIFY_CODE_BLOCK_PLACEHOLDER_(\d+)__/g, (match, index) => {
-        return codeBlocks[parseInt(index)];
-    });
-
-    // 4. COMPILE STRUCTURES: Let marked parse blocks cleanly and auto-escape elements contextually
-    return marked.parse(contentString);
-};
 // ============================================================
 
 // ====================== GRAPHQL ENDPOINT ======================
@@ -215,6 +175,14 @@ app.get("/", async (req, res) => {
 });
 
 // ====================== ROUTES ======================
+
+// Redirect legacy /user/profile/:userId to unified public profile page
+// This handles cases where links or users try to access /user/profile/:id directly.
+app.get("/user/profile/:userId", (req, res) => {
+    const { userId } = req.params;
+    return res.redirect(`/profile/${userId}`);
+});
+
 app.use("/admin", AdminRoute);
 app.use("/user/profile", ProfileRoute);
 app.use("/profile", PublicProfileRoute);
