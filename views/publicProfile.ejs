@@ -17,6 +17,7 @@
             --primary: #6366f1;
             --primary-light: #e0e7ff;
             --success: #10b981;
+            --warning: #f59e0b;
             --radius: 16px;
             --shadow: 0 1px 3px rgba(0,0,0,0.1);
             --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
@@ -135,6 +136,38 @@
             flex-wrap: wrap;
         }
 
+        .profile-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge-following {
+            background: var(--success);
+            color: white;
+        }
+
+        .badge-follower {
+            background: var(--warning);
+            color: white;
+        }
+
+        .badge-mutual {
+            background: var(--primary);
+            color: white;
+        }
+
         .profile-handle {
             color: var(--text-secondary);
             font-size: 0.95rem;
@@ -216,6 +249,9 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-primary {
@@ -418,10 +454,26 @@
                 <div class="profile-info">
                     <div class="profile-name">
                         <%= profileUser.fullName %>
+                    </div>
+
+                    <!-- Relationship Badges -->
+                    <div class="profile-badges">
                         <% if (isMutualFollow && !isOwner) { %>
-                            <span style="font-size: 0.7rem; background: var(--success); color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600;">Following</span>
+                            <span class="badge badge-mutual">
+                                <i class="fas fa-handshake"></i> Mutual Follow
+                            </span>
+                        <% } else if (isFollowing && !isOwner) { %>
+                            <span class="badge badge-following">
+                                <i class="fas fa-user-check"></i> Following
+                            </span>
+                        <% } %>
+                        <% if (profileFollowsMe && !isOwner) { %>
+                            <span class="badge badge-follower">
+                                <i class="fas fa-star"></i> Follows You
+                            </span>
                         <% } %>
                     </div>
+
                     <div class="profile-handle"><i class="fas fa-at"></i> @<%= profileUser.email.split('@')[0] %></div>
 
                     <!-- Bio (Always Visible) -->
@@ -463,8 +515,7 @@
                     <!-- Follow Button for Visitors -->
                     <button class="btn <%= isFollowing ? 'btn-outline' : 'btn-primary' %>" 
                             id="followBtn"
-                            onclick="toggleFollowProfile('<%= profileUser._id %>')" 
-                            style="display: flex; align-items: center; gap: 8px;">
+                            onclick="toggleFollowProfile('<%= profileUser._id %>')">
                         <i class="<%= isFollowing ? 'fas fa-user-check' : 'fas fa-user-plus' %>"></i>
                         <span id="followBtnText"><%= followButtonText %></span>
                     </button>
@@ -472,7 +523,7 @@
                 
                 <% if (isOwner && user) { %>
                     <!-- Edit Profile Button (Only for Owner) -->
-                    <a href="/user/profile/edit" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
+                    <a href="/user/profile/edit" class="btn btn-primary">
                         <i class="fas fa-edit"></i>
                         Edit Profile
                     </a>
@@ -486,7 +537,17 @@
         <div style="max-width: 900px; margin: 24px auto; padding: 0 24px;">
             <div class="privacy-notice">
                 <i class="fas fa-lock"></i>
-                <span>Follow this user to view their followers, following list, and all blogs.</span>
+                <span>Follow this user to view their blogs, followers and following list.</span>
+            </div>
+        </div>
+    <% } %>
+
+    <!-- Profile Access Info -->
+    <% if (!isOwner && profileFollowsMe && !isFollowing) { %>
+        <div style="max-width: 900px; margin: 16px auto; padding: 0 24px;">
+            <div style="background: var(--primary-light); border: 1px solid var(--primary); border-radius: 8px; padding: 16px; color: var(--primary); font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-info-circle"></i>
+                <span>This user follows you! Follow back to get mutual follow benefits.</span>
             </div>
         </div>
     <% } %>
@@ -531,7 +592,7 @@
             <% } else { %>
                 <div class="empty-state">
                     <i class="fas fa-lock"></i>
-                    <p>Blogs are hidden until you follow each other</p>
+                    <p>Blogs are hidden until you follow this user</p>
                 </div>
             <% } %>
         </div>
@@ -547,7 +608,7 @@
                                  onerror="this.src='/imgs/default.png';">
                             <div class="user-card-name"><%= follower.fullName %></div>
                             <div class="user-card-handle">@<%= follower.email.split('@')[0] %></div>
-                            <a href="/profile/<%= follower._id %>" class="btn btn-outline" style="width: 100%; text-decoration: none;">
+                            <a href="/profile/<%= follower._id %>" class="btn btn-outline" style="width: 100%; text-decoration: none; justify-content: center;">
                                 View Profile
                             </a>
                         </div>
@@ -572,7 +633,7 @@
                                  onerror="this.src='/imgs/default.png';">
                             <div class="user-card-name"><%= followee.fullName %></div>
                             <div class="user-card-handle">@<%= followee.email.split('@')[0] %></div>
-                            <a href="/profile/<%= followee._id %>" class="btn btn-outline" style="width: 100%; text-decoration: none;">
+                            <a href="/profile/<%= followee._id %>" class="btn btn-outline" style="width: 100%; text-decoration: none; justify-content: center;">
                                 View Profile
                             </a>
                         </div>
@@ -595,12 +656,11 @@
             
             // Show selected tab
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            event.target.closest('.tab').classList.add('active');
         }
 
         async function toggleFollowProfile(userId) {
             const btn = document.getElementById('followBtn');
-            const btnText = document.getElementById('followBtnText');
             btn.disabled = true;
 
             try {
@@ -611,17 +671,18 @@
                     if (data.following) {
                         btn.classList.remove('btn-primary');
                         btn.classList.add('btn-outline');
-                        btnText.textContent = 'Following';
                         btn.innerHTML = '<i class="fas fa-user-check"></i><span>Following</span>';
                     } else {
                         btn.classList.remove('btn-outline');
                         btn.classList.add('btn-primary');
-                        btnText.textContent = 'Follow';
                         btn.innerHTML = '<i class="fas fa-user-plus"></i><span>Follow</span>';
                     }
+                    // Refresh page to show updated content
+                    setTimeout(() => location.reload(), 300);
                 }
             } catch (error) {
                 console.error('Follow error:', error);
+                alert('Failed to follow user');
             } finally {
                 btn.disabled = false;
             }

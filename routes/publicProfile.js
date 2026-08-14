@@ -24,6 +24,7 @@ router.get("/:userId", async (req, res) => {
         // Determine relationship status
         let isOwner = false;
         let isFollowing = false;
+        let profileFollowsMe = false;
         let isMutualFollow = false;
         let followButtonText = "Follow";
 
@@ -33,7 +34,7 @@ router.get("/:userId", async (req, res) => {
             const currentUser = await User.findById(req.user._id).lean();
             isFollowing = currentUser.following.some(id => id.toString() === userId);
 
-            const profileFollowsMe = profileUser.followers.some(
+            profileFollowsMe = profileUser.followers.some(
                 f => f._id.toString() === req.user._id.toString()
             );
             
@@ -45,11 +46,12 @@ router.get("/:userId", async (req, res) => {
             }
         }
 
-        // ====================== PRIVACY LOGIC ======================
+        // ====================== UPDATED PRIVACY LOGIC ======================
         // Show full profile if:
         // 1. Viewing own profile (isOwner)
         // 2. Mutual follow (both following each other)
-        const canViewFullProfile = isOwner || isMutualFollow;
+        // 3. Profile owner follows the visitor (one-way follow - profile accepts visitor)
+        const canViewFullProfile = isOwner || isMutualFollow || profileFollowsMe;
 
         let blogs = [];
         let blogCount = 0;
@@ -96,6 +98,7 @@ router.get("/:userId", async (req, res) => {
             isOwner,
             isFollowing,
             isMutualFollow,
+            profileFollowsMe, // Pass this to template
             canViewFullProfile, // Pass this to template
             canViewFollowers: canViewFullProfile,
             canViewFollowing: canViewFullProfile,
