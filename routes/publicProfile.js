@@ -56,9 +56,11 @@ router.get("/:userId", async (req, res) => {
             showFollowingList = isOwner || isMutualFollow;
         }
 
-        res.render("publicProfile", {
-            user: req.user || null,
-            profileUser,
+        // Render the unified profile view. Pass the profile as `user` (so templates
+        // can use `user` for the profile being viewed and `locals.user` for the
+        // currently authenticated viewer)
+        res.render("profile", {
+            user: profileUser,
             blogs,
             stats: {
                 blogCount,
