@@ -21,97 +21,64 @@ router.get("/:userId", async (req, res) => {
             return res.status(404).render("404", { user: req.user || null });
         }
 
-        // Determine relationship status
-        let isOwner = false;
+        const blogCount = await Blog.countDocuments({ 
+            createdBy: userId, 
+            isDeleted: false,
+            status: "published" 
+        });
+
+        const blogs = await Blog.find({ 
+            createdBy: userId, 
+            isDeleted: false,
+            status: "published" 
+        })
+            .sort({ createdAt: -1 })
+            .populate("createdBy", "fullName profileImageURL")
+            .lean();
+
+        let showFollowersList = false;
+        let showFollowingList = false;
         let isFollowing = false;
-        let profileFollowsMe = false;
         let isMutualFollow = false;
-        let followButtonText = "Follow";
+        let isOwner = false;
 
         if (req.user) {
             isOwner = req.user._id.toString() === userId.toString();
-            
             const currentUser = await User.findById(req.user._id).lean();
             isFollowing = currentUser.following.some(id => id.toString() === userId);
 
-            profileFollowsMe = profileUser.followers.some(
+            const profileFollowsMe = profileUser.followers.some(
                 f => f._id.toString() === req.user._id.toString()
             );
-            
             isMutualFollow = isFollowing && profileFollowsMe;
-            
-            // Set follow button text
-            if (isFollowing) {
-                followButtonText = "Following";
-            }
+
+            showFollowersList = isOwner || isMutualFollow;
+            showFollowingList = isOwner || isMutualFollow;
         }
-
-        // ====================== UPDATED PRIVACY LOGIC ======================
-        // Show full profile if:
-        // 1. Viewing own profile (isOwner)
-        // 2. Mutual follow (both following each other)
-        // 3. Profile owner follows the visitor (one-way follow - profile accepts visitor)
-        const canViewFullProfile = isOwner || isMutualFollow || profileFollowsMe;
-
-        let blogs = [];
-        let blogCount = 0;
-
-        if (canViewFullProfile) {
-            // Show all published blogs
-            blogs = await Blog.find({
-                createdBy: userId,
-                isDeleted: false,
-                status: "published"
-            })
-                .sort({ createdAt: -1 })
-                .populate("createdBy", "fullName profileImageURL")
-                .lean();
-            blogCount = blogs.length;
-        } else {
-            // Only show blog count (don't show actual blogs)
-            blogCount = await Blog.countDocuments({
-                createdBy: userId,
-                isDeleted: false,
-                status: "published"
-            });
-        }
-
-        // Prepare followers/following lists based on privacy
-        let visibleFollowers = [];
-        let visibleFollowing = [];
-
-        if (canViewFullProfile) {
-            visibleFollowers = profileUser.followers || [];
-            visibleFollowing = profileUser.following || [];
-        }
-        // else: keep empty arrays
 
         res.render("publicProfile", {
             user: req.user || null,
             profileUser,
-            blogs: canViewFullProfile ? blogs : [],
+            blogs,
             stats: {
-                blogCount: blogCount,
-                followerCount: profileUser.followers ? profileUser.followers.length : 0,
-                followingCount: profileUser.following ? profileUser.following.length : 0
+                blogCount,
+                followerCount: profileUser.followers.length,
+                followingCount: profileUser.following.length
             },
             isOwner,
             isFollowing,
             isMutualFollow,
-            profileFollowsMe, // Pass this to template
-            canViewFullProfile, // Pass this to template
-            canViewFollowers: canViewFullProfile,
-            canViewFollowing: canViewFullProfile,
-            visibleFollowers: canViewFullProfile ? profileUser.followers : [],
-            visibleFollowing: canViewFullProfile ? profileUser.following : [],
-            followButtonText
+            showFollowersList,
+            showFollowingList,
+            visibleFollowers: showFollowersList ? profileUser.followers : [],
+            visibleFollowing: showFollowingList ? profileUser.following : []
         });
 
     } catch (error) {
         console.error("Public Profile Error:", error);
-        res.status(500).render("error", {
+        res.status(500).render("error", { 
             user: req.user || null,
-            error: "Failed to load profile"
+            error: "Failed to load profile" 
         });
     }
 });
