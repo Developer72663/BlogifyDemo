@@ -1,414 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <%- include("./partials/head") %>
-    <title><%= user.fullName %> - Profile | Blogify</title>
+  <%- include("./partials/head") %>
+  <title><%= user.fullName %> | Blogify</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#fff;--text:#182033;--muted:#718096;--line:#e7eaf1;--primary:#635bff;--soft:#efedff;--shadow:0 16px 45px rgba(24,32,51,.08)}
+    *{box-sizing:border-box}.profile-page{min-height:100vh;background:var(--bg);color:var(--text);padding:94px 16px 60px}.profile-shell{max-width:1120px;margin:auto}.profile-card,.content-card{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}.profile-card{padding:30px}.profile-head{display:flex;gap:25px;align-items:center}.avatar{width:132px;height:132px;border-radius:50%;object-fit:cover;border:5px solid var(--card);box-shadow:0 8px 28px rgba(0,0,0,.12)}.identity{flex:1;min-width:0}.identity h1{margin:0 0 5px;font-size:2rem;letter-spacing:-.035em}.identity .email{color:var(--muted);font-size:.86rem;margin:0 0 12px}.bio{margin:0 0 12px;line-height:1.6;max-width:700px}.meta{display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:.84rem}.meta a{color:var(--primary);text-decoration:none}.badge{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:6px 10px;background:var(--soft);color:var(--primary);font-weight:800;font-size:.72rem}.actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}.btn{border:0;border-radius:11px;padding:10px 15px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px}.primary{background:var(--primary);color:#fff}.secondary{background:var(--card);border:1px solid var(--line);color:var(--text)}.success{background:#159570;color:#fff}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:28px;padding-top:22px;border-top:1px solid var(--line)}.stat{text-align:center;border:0;background:transparent;color:var(--text);cursor:pointer}.stat strong{display:block;font-size:1.25rem}.stat span{color:var(--muted);font-size:.78rem}.tabs{display:flex;gap:5px;margin:22px 0 15px;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:15px}.tab{flex:1;border:0;background:transparent;padding:11px;border-radius:10px;color:var(--muted);font-weight:800;cursor:pointer}.tab.active{background:var(--soft);color:var(--primary)}.content-card{padding:24px}.panel{display:none}.panel.active{display:block}.blog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.blog{border:1px solid var(--line);border-radius:17px;overflow:hidden;background:var(--card);display:flex;flex-direction:column}.cover{width:100%;height:210px;object-fit:cover;background:var(--bg)}.blog-body{padding:17px;display:flex;flex-direction:column;flex:1}.blog h3{font-size:1.08rem;margin:0 0 8px}.blog p{color:var(--muted);font-size:.85rem;line-height:1.5;flex:1}.blog-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.74rem;padding-top:12px;border-top:1px solid var(--line)}.empty{text-align:center;padding:55px 15px;color:var(--muted)}.empty i{font-size:2.8rem;margin-bottom:12px}.lock{background:var(--soft);border-radius:18px;padding:35px;text-align:center}.lock i{font-size:2.4rem;color:var(--primary);margin-bottom:12px}.people{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.person{border:1px solid var(--line);border-radius:15px;padding:16px;text-align:center}.person img{width:58px;height:58px;border-radius:50%;object-fit:cover}.person strong{display:block;margin-top:8px}.person small{color:var(--muted)}.toast{position:fixed;right:20px;bottom:20px;background:#182033;color:white;padding:12px 16px;border-radius:11px;display:none;z-index:20}@media(max-width:760px){.profile-page{padding:82px 10px 40px}.profile-card{padding:20px}.profile-head{flex-direction:column;text-align:center}.identity .email{margin-bottom:8px}.meta{justify-content:center}.actions{justify-content:center}.stats{margin-top:20px}.blog-grid,.people{grid-template-columns:1fr}.cover{height:190px}.tabs{overflow:auto}.tab{min-width:105px}}
+  </style>
 </head>
 <body>
-    <%- include("./partials/nave") %>
-
-    <%
-        const isOwnProfile = locals.user && locals.user._id.toString() === user._id.toString();
-    %>
-
-    <!-- Profile Header -->
-    <header class="bg-primary-soft border-bottom py-5">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-auto text-center mb-4 mb-md-0">
-                    <img src="<%= user.profileImageURL || '/imgs/default.png' %>" 
-                         alt="<%= user.fullName %>" 
-                         width="120" height="120" 
-                         class="rounded-circle border border-4 shadow-sm mb-3"
-                         style="object-fit: cover;"
-                         onerror="this.src='/imgs/default.png';">
-                </div>
-
-                <div class="col-md flex-grow-1">
-                    <h1 class="fw-bold mb-2"><%= user.fullName %></h1>
-                    <p class="text-muted mb-3"><%= user.email %></p>
-                    <% if (user.bio) { %>
-                        <p class="mb-3"><%= user.bio %></p>
-                    <% } %>
-                    <% if (user.website) { %>
-                        <p class="mb-3">
-                            <a href="<%= user.website %>" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-globe"></i> Visit Website
-                            </a>
-                        </p>
-                    <% } %>
-                    
-                    <div class="d-flex gap-4">
-                        <div>
-                            <h5 class="fw-bold"><%= blogs ? blogs.length : 0 %></h5>
-                            <small class="text-muted">Blogs</small>
-                        </div>
-                        <div>
-                            <h5 class="fw-bold"><%= user.followers ? user.followers.length : 0 %></h5>
-                            <small class="text-muted">Followers</small>
-                        </div>
-                        <div>
-                            <h5 class="fw-bold"><%= user.following ? user.following.length : 0 %></h5>
-                            <small class="text-muted">Following</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-auto">
-                    <div class="d-flex gap-2">
-                        <% if (isOwnProfile) { %>
-                            <a href="/user/profile/edit" class="btn btn-primary">
-                                <i class="fas fa-edit"></i> Edit Profile
-                            </a>
-                        <% } else if (locals.user) { %>
-                            <button class="btn btn-outline-primary" id="followBtn" onclick="toggleFollow()">
-                                <i class="fas fa-user-plus"></i> Follow
-                            </button>
-                        <% } %>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <div class="container my-4">
-        <ul class="nav nav-tabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="blogs-tab" data-bs-toggle="tab" 
-                        data-bs-target="#blogs" type="button" role="tab" aria-selected="true">
-                    <i class="fas fa-book"></i> Blogs
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="followers-tab" data-bs-toggle="tab" 
-                        data-bs-target="#followers" type="button" role="tab" aria-selected="false">
-                    <i class="fas fa-users"></i> Followers
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="following-tab" data-bs-toggle="tab" 
-                        data-bs-target="#following" type="button" role="tab" aria-selected="false">
-                    <i class="fas fa-heart"></i> Following
-                </button>
-            </li>
-            <% if (isOwnProfile) { %>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" 
-                            data-bs-target="#analytics" type="button" role="tab" aria-selected="false">
-                        <i class="fas fa-chart-line"></i> Analytics
-                    </button>
-                </li>
-            <% } %>
-        </ul>
+<%- include("./partials/nave") %>
+<main class="profile-page"><div class="profile-shell">
+  <section class="profile-card">
+    <div class="profile-head">
+      <img class="avatar" src="<%= user.profileImageURL || '/imgs/default.png' %>" alt="<%= user.fullName %>" onerror="this.src='/imgs/default.png'">
+      <div class="identity">
+        <div style="margin-bottom:9px"><span class="badge"><i class="fas <%= user.isPrivate ? 'fa-lock' : 'fa-globe' %>"></i> <%= user.isPrivate ? 'Private account' : 'Public account' %></span></div>
+        <h1><%= user.fullName %></h1>
+        <% if (user.email && isOwnProfile) { %><p class="email"><%= user.email %></p><% } %>
+        <% if (user.bio) { %><p class="bio"><%= user.bio %></p><% } %>
+        <div class="meta"><% if (user.location) { %><span><i class="fas fa-map-marker-alt"></i> <%= user.location %></span><% } %><% if (user.website) { %><a href="<%= user.website %>" target="_blank" rel="noopener"><i class="fas fa-link"></i> Website</a><% } %></div>
+      </div>
+      <div class="actions">
+        <% if (isOwnProfile) { %><a class="btn primary" href="/user/profile/edit"><i class="fas fa-edit"></i> Edit profile</a><a class="btn secondary" href="/user/profile/settings"><i class="fas fa-cog"></i> Settings</a>
+        <% } else if (isLoggedIn) { %><button id="followBtn" class="btn <%= followState === 'following' ? 'success' : 'secondary' %>" onclick="toggleFollow()"><i class="fas <%= followState === 'following' ? 'fa-user-check' : followState === 'requested' ? 'fa-clock' : 'fa-user-plus' %>"></i> <%= followState === 'following' ? 'Following' : followState === 'requested' ? 'Request sent' : 'Follow' %></button>
+        <% } else { %><a class="btn primary" href="/user/signin"><i class="fas fa-user-plus"></i> Sign in to follow</a><% } %>
+      </div>
     </div>
-
-    <!-- Tab Content -->
-    <div class="container mb-5">
-        <div class="tab-content">
-
-            <!-- Blogs Tab -->
-            <div class="tab-pane fade show active" id="blogs" role="tabpanel">
-                <% if (!blogs || blogs.length === 0) { %>
-                    <div class="text-center py-5">
-                        <i class="fas fa-inbox fa-5x text-muted mb-3"></i>
-                        <h4 class="text-muted">No blogs published yet</h4>
-                        <% if (isOwnProfile) { %>
-                            <a href="/blogs/add-new" class="btn btn-primary mt-3">
-                                <i class="fas fa-pen"></i> Write First Blog
-                            </a>
-                        <% } %>
-                    </div>
-                <% } else { %>
-                    <div class="row">
-                        <% blogs.forEach(blog => { %>
-                            <div class="col-lg-6 col-xl-6 mb-4">
-                                <div class="card blog-card h-100">
-                                    <div class="position-relative">
-                                        <% if (blog.coverImageURL) { %>
-                                            <img src="<%= blog.coverImageURL %>" 
-                                                 class="card-img-top blog-card-image" 
-                                                 alt="<%= blog.title %>"
-                                                 onerror="this.src='/images/default-blog.png';">
-                                        <% } else { %>
-                                            <div class="bg-light d-flex align-items-center justify-content-center blog-card-image">
-                                                <i class="fas fa-image fa-3x text-muted"></i>
-                                            </div>
-                                        <% } %>
-
-                                        <div class="position-absolute top-0 end-0 m-2">
-                                            <% if (blog.status === 'draft') { %>
-                                                <span class="badge bg-warning text-dark">Draft</span>
-                                            <% } else if (blog.isFeatured) { %>
-                                                <span class="badge bg-success">Featured</span>
-                                            <% } %>
-                                        </div>
-
-                                        <% if (isOwnProfile) { %>
-                                            <div class="dropdown position-absolute top-0 start-0 m-2">
-                                                <button class="btn btn-sm btn-dark dropdown-toggle" data-bs-toggle="dropdown">
-                                                    <i class="fas fa-ellipsis-v"></i>
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="/blogs/<%= blog._id %>"><i class="fas fa-eye"></i> View</a></li>
-                                                    <li><a class="dropdown-item" href="/blogs/<%= blog._id %>/edit"><i class="fas fa-edit"></i> Edit</a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <a class="dropdown-item text-danger" 
-                                                           href="#" 
-                                                           onclick="deleteBlog('<%= blog._id %>', event)">
-                                                           <i class="fas fa-trash"></i> Delete
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        <% } %>
-                                    </div>
-
-                                    <div class="card-body d-flex flex-column">
-                                        <h5 class="card-title fw-bold">
-                                            <%= truncate(blog.title, 60) %>
-                                        </h5>
-
-                                        <% if (blog.tags && blog.tags.length > 0) { %>
-                                            <div class="mb-2">
-                                                <% blog.tags.slice(0, 2).forEach(tag => { %>
-                                                    <span class="badge bg-primary-soft text-primary me-1">
-                                                        <%= tag %>
-                                                    </span>
-                                                <% }) %>
-                                            </div>
-                                        <% } %>
-
-                                        <p class="card-text text-muted flex-grow-1">
-                                            <%= truncate(blog.excerpt || (blog.body ? blog.body.substring(0, 100) : ''), 80) %>
-                                        </p>
-
-                                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                                            <small class="text-muted">
-                                                <i class="fas fa-calendar"></i> 
-                                                <%= formatDate(blog.createdAt).split(',')[0] %>
-                                            </small>
-                                            <div>
-                                                <small class="text-muted me-3">
-                                                    <i class="fas fa-eye"></i> <%= blog.viewCount || 0 %>
-                                                </small>
-                                                <small class="text-muted">
-                                                    <i class="fas fa-heart"></i> <%= blog.likes ? blog.likes.length : 0 %>
-                                                </small>
-                                            </div>
-                                        </div>
-
-                                        <a href="/blogs/<%= blog._id %>" class="btn btn-primary btn-sm mt-3">
-                                            <i class="fas fa-arrow-right"></i> Read
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }) %>
-                    </div>
-                <% } %>
-            </div>
-
-            <!-- Followers Tab -->
-            <div class="tab-pane fade" id="followers" role="tabpanel">
-                <% if (!user.followers || user.followers.length === 0) { %>
-                    <div class="text-center py-5">
-                        <i class="fas fa-user-friends fa-5x text-muted mb-3"></i>
-                        <p class="text-muted">No followers yet</p>
-                    </div>
-                <% } else { %>
-                    <div class="row">
-                        <% user.followers.forEach(follower => { %>
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card">
-                                    <div class="card-body text-center">
-                                        <img src="<%= follower.profileImageURL || '/imgs/default.png' %>" 
-                                             width="60" height="60" 
-                                             class="rounded-circle mb-2"
-                                             onerror="this.src='/imgs/default.png';">
-                                        <h6 class="fw-bold"><%= follower.fullName %></h6>
-                                        <p class="text-muted small"><%= follower.bio || '' %></p>
-                                        <% if (locals.user && follower._id.toString() !== locals.user._id.toString()) { %>
-                                            <button class="btn btn-sm btn-outline-primary w-100"
-                                                    onclick="toggleFollowUser('<%= follower._id %>', this)">
-                                                <i class="fas fa-user-plus"></i> Follow Back
-                                            </button>
-                                        <% } %>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }) %>
-                    </div>
-                <% } %>
-            </div>
-
-            <!-- Following Tab -->
-            <div class="tab-pane fade" id="following" role="tabpanel">
-                <% if (!user.following || user.following.length === 0) { %>
-                    <div class="text-center py-5">
-                        <i class="fas fa-heart fa-5x text-muted mb-3"></i>
-                        <p class="text-muted">Not following anyone yet</p>
-                    </div>
-                <% } else { %>
-                    <div class="row">
-                        <% user.following.forEach(followee => { %>
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card">
-                                    <div class="card-body text-center">
-                                        <img src="<%= followee.profileImageURL || '/imgs/default.png' %>" 
-                                             width="60" height="60" 
-                                             class="rounded-circle mb-2"
-                                             onerror="this.src='/imgs/default.png';">
-                                        <h6 class="fw-bold"><%= followee.fullName %></h6>
-                                        <p class="text-muted small"><%= followee.bio || '' %></p>
-                                        <% if (locals.user && followee._id.toString() !== locals.user._id.toString()) { %>
-                                            <button class="btn btn-sm btn-success w-100"
-                                                    onclick="toggleFollowUser('<%= followee._id %>', this)">
-                                                <i class="fas fa-user-check"></i> Following
-                                            </button>
-                                        <% } %>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }) %>
-                    </div>
-                <% } %>
-            </div>
-
-            <!-- Analytics Tab (owner only) -->
-            <% if (isOwnProfile) { %>
-                <div class="tab-pane fade" id="analytics" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-6 col-lg-3 mb-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <i class="fas fa-book fa-3x text-primary mb-3"></i>
-                                    <h6 class="text-muted">Total Blogs</h6>
-                                    <h3 class="fw-bold" id="totalBlogs">—</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3 mb-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <i class="fas fa-eye fa-3x text-success mb-3"></i>
-                                    <h6 class="text-muted">Total Views</h6>
-                                    <h3 class="fw-bold" id="totalViews">—</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3 mb-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <i class="fas fa-heart fa-3x text-danger mb-3"></i>
-                                    <h6 class="text-muted">Total Likes</h6>
-                                    <h3 class="fw-bold" id="totalLikes">—</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3 mb-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <i class="fas fa-comment fa-3x text-info mb-3"></i>
-                                    <h6 class="text-muted">Total Comments</h6>
-                                    <h3 class="fw-bold" id="totalComments">—</h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <% } %>
-
-        </div>
+    <div class="stats"><button class="stat" onclick="openPanel('followers')"><strong><%= followerCount %></strong><span>Followers</span></button><button class="stat" onclick="openPanel('following')"><strong><%= followingCount %></strong><span>Following</span></button><button class="stat" onclick="openPanel('blogs')"><strong><%= blogCount %></strong><span>Blogs</span></button></div>
+  </section>
+  <nav class="tabs" aria-label="Profile sections"><button class="tab active" data-panel="blogs" onclick="openPanel('blogs')"><i class="fas fa-book"></i> Blogs</button><button class="tab" data-panel="followers" onclick="openPanel('followers')"><i class="fas fa-users"></i> Followers</button><button class="tab" data-panel="following" onclick="openPanel('following')"><i class="fas fa-user-friends"></i> Following</button></nav>
+  <section class="content-card">
+    <div id="blogs" class="panel active">
+      <% if (contentLocked) { %><div class="lock"><i class="fas fa-lock"></i><h3>This account is private</h3><p>Follow <%= user.fullName %> and wait for approval to see their blogs and lists.</p></div>
+      <% } else if (!blogs.length) { %><div class="empty"><i class="fas fa-pen"></i><h3>No blogs published yet</h3><% if(isOwnProfile){%><a class="btn primary" href="/blogs/add-new">Write your first blog</a><%}%></div>
+      <% } else { %><div class="blog-grid"><% blogs.forEach(blog=>{%><article class="blog"><% if(blog.coverImageURL){%><img class="cover" src="<%= blog.coverImageURL %>" alt="<%= blog.title %>" onerror="this.src='/images/default-blog.png'"> <% } else {%><div class="cover" style="display:flex;align-items:center;justify-content:center"><i class="fas fa-image fa-2x" style="color:var(--muted)"></i></div><%}%><div class="blog-body"><h3><%= blog.title %></h3><p><%= blog.excerpt || (blog.body ? blog.body.substring(0,140) : '') %></p><div class="blog-meta"><span><i class="far fa-calendar"></i> <%= new Date(blog.createdAt).toLocaleDateString() %></span><span><i class="far fa-heart"></i> <%= blog.likes ? blog.likes.length : 0 %> · <i class="far fa-eye"></i> <%= blog.viewCount || 0 %></span></div><a class="btn primary" style="margin-top:12px;justify-content:center" href="/blogs/<%= blog._id %>">Read blog</a></div></article><%})%></div><%}%>
     </div>
-
-    <%- include("./partials/scripts") %>
-
-    <script>
-        const profileUserId = '<%= user._id %>';
-        const currentUserId  = '<%= locals.user ? locals.user._id : "" %>';
-
-        async function deleteBlog(id, event) {
-            event.preventDefault();
-            if (!await confirmAction('Are you sure you want to delete this blog?')) return;
-            try {
-                const res = await axios.delete(`/blogs/${id}`);
-                if (res.data.success) {
-                    notify.success('Blog deleted successfully!');
-                    setTimeout(() => location.reload(), 1500);
-                }
-            } catch (err) {
-                notify.error('Failed to delete blog');
-            }
-        }
-
-        async function toggleFollow() {
-            if (!currentUserId) {
-                window.location.href = '/user/signin';
-                return;
-            }
-            try {
-                const res  = await axios.post(`/follow/${profileUserId}/follow`);
-                const data = res.data;
-                if (data.success) {
-                    notify.success(data.message);
-                    const btn = document.getElementById('followBtn');
-                    if (data.following) {
-                        btn.innerHTML = '<i class="fas fa-user-check"></i> Following';
-                        btn.classList.replace('btn-outline-primary', 'btn-success');
-                    } else {
-                        btn.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
-                        btn.classList.replace('btn-success', 'btn-outline-primary');
-                    }
-                }
-            } catch (err) {
-                notify.error('Failed to follow user');
-            }
-        }
-
-        async function toggleFollowUser(targetId, btn) {
-            if (!currentUserId) {
-                window.location.href = '/user/signin';
-                return;
-            }
-            try {
-                const res  = await axios.post(`/follow/${targetId}/follow`);
-                const data = res.data;
-                if (data.success) {
-                    notify.success(data.message);
-                    if (data.following) {
-                        btn.innerHTML = '<i class="fas fa-user-check"></i> Following';
-                        btn.classList.replace('btn-outline-primary', 'btn-success');
-                    } else {
-                        btn.innerHTML = '<i class="fas fa-user-plus"></i> Follow Back';
-                        btn.classList.replace('btn-success', 'btn-outline-primary');
-                    }
-                }
-            } catch (err) {
-                notify.error('Failed to update follow status');
-            }
-        }
-
-        <% if (isOwnProfile) { %>
-            async function loadAnalytics() {
-                try {
-                    const res = await axios.get('/analytics/author/stats');
-                    if (res.data.success) {
-                        const s = res.data.stats;
-                        document.getElementById('totalBlogs').textContent    = s.totalBlogs    ?? 0;
-                        document.getElementById('totalViews').textContent    = s.totalViews    ?? 0;
-                        document.getElementById('totalLikes').textContent    = s.totalLikes    ?? 0;
-                        document.getElementById('totalComments').textContent = s.totalComments ?? 0;
-                    }
-                } catch (err) {
-                    console.error('Error loading analytics:', err);
-                }
-            }
-
-            document.getElementById('analytics-tab')
-                    .addEventListener('shown.bs.tab', loadAnalytics);
-        <% } %>
-    </script>
-</body>
-</html>
+    <div id="followers" class="panel"><div id="followersContent" class="empty"><i class="fas fa-users"></i><p>Loading followers…</p></div></div>
+    <div id="following" class="panel"><div id="followingContent" class="empty"><i class="fas fa-user-friends"></i><p>Loading following…</p></div></div>
+  </section>
+</div></main><div class="toast" id="toast"></div>
+<%- include("./partials/scripts") %>
+<script>
+const profileUserId='<%= user._id %>',isLoggedIn=<%= isLoggedIn ? 'true':'false' %>;
+function toast(m){const x=document.getElementById('toast');x.textContent=m;x.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>x.style.display='none',2800)}
+function openPanel(name){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===name));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.panel===name));if(name==='followers'||name==='following')loadPeople(name)}
+async function toggleFollow(){if(!isLoggedIn)return location.href='/user/signin';const btn=document.getElementById('followBtn');btn.disabled=true;try{const r=await fetch('/follow/'+profileUserId+'/follow',{method:'POST',credentials:'same-origin'});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.message||'Unable to follow');btn.innerHTML=d.following?'<i class="fas fa-user-check"></i> Following':d.requested?'<i class="fas fa-clock"></i> Request sent':'<i class="fas fa-user-plus"></i> Follow';btn.className='btn '+(d.following?'success':'secondary');toast(d.message)}catch(e){toast(e.message)}finally{btn.disabled=false}}
+async function loadPeople(type){const box=document.getElementById(type+'Content');box.innerHTML='<div class="empty"><p>Loading…</p></div>';try{const r=await fetch('/follow/'+profileUserId+'/'+type,{credentials:'same-origin'});const d=await r.json();if(!r.ok){box.innerHTML='<div class="lock"><i class="fas fa-lock"></i><h3>Private list</h3><p>'+d.message+'</p></div>';return}const list=d[type]||[];if(!list.length){box.innerHTML='<div class="empty"><i class="fas fa-user-friends"></i><p>No '+type+' yet.</p></div>';return}box.className='people';box.innerHTML=list.map(p=>`<div class="person"><img src="${p.profileImageURL||'/imgs/default.png'}" onerror="this.src='/imgs/default.png'"><strong>${escapeHtml(p.fullName||'User')}</strong><small>${escapeHtml(p.bio||'')}</small><div style="margin-top:10px"><a class="btn secondary" href="/user/profile/${p._id}">View profile</a></div></div>`).join('')}catch(e){box.innerHTML='<div class="empty"><p>Unable to load this list.</p></div>'}}
+function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+</script></body></html>
