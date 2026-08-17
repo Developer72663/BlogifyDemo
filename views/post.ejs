@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('./partials/head') %>
+  <title>Create Post | Blogify</title>
+  <style>
+    .post-page{max-width:760px;margin:0 auto;padding:40px 16px 80px}.post-head{text-align:center;margin-bottom:28px}.post-head h1{font-weight:800;margin-bottom:8px}.post-head p{color:var(--muted)}
+    .post-types{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:22px}.post-type{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:16px;padding:20px;text-align:left;cursor:pointer;transition:.2s}.post-type:hover{transform:translateY(-2px)}.post-type.active{border:2px solid var(--primary);background:var(--soft)}.post-type i{font-size:1.5rem;color:var(--primary);margin-bottom:10px}.post-type strong,.post-type span{display:block}.post-type span{font-size:.82rem;color:var(--muted);margin-top:4px}
+    .post-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:0 8px 25px var(--shadow)}.post-form{display:none}.post-form.active{display:block}.field{margin-bottom:18px}.field label{display:block;font-weight:700;margin-bottom:7px}.field input,.field textarea{width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:11px;padding:12px}.field textarea{min-height:120px;resize:vertical}.upload{border:2px dashed var(--border);border-radius:15px;padding:28px;text-align:center}.upload i{font-size:2rem;color:var(--primary);margin-bottom:8px}.upload input{display:block;width:100%;margin-top:12px}.video-note{font-size:.8rem;color:var(--muted);margin-top:8px}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:22px}.btn-post{border:0;background:var(--primary);color:#fff;border-radius:11px;padding:11px 18px;font-weight:750}.btn-cancel{border:1px solid var(--border);background:var(--soft);color:var(--text);border-radius:11px;padding:11px 18px;font-weight:700;text-decoration:none}@media(max-width:600px){.post-page{padding:25px 12px 60px}.post-types{grid-template-columns:1fr}.post-card{padding:18px}}
+  </style>
+</head>
+<body>
+<%- include('./partials/nave') %>
+<main class="post-page">
+  <div class="post-head"><h1>Create a post</h1><p>Share a photo or a short video with your Blogify community.</p></div>
+  <div class="post-types">
+    <button type="button" class="post-type active" data-type="photo"><i class="fas fa-image"></i><strong>Post Photo</strong><span>Share an image with a caption.</span></button>
+    <button type="button" class="post-type" data-type="video"><i class="fas fa-video"></i><strong>Post Video</strong><span>Share a video up to 60 seconds.</span></button>
+  </div>
+  <div class="post-card">
+    <form id="photoForm" class="post-form active" action="/blog" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="mediaType" value="photo">
+      <div class="field"><label>Title</label><input name="title" required maxlength="160" placeholder="Give your photo a title"></div>
+      <div class="field"><label>Caption</label><textarea name="content" maxlength="5000" placeholder="Tell people about your photo..."></textarea></div>
+      <div class="field upload"><i class="fas fa-cloud-arrow-up"></i><div><strong>Choose a photo</strong></div><input type="file" name="coverImage" accept="image/*" required></div>
+      <div class="actions"><a href="/" class="btn-cancel">Cancel</a><button class="btn-post" type="submit">Post Photo</button></div>
+    </form>
+    <form id="videoForm" class="post-form" action="/blog" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="mediaType" value="video">
+      <div class="field"><label>Title</label><input name="title" required maxlength="160" placeholder="Give your video a title"></div>
+      <div class="field"><label>Caption</label><textarea name="content" maxlength="5000" placeholder="Tell people about your video..."></textarea></div>
+      <div class="field upload"><i class="fas fa-video"></i><div><strong>Choose a video</strong></div><input id="videoInput" type="file" name="video" accept="video/*" required><div class="video-note">Maximum published length: 60 seconds. Longer videos are trimmed to the first 60 seconds by the backend.</div></div>
+      <div class="actions"><a href="/" class="btn-cancel">Cancel</a><button class="btn-post" type="submit">Post Video</button></div>
+    </form>
+  </div>
+</main>
+<%- include('./partials/scripts') %>
+<script>
+const types=document.querySelectorAll('.post-type');const forms={photo:document.getElementById('photoForm'),video:document.getElementById('videoForm')};types.forEach(btn=>btn.addEventListener('click',()=>{const type=btn.dataset.type;types.forEach(x=>x.classList.toggle('active',x===btn));Object.entries(forms).forEach(([key,form])=>form.classList.toggle('active',key===type));}));
+</script>
+</body>
+</html>
