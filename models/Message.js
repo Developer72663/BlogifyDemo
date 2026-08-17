@@ -1,0 +1,4 @@
+const mongoose=require("mongoose");
+const messageSchema=new mongoose.Schema({conversationId:{type:mongoose.Schema.Types.ObjectId,ref:"Conversation",required:true,index:true},senderId:{type:mongoose.Schema.Types.ObjectId,ref:"user",required:true,index:true},receiverId:{type:mongoose.Schema.Types.ObjectId,ref:"user",required:true,index:true},text:{type:String,trim:true,maxlength:5000,default:""},replyTo:{type:mongoose.Schema.Types.ObjectId,ref:"Message",default:null},status:{type:String,enum:["sent","delivered","read"],default:"sent"},edited:{type:Boolean,default:false},deleted:{type:Boolean,default:false}},{timestamps:true});
+messageSchema.index({conversationId:1,createdAt:1});
+module.exports=mongoose.model("Message",messageSchema);
