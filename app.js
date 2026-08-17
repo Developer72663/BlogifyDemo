@@ -36,9 +36,25 @@ app.get("/",async(req,res)=>{try{
     let sortOption={createdAt:-1};if(sort==="oldest")sortOption={createdAt:1};if(sort==="title")sortOption={title:1};if(sort==="trending")sortOption={viewCount:-1};
     const skip=(page-1)*limit;
     const blogs=await Blog.find(filter).sort(sortOption).skip(skip).limit(limit).populate("createdBy","fullName profileImageURL").lean();
+    // Normalize the public avatar URL once on the server so home.ejs never has to
+    // guess between a missing value, an old relative value, or a malformed URL.
+    for(const blog of blogs){
+        const author=blog.createdBy;
+        let avatar=author?.profileImageURL;
+        if(typeof avatar!=="string"||!avatar.trim()) avatar="/imgs/default.png";
+        else { avatar=avatar.trim(); if(avatar.startsWith("//")) avatar="https:"+avatar; else if(avatar.startsWith("http://")) avatar="https://"+avatar.slice(7); }
+        if(author) author.avatarURL=avatar;
+    }
     const totalBlogs=await Blog.countDocuments(filter),totalPages=Math.ceil(totalBlogs/limit);
     const featuredFilter={isFeatured:true,status:"published",isDeleted:false,...visibility};
     const featuredBlogs=await Blog.find(featuredFilter).sort({featuredRank:1,createdAt:-1}).limit(3).populate("createdBy","fullName profileImageURL").lean();
+    for(const blog of featuredBlogs){
+        const author=blog.createdBy;
+        let avatar=author?.profileImageURL;
+        if(typeof avatar!=="string"||!avatar.trim()) avatar="/imgs/default.png";
+        else { avatar=avatar.trim(); if(avatar.startsWith("//")) avatar="https:"+avatar; else if(avatar.startsWith("http://")) avatar="https://"+avatar.slice(7); }
+        if(author) author.avatarURL=avatar;
+    }
     res.render("home",{title:"Blogify",user:req.user||null,blogs:blogs||[],featuredBlogs,currentPage:page,totalPages,totalBlogs,search,sort});
 }catch(error){console.error("Home Route Error:",error);res.status(500).send("Internal Server Error");}});
 app.get("/user/blog/add",checkForAuthenticationCookie("token"),(req,res)=>{if(!req.user)return res.redirect("/user/signin");res.redirect("/blogs/add-new");});
