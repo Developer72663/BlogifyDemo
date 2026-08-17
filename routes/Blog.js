@@ -10,7 +10,6 @@ const AnalyticsService = require("../services/analyticsService");
 const NotificationService = require("../services/notificationService");
 
 router.use(restrictToLoggedInUserOnly);
-
 router.get("/add-new", (req,res)=>res.render("addBlog",{user:req.user,error:null}));
 
 async function uploadCoverImage(file){
@@ -20,10 +19,10 @@ async function uploadCoverImage(file){
 }
 
 async function canAccessBlog(blog, viewerId){
-    if(!blog) return false;
+    if(!blog)return false;
     const author=await User.findById(blog.createdBy).select("isPrivate followers").lean();
-    if(!author || !author.isPrivate) return true;
-    return !!viewerId && (author._id.toString()===viewerId.toString() || author.followers.some(id=>id.toString()===viewerId.toString()));
+    if(!author||!author.isPrivate)return true;
+    return !!viewerId&&(author._id.toString()===viewerId.toString()||author.followers.some(id=>id.toString()===viewerId.toString()));
 }
 
 router.post("/add-new",blogCreationLimiter,cloudinaryUpload.single("coverImage"),async(req,res)=>{
@@ -55,8 +54,10 @@ router.get("/:id",async(req,res)=>{
         const existingView=await Blog.findOne({_id:blog._id,viewers:{$elemMatch:{viewerId:viewerFingerprint,viewedAt:{$gte:twentyFourHoursAgo}}}});
         if(!existingView){await Blog.findByIdAndUpdate(blog._id,{$pull:{viewers:{viewerId:viewerFingerprint}}});await Blog.findByIdAndUpdate(blog._id,{$push:{viewers:{viewerId:viewerFingerprint,viewedAt:new Date(),isAuthenticated:!!req.user}},$inc:{viewCount:1}});await AnalyticsService.trackView(blog._id,req.user?._id,"direct");}
         const updatedBlog=await Blog.findById(req.params.id).notDeleted().populate("createdBy","fullName profileImageURL bio followers").lean();
-        const relatedBlogs=await Blog.find({tags:{$in:blog.tags},_id:{$ne:blog._id},isDeleted:false,status:"published"}).limit(3).lean();
-        const authorBlogs=await Blog.find({createdBy:blog.createdBy._id,_id:{$ne:blog._id},isDeleted:false,status:"published"}).lean();
+        const candidateRelated=await Blog.find({tags:{$in:blog.tags||[]},_id:{$ne:blog._id},isDeleted:false,status:"published"}).limit(12).lean();
+        const relatedBlogs=[];for(const item of candidateRelated){if(await canAccessBlog(item,req.user?._id)&&relatedBlogs.length<5)relatedBlogs.push(item);}
+        const candidateAuthorBlogs=await Blog.find({createdBy:blog.createdBy._id,_id:{$ne:blog._id},isDeleted:false,status:"published"}).sort({createdAt:-1}).limit(12).lean();
+        const authorBlogs=[];for(const item of candidateAuthorBlogs){if(await canAccessBlog(item,req.user?._id)&&authorBlogs.length<5)authorBlogs.push(item);}
         const hasLiked=req.user?updatedBlog.likes.some(id=>id.toString()===req.user._id.toString()):false;
         res.render("view",{user:req.user,blog:updatedBlog,relatedBlogs,authorBlogs,hasLiked});
     }catch(error){console.error("Single Blog Error:",error);res.status(500).send("Internal Server Error");}
