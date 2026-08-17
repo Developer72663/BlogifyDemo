@@ -1,1620 +1,213 @@
-<!-- Modern Premium Navigation -->
-<nav class="main-nav" id="mainNav">
-    <div class="nav-container">
-        <!-- Logo -->
-        <a href="/" class="nav-brand">
-            <div class="brand-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-                    <path d="M2 2l7.586 7.586"/>
-                    <circle cx="11" cy="11" r="2"/>
-                </svg>
-            </div>
-            <span class="brand-text">Blogify</span>
+<nav class="blogify-nav" id="mainNav">
+    <div class="nav-shell">
+        <a href="/" class="nav-brand" aria-label="Blogify home">
+            <span class="brand-mark"><i class="fas fa-pen-nib"></i></span>
+            <span class="brand-name">Blogify</span>
         </a>
 
-        <!-- Desktop Navigation -->
-        <div class="nav-links-desktop">
-            <a href="/" class="nav-link <%= locals.activePage === 'home' ? 'active' : '' %>">
-                <i class="fas fa-compass"></i>
-                <span>Explore</span>
-            </a>
+        <div class="nav-center">
+            <a href="/" class="nav-link <%= locals.activePage === 'home' ? 'active' : '' %>"><i class="fas fa-compass"></i> Explore</a>
             <% if (locals.user) { %>
-                <a href="/blogs/add-new" class="nav-link">
-                    <i class="fas fa-pen-nib"></i>
-                    <span>Write</span>
-                </a>
-                <a href="/profile/<%= locals.user._id %>" class="nav-link">
-                    <i class="fas fa-layer-group"></i>
-                    <span>My Blogs</span>
-                </a>
+                <a href="/blogs/add-new" class="nav-link"><i class="fas fa-plus"></i> Write</a>
+                <a href="/profile/<%= locals.user._id %>" class="nav-link"><i class="fas fa-layer-group"></i> My Blogs</a>
             <% } %>
         </div>
 
-        <!-- Right Section -->
         <div class="nav-actions">
-            <!-- Search Toggle -->
-            <button class="nav-btn search-toggle" id="searchToggle" title="Search">
-                <i class="fas fa-search"></i>
-            </button>
-
+            <button class="nav-icon" id="searchToggle" type="button" title="Search"><i class="fas fa-search"></i></button>
             <% if (locals.user) { %>
-                <!-- Notifications -->
-                <button class="nav-btn notif-btn" id="notificationBell" title="Notifications">
-                    <i class="far fa-bell"></i>
-                    <span class="notif-dot" id="notificationBadge" style="display: none;">
-                        <span id="notificationCount">0</span>
-                    </span>
-                </button>
+                <a class="nav-icon" href="/notifications" title="Notifications">
+                    <i class="far fa-bell"></i><span class="nav-badge" id="notificationBadge" style="display:none"><span id="notificationCount">0</span></span>
+                </a>
+                <button class="nav-icon" id="themeToggle" type="button" title="Toggle theme"><i class="fas fa-moon" id="themeIcon"></i></button>
 
-                <!-- Theme Toggle -->
-                <button class="nav-btn theme-btn" id="themeToggle" title="Toggle Theme">
-                    <i class="fas fa-moon" id="themeIcon"></i>
-                </button>
-
-                <!-- User Menu -->
-                <div class="user-menu">
-                    <button class="user-trigger" id="userMenuTrigger">
-                        <img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" 
-                             alt="<%= locals.user.fullName %>"
-                             onerror="this.src='/imgs/default.png';">
-                        <span class="user-name"><%= locals.user.fullName.split(' ')[0] %></span>
-                        <i class="fas fa-chevron-down"></i>
+                <div class="account-menu" id="accountMenu">
+                    <button class="account-trigger" id="userMenuTrigger" type="button" aria-expanded="false">
+                        <img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" alt="<%= locals.user.fullName %>" onerror="this.src='/imgs/default.png';">
+                        <span><%= locals.user.fullName.split(' ')[0] %></span><i class="fas fa-chevron-down"></i>
                     </button>
-                    
-                    <!-- Dropdown -->
-                    <div class="user-dropdown" id="userDropdown">
-                        <div class="dropdown-header">
-                            <img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" 
-                                 alt="<%= locals.user.fullName %>"
-                                 onerror="this.src='/imgs/default.png';">
-                            <div>
-                                <h4><%= locals.user.fullName %></h4>
-                                <p>@<%= locals.user.email.split('@')[0] %></p>
-                            </div>
+                    <div class="account-dropdown" id="userDropdown">
+                        <div class="account-summary">
+                            <img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" alt="" onerror="this.src='/imgs/default.png';">
+                            <div><strong><%= locals.user.fullName %></strong><small><%= locals.user.email %></small></div>
                         </div>
-                        
-                        <div class="dropdown-body">
-                            <a href="/profile/<%= locals.user._id %>" class="dropdown-item">
-                                <div class="item-icon blue">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <span>Profile</span>
-                            </a>
-                            <a href="/notifications" class="dropdown-item">
-                                <div class="item-icon purple">
-                                    <i class="fas fa-bell"></i>
-                                </div>
-                                <span>Notifications</span>
-                                <span class="item-badge" id="dropdownNotifBadge" style="display: none;">0</span>
-                            </a>
-                            <a href="/profile/<%= locals.user._id %>?tab=followers" class="dropdown-item">
-                                <div class="item-icon green">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <span>Followers</span>
-                                <span class="item-count"><%= locals.user.followers ? locals.user.followers.length : 0 %></span>
-                            </a>
-                            <a href="/profile/<%= locals.user._id %>?tab=following" class="dropdown-item">
-                                <div class="item-icon pink">
-                                    <i class="fas fa-heart"></i>
-                                </div>
-                                <span>Following</span>
-                                <span class="item-count"><%= locals.user.following ? locals.user.following.length : 0 %></span>
-                            </a>
-                            
-                            <div class="dropdown-divider"></div>
-                            
-                            <a href="#" class="dropdown-item" id="analyticsBtn">
-                                <div class="item-icon orange">
-                                    <i class="fas fa-chart-line"></i>
-                                </div>
-                                <span>Analytics</span>
-                            </a>
-                            <a href="#" class="dropdown-item" id="settingsBtn">
-                                <div class="item-icon gray">
-                                    <i class="fas fa-cog"></i>
-                                </div>
-                                <span>Settings</span>
-                            </a>
-                            
-                            <% if (locals.user.role === "ADMIN") { %>
-                                <div class="dropdown-divider"></div>
-                                <a href="/admin/users" class="dropdown-item">
-                                    <div class="item-icon red">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </div>
-                                    <span>Admin Panel</span>
-                                </a>
+                        <div class="dropdown-links">
+                            <a href="/profile/<%= locals.user._id %>"><i class="fas fa-user"></i><span>Profile</span></a>
+                            <a href="/notifications"><i class="fas fa-bell"></i><span>Notifications</span><b id="dropdownNotifBadge" style="display:none">0</b></a>
+                            <a href="/profile/<%= locals.user._id %>?tab=followers"><i class="fas fa-users"></i><span>Followers</span><em><%= locals.user.followers ? locals.user.followers.length : 0 %></em></a>
+                            <a href="/profile/<%= locals.user._id %>?tab=following"><i class="fas fa-heart"></i><span>Following</span><em><%= locals.user.following ? locals.user.following.length : 0 %></em></a>
+                            <div class="dropdown-rule"></div>
+                            <a href="/analytics"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
+                            <a href="/user/profile/settings"><i class="fas fa-sliders-h"></i><span>Settings</span></a>
+                            <% if (locals.user.role === 'ADMIN') { %>
+                                <a href="/admin/users"><i class="fas fa-shield-alt"></i><span>Admin Panel</span></a>
                             <% } %>
                         </div>
-                        
-                        <div class="dropdown-footer">
-                            <a href="/user/logout" class="logout-btn">
-                                <i class="fas fa-sign-out-alt"></i>
-                                <span>Sign Out</span>
-                            </a>
-                        </div>
+                        <a href="/user/logout" class="signout"><i class="fas fa-sign-out-alt"></i> Sign out</a>
                     </div>
                 </div>
-            <% } else { %>
-                <div class="auth-buttons">
-                    <a href="/user/signin" class="btn-signin">Sign In</a>
-                    <a href="/user/signup" class="btn-signup">Get Started</a>
-                </div>
+            <% else { %>
+                <a href="/user/signin" class="signin-link">Sign in</a>
+                <a href="/user/signup" class="signup-link">Get started</a>
             <% } %>
-
-            <!-- Mobile Menu Toggle -->
-            <button class="mobile-toggle" id="mobileToggle">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+            <button class="mobile-nav-toggle" id="mobileToggle" type="button" aria-label="Open menu"><i class="fas fa-bars"></i></button>
         </div>
     </div>
 
-    <!-- Search Overlay -->
-    <div class="search-overlay" id="searchOverlay">
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <form method="GET" action="/">
-                <input type="search" name="search" placeholder="Search articles, topics, authors..." autofocus>
-            </form>
-            <button class="search-close" id="searchClose">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="search-backdrop"></div>
+    <div class="search-popover" id="searchOverlay">
+        <form action="/" method="GET">
+            <i class="fas fa-search"></i>
+            <input type="search" name="search" placeholder="Search articles, topics, authors..." autocomplete="off">
+            <button type="button" id="searchClose" aria-label="Close search"><i class="fas fa-times"></i></button>
+        </form>
     </div>
 </nav>
 
-<!-- Mobile Menu -->
-<div class="mobile-menu" id="mobileMenu">
-    <div class="mobile-header">
-        <span class="mobile-title">Menu</span>
-        <button class="mobile-close" id="mobileClose">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <div class="mobile-links">
-        <a href="/" class="mobile-link">
-            <i class="fas fa-compass"></i>
-            <span>Explore</span>
-        </a>
+<div class="mobile-drawer" id="mobileMenu">
+    <div class="mobile-drawer-head"><strong>Menu</strong><button id="mobileClose" type="button"><i class="fas fa-times"></i></button></div>
+    <div class="mobile-drawer-links">
+        <a href="/"><i class="fas fa-compass"></i> Explore</a>
         <% if (locals.user) { %>
-            <a href="/blogs/add-new" class="mobile-link">
-                <i class="fas fa-pen-nib"></i>
-                <span>Write</span>
-            </a>
-            <a href="/profile/<%= locals.user._id %>" class="mobile-link">
-                <i class="fas fa-layer-group"></i>
-                <span>My Blogs</span>
-            </a>
-            <a href="/notifications" class="mobile-link">
-                <i class="fas fa-bell"></i>
-                <span>Notifications</span>
-                <span class="mobile-badge" id="mobileNotifBadge" style="display: none;">0</span>
-            </a>
-            <div class="mobile-divider"></div>
-            <a href="/profile/<%= locals.user._id %>" class="mobile-link">
-                <i class="fas fa-user"></i>
-                <span>Profile</span>
-            </a>
-            <a href="#" class="mobile-link" id="mobileSettings">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
-            <div class="mobile-divider"></div>
-            <a href="/user/logout" class="mobile-link text-danger">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Sign Out</span>
-            </a>
+            <a href="/blogs/add-new"><i class="fas fa-plus"></i> Write</a>
+            <a href="/profile/<%= locals.user._id %>"><i class="fas fa-layer-group"></i> My Blogs</a>
+            <a href="/notifications"><i class="fas fa-bell"></i> Notifications</a>
+            <a href="/profile/<%= locals.user._id %>"><i class="fas fa-user"></i> Profile</a>
+            <a href="/analytics"><i class="fas fa-chart-line"></i> Analytics</a>
+            <a href="/user/profile/settings"><i class="fas fa-sliders-h"></i> Settings</a>
+            <% if (locals.user.role === 'ADMIN') { %><a href="/admin/users"><i class="fas fa-shield-alt"></i> Admin Panel</a><% } %>
+            <div class="mobile-rule"></div>
+            <a href="/user/logout" class="danger-link"><i class="fas fa-sign-out-alt"></i> Sign out</a>
         <% } else { %>
-            <div class="mobile-divider"></div>
-            <a href="/user/signin" class="mobile-link">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>Sign In</span>
-            </a>
-            <a href="/user/signup" class="mobile-link text-primary fw-bold">
-                <i class="fas fa-rocket"></i>
-                <span>Get Started</span>
-            </a>
+            <div class="mobile-rule"></div>
+            <a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign in</a>
+            <a href="/user/signup" class="primary-link"><i class="fas fa-rocket"></i> Get started</a>
         <% } %>
     </div>
 </div>
-
-<!-- Notification Panel -->
-<div class="notif-panel" id="notifPanel">
-    <div class="notif-header">
-        <h3>
-            <i class="fas fa-bell"></i>
-            Notifications
-        </h3>
-        <div class="notif-actions">
-            <button class="btn-markall" onclick="markAllReadPanel()">Mark all read</button>
-            <button class="btn-close-panel" id="closeNotifPanel">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-    <div class="notif-body" id="notifBody">
-        <div class="notif-empty">
-            <i class="far fa-bell"></i>
-            <p>No notifications yet</p>
-        </div>
-    </div>
-    <div class="notif-footer">
-        <a href="/notifications" class="btn-viewall">
-            View All
-            <i class="fas fa-arrow-right"></i>
-        </a>
-    </div>
-</div>
-<div class="panel-backdrop" id="panelBackdrop"></div>
-
-<!-- Settings Modal -->
-<div class="settings-modal" id="settingsModal">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3><i class="fas fa-cog"></i> Settings</h3>
-            <button class="modal-close" id="closeSettings">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="modal-body">
-            <div class="setting-group">
-                <label>Appearance</label>
-                <div class="theme-options">
-                    <button class="theme-opt active" data-theme="light">
-                        <i class="fas fa-sun"></i>
-                        <span>Light</span>
-                    </button>
-                    <button class="theme-opt" data-theme="dark">
-                        <i class="fas fa-moon"></i>
-                        <span>Dark</span>
-                    </button>
-                    <button class="theme-opt" data-theme="system">
-                        <i class="fas fa-desktop"></i>
-                        <span>Auto</span>
-                    </button>
-                </div>
-            </div>
-            <div class="setting-group">
-                <label class="switch-label">
-                    <span>Email Notifications</span>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="emailNotifSwitch" checked>
-                        <span class="toggle-slider"></span>
-                    </div>
-                </label>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="nav-backdrop" id="navBackdrop"></div>
 
 <style>
-    /* ===== CSS VARIABLES ===== */
-    :root {
-        --nav-bg: rgba(255, 255, 255, 0.85);
-        --nav-border: rgba(0, 0, 0, 0.06);
-        --nav-text: #1a1a2e;
-        --nav-text-secondary: #6b7280;
-        --nav-hover: rgba(99, 102, 241, 0.08);
-        --nav-active: #6366f1;
-        --nav-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
-        --glass-bg: rgba(255, 255, 255, 0.72);
-        --card-bg: #ffffff;
-        --divider: rgba(0, 0, 0, 0.06);
-    }
-
-    [data-theme="dark"] {
-        --nav-bg: rgba(15, 15, 26, 0.9);
-        --nav-border: rgba(255, 255, 255, 0.06);
-        --nav-text: #f1f5f9;
-        --nav-text-secondary: #94a3b8;
-        --nav-hover: rgba(129, 140, 248, 0.12);
-        --nav-active: #818cf8;
-        --nav-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-        --glass-bg: rgba(15, 15, 26, 0.8);
-        --card-bg: #1a1a2e;
-        --divider: rgba(255, 255, 255, 0.08);
-    }
-
-    /* ===== BASE NAVBAR ===== */
-    .main-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        background: var(--nav-bg);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border-bottom: 1px solid var(--nav-border);
-        box-shadow: var(--nav-shadow);
-        transition: all 0.3s ease;
-    }
-
-    .nav-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 24px;
-        height: 64px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-    }
-
-    /* ===== BRAND ===== */
-    .nav-brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-        color: var(--nav-text);
-        font-weight: 800;
-        font-size: 1.4rem;
-        letter-spacing: -0.5px;
-        flex-shrink: 0;
-    }
-
-    .brand-icon {
-        width: 36px;
-        height: 36px;
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-    }
-
-    .brand-icon svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .brand-text {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    /* ===== DESKTOP LINKS ===== */
-    .nav-links-desktop {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex: 1;
-        justify-content: center;
-    }
-
-    .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 12px;
-        color: var(--nav-text-secondary);
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        position: relative;
-    }
-
-    .nav-link:hover {
-        background: var(--nav-hover);
-        color: var(--nav-active);
-    }
-
-    .nav-link.active {
-        background: var(--nav-hover);
-        color: var(--nav-active);
-        font-weight: 600;
-    }
-
-    .nav-link i {
-        font-size: 1rem;
-    }
-
-    /* ===== NAV ACTIONS ===== */
-    .nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-shrink: 0;
-    }
-
-    .nav-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        border: none;
-        background: transparent;
-        color: var(--nav-text-secondary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        position: relative;
-        font-size: 1.1rem;
-    }
-
-    .nav-btn:hover {
-        background: var(--nav-hover);
-        color: var(--nav-active);
-        transform: translateY(-1px);
-    }
-
-    /* Notification Button */
-    .notif-btn .notif-dot {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        min-width: 18px;
-        height: 18px;
-        background: #ef4444;
-        color: white;
-        font-size: 0.65rem;
-        font-weight: 700;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 5px;
-        border: 2px solid var(--nav-bg);
-        transition: all 0.2s ease;
-    }
-
-    /* Theme Button */
-    .theme-btn {
-        overflow: hidden;
-    }
-
-    .theme-btn i {
-        transition: transform 0.3s ease;
-    }
-
-    .theme-btn:hover i {
-        transform: rotate(15deg) scale(1.1);
-    }
-
-    /* ===== USER MENU ===== */
-    .user-menu {
-        position: relative;
-    }
-
-    .user-trigger {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 4px 12px 4px 4px;
-        border-radius: 50px;
-        border: 1px solid var(--nav-border);
-        background: var(--glass-bg);
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .user-trigger:hover {
-        border-color: var(--nav-active);
-        box-shadow: 0 0 0 3px var(--nav-hover);
-    }
-
-    .user-trigger img {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-
-    .user-trigger .user-name {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--nav-text);
-    }
-
-    .user-trigger i {
-        font-size: 0.7rem;
-        color: var(--nav-text-secondary);
-        transition: transform 0.2s ease;
-    }
-
-    .user-menu.open .user-trigger i {
-        transform: rotate(180deg);
-    }
-
-    /* User Dropdown */
-    .user-dropdown {
-        position: absolute;
-        top: calc(100% + 8px);
-        right: 0;
-        width: 280px;
-        background: var(--card-bg);
-        border-radius: 20px;
-        border: 1px solid var(--nav-border);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px) scale(0.96);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1001;
-        overflow: hidden;
-    }
-
-    .user-menu.open .user-dropdown {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0) scale(1);
-    }
-
-    .dropdown-header {
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        border-bottom: 1px solid var(--divider);
-    }
-
-    .dropdown-header img {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        object-fit: cover;
-    }
-
-    .dropdown-header h4 {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--nav-text);
-        margin: 0;
-    }
-
-    .dropdown-header p {
-        font-size: 0.8rem;
-        color: var(--nav-text-secondary);
-        margin: 4px 0 0;
-    }
-
-    .dropdown-body {
-        padding: 8px;
-    }
-
-    .dropdown-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        border-radius: 12px;
-        color: var(--nav-text);
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all 0.15s ease;
-        position: relative;
-    }
-
-    .dropdown-item:hover {
-        background: var(--nav-hover);
-    }
-
-    .item-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        color: white;
-        flex-shrink: 0;
-    }
-
-    .item-icon.blue { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
-    .item-icon.purple { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
-    .item-icon.green { background: linear-gradient(135deg, #10b981, #34d399); }
-    .item-icon.pink { background: linear-gradient(135deg, #ec4899, #f472b6); }
-    .item-icon.orange { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
-    .item-icon.gray { background: linear-gradient(135deg, #6b7280, #9ca3af); }
-    .item-icon.red { background: linear-gradient(135deg, #ef4444, #f87171); }
-
-    .item-badge {
-        margin-left: auto;
-        background: #ef4444;
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 20px;
-    }
-
-    .item-count {
-        margin-left: auto;
-        background: var(--nav-hover);
-        color: var(--nav-active);
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 2px 10px;
-        border-radius: 20px;
-    }
-
-    .dropdown-divider {
-        height: 1px;
-        background: var(--divider);
-        margin: 8px 12px;
-    }
-
-    .dropdown-footer {
-        padding: 12px;
-        border-top: 1px solid var(--divider);
-    }
-
-    .logout-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px;
-        border-radius: 12px;
-        color: #ef4444;
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
-
-    .logout-btn:hover {
-        background: rgba(239, 68, 68, 0.08);
-    }
-
-    /* ===== AUTH BUTTONS ===== */
-    .auth-buttons {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .btn-signin {
-        padding: 8px 20px;
-        border-radius: 12px;
-        color: var(--nav-text);
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-
-    .btn-signin:hover {
-        background: var(--nav-hover);
-        color: var(--nav-active);
-    }
-
-    .btn-signup {
-        padding: 8px 20px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        color: white;
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        transition: all 0.2s ease;
-    }
-
-    .btn-signup:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-    }
-
-    /* ===== SEARCH OVERLAY ===== */
-    .search-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1002;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .search-overlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .search-container {
-        position: relative;
-        background: var(--card-bg);
-        padding: 20px 24px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        border-bottom: 1px solid var(--nav-border);
-        transform: translateY(-100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .search-overlay.active .search-container {
-        transform: translateY(0);
-    }
-
-    .search-icon {
-        color: var(--nav-text-secondary);
-        font-size: 1.1rem;
-    }
-
-    .search-container form {
-        flex: 1;
-    }
-
-    .search-container input {
-        width: 100%;
-        border: none;
-        background: transparent;
-        color: var(--nav-text);
-        font-size: 1.1rem;
-        font-weight: 500;
-        outline: none;
-    }
-
-    .search-container input::placeholder {
-        color: var(--nav-text-secondary);
-    }
-
-    .search-close {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        border: none;
-        background: var(--nav-hover);
-        color: var(--nav-text-secondary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-    }
-
-    .search-close:hover {
-        background: var(--nav-active);
-        color: white;
-    }
-
-    .search-backdrop {
-        position: fixed;
-        top: 70px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(4px);
-    }
-
-    /* ===== MOBILE MENU ===== */
-    .mobile-toggle {
-        display: none;
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        padding: 0;
-    }
-
-    .mobile-toggle span {
-        display: block;
-        width: 20px;
-        height: 2px;
-        background: var(--nav-text);
-        border-radius: 2px;
-        transition: all 0.3s ease;
-    }
-
-    .mobile-toggle.active span:nth-child(1) {
-        transform: rotate(45deg) translate(5px, 5px);
-    }
-
-    .mobile-toggle.active span:nth-child(2) {
-        opacity: 0;
-    }
-
-    .mobile-toggle.active span:nth-child(3) {
-        transform: rotate(-45deg) translate(5px, -5px);
-    }
-
-    .mobile-menu {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 320px;
-        max-width: 90vw;
-        height: 100vh;
-        background: var(--card-bg);
-        z-index: 1003;
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        flex-direction: column;
-    }
-
-    .mobile-menu.active {
-        transform: translateX(0);
-    }
-
-    .mobile-header {
-        padding: 20px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid var(--divider);
-    }
-
-    .mobile-title {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--nav-text);
-    }
-
-    .mobile-close {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        border: none;
-        background: var(--nav-hover);
-        color: var(--nav-text);
-        cursor: pointer;
-    }
-
-    .mobile-links {
-        flex: 1;
-        padding: 16px;
-        overflow-y: auto;
-    }
-
-    .mobile-link {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 14px 16px;
-        border-radius: 14px;
-        color: var(--nav-text);
-        text-decoration: none;
-        font-size: 0.95rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        margin-bottom: 4px;
-    }
-
-    .mobile-link:hover {
-        background: var(--nav-hover);
-    }
-
-    .mobile-link i {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: var(--nav-hover);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--nav-active);
-    }
-
-    .mobile-badge {
-        margin-left: auto;
-        background: #ef4444;
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 10px;
-        border-radius: 20px;
-    }
-
-    .mobile-divider {
-        height: 1px;
-        background: var(--divider);
-        margin: 12px 8px;
-    }
-
-    /* ===== NOTIFICATION PANEL ===== */
-    .notif-panel {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 400px;
-        max-width: 90vw;
-        height: 100vh;
-        background: var(--card-bg);
-        z-index: 1003;
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        flex-direction: column;
-        border-left: 1px solid var(--nav-border);
-    }
-
-    .notif-panel.active {
-        transform: translateX(0);
-    }
-
-    .notif-header {
-        padding: 20px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid var(--divider);
-    }
-
-    .notif-header h3 {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--nav-text);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .notif-header h3 i {
-        color: var(--nav-active);
-    }
-
-    .notif-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-markall {
-        padding: 6px 14px;
-        border-radius: 20px;
-        border: 1px solid var(--nav-border);
-        background: transparent;
-        color: var(--nav-active);
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .btn-markall:hover {
-        background: var(--nav-hover);
-    }
-
-    .btn-close-panel {
-        width: 32px;
-        height: 32px;
-        border-radius: 10px;
-        border: none;
-        background: var(--nav-hover);
-        color: var(--nav-text-secondary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .notif-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 8px;
-    }
-
-    .notif-empty {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--nav-text-secondary);
-    }
-
-    .notif-empty i {
-        font-size: 3rem;
-        margin-bottom: 16px;
-        opacity: 0.3;
-    }
-
-    .notif-footer {
-        padding: 16px;
-        border-top: 1px solid var(--divider);
-        text-align: center;
-    }
-
-    .btn-viewall {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 24px;
-        border-radius: 12px;
-        background: var(--nav-hover);
-        color: var(--nav-active);
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
-
-    .btn-viewall:hover {
-        background: var(--nav-active);
-        color: white;
-    }
-
-    .panel-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(4px);
-        z-index: 1002;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .panel-backdrop.active {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    /* ===== SETTINGS MODAL ===== */
-    .settings-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 1004;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .settings-modal.active {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .settings-modal::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-card {
-        position: relative;
-        background: var(--card-bg);
-        border-radius: 24px;
-        width: 100%;
-        max-width: 420px;
-        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        transform: scale(0.9) translateY(20px);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .settings-modal.active .modal-card {
-        transform: scale(1) translateY(0);
-    }
-
-    .modal-header {
-        padding: 24px 24px 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .modal-header h3 {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--nav-text);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .modal-header h3 i {
-        color: var(--nav-active);
-    }
-
-    .modal-close {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        border: none;
-        background: var(--nav-hover);
-        color: var(--nav-text-secondary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-    }
-
-    .modal-close:hover {
-        background: var(--nav-active);
-        color: white;
-    }
-
-    .modal-body {
-        padding: 24px;
-    }
-
-    .setting-group {
-        margin-bottom: 24px;
-    }
-
-    .setting-group:last-child {
-        margin-bottom: 0;
-    }
-
-    .setting-group label {
-        display: block;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--nav-text-secondary);
-        margin-bottom: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .theme-options {
-        display: flex;
-        gap: 10px;
-    }
-
-    .theme-opt {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        padding: 16px 12px;
-        border-radius: 16px;
-        border: 2px solid var(--nav-border);
-        background: transparent;
-        color: var(--nav-text);
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .theme-opt:hover {
-        border-color: var(--nav-active);
-        background: var(--nav-hover);
-    }
-
-    .theme-opt.active {
-        border-color: var(--nav-active);
-        background: var(--nav-hover);
-        color: var(--nav-active);
-    }
-
-    .theme-opt i {
-        font-size: 1.3rem;
-    }
-
-    .theme-opt span {
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    .switch-label {
-        display: flex !important;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px;
-        border-radius: 16px;
-        background: var(--nav-hover);
-        text-transform: none !important;
-        letter-spacing: 0 !important;
-        margin-bottom: 0 !important;
-        cursor: pointer;
-    }
-
-    .toggle-switch {
-        position: relative;
-        width: 48px;
-        height: 26px;
-    }
-
-    .toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
-    .toggle-slider {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: var(--nav-border);
-        border-radius: 26px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-    .toggle-slider::before {
-        content: '';
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 20px;
-        height: 20px;
-        background: white;
-        border-radius: 50%;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-
-    .toggle-switch input:checked + .toggle-slider {
-        background: var(--nav-active);
-    }
-
-    .toggle-switch input:checked + .toggle-slider::before {
-        transform: translateX(22px);
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 991px) {
-        .nav-links-desktop {
-            display: none;
-        }
-
-        .nav-actions .nav-btn:not(.search-toggle):not(.notif-btn) {
-            display: none;
-        }
-
-        .auth-buttons {
-            display: none;
-        }
-
-        .mobile-toggle {
-            display: flex;
-        }
-
-        .user-trigger .user-name,
-        .user-trigger i {
-            display: none;
-        }
-
-        .user-trigger {
-            padding: 4px;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .nav-container {
-            padding: 0 16px;
-            height: 56px;
-        }
-
-        .brand-text {
-            display: none;
-        }
-
-        .nav-brand {
-            gap: 0;
-        }
-    }
+    :root { --nav-bg:#fff; --nav-text:#111827; --nav-muted:#6b7280; --nav-border:#e8eaf0; --nav-soft:#f5f5ff; --nav-primary:#635bff; }
+    [data-theme="dark"] { --nav-bg:#0f172a; --nav-text:#f8fafc; --nav-muted:#94a3b8; --nav-border:#243047; --nav-soft:rgba(99,91,255,.15); --nav-primary:#8b83ff; }
+    .blogify-nav { position:fixed; top:0; left:0; right:0; z-index:1000; background:rgba(255,255,255,.82); border-bottom:1px solid var(--nav-border); backdrop-filter:blur(18px); }
+    [data-theme="dark"] .blogify-nav { background:rgba(15,23,42,.86); }
+    .nav-shell { max-width:1280px; height:70px; margin:auto; padding:0 22px; display:flex; align-items:center; gap:24px; }
+    .nav-brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--nav-text); font-weight:900; letter-spacing:-.04em; font-size:1.25rem; }
+    .brand-mark { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#635bff,#8b5cf6); box-shadow:0 8px 20px rgba(99,91,255,.24); }
+    .nav-center { display:flex; justify-content:center; align-items:center; gap:4px; flex:1; }
+    .nav-link { display:flex; align-items:center; gap:8px; padding:10px 13px; border-radius:11px; color:var(--nav-muted); text-decoration:none; font-size:.88rem; font-weight:750; transition:.18s; }
+    .nav-link:hover,.nav-link.active { background:var(--nav-soft); color:var(--nav-primary); }
+    .nav-actions { display:flex; align-items:center; gap:7px; }
+    .nav-icon,.mobile-nav-toggle { position:relative; width:40px; height:40px; border:0; border-radius:11px; background:transparent; color:var(--nav-muted); display:grid; place-items:center; cursor:pointer; font-size:1rem; text-decoration:none; }
+    .nav-icon:hover,.mobile-nav-toggle:hover { background:var(--nav-soft); color:var(--nav-primary); }
+    .nav-badge { position:absolute; top:3px; right:2px; min-width:17px; height:17px; padding:0 4px; border-radius:20px; display:grid; place-items:center; background:#ef4444; color:#fff; border:2px solid var(--nav-bg); font-size:.58rem; font-weight:900; }
+    .account-menu { position:relative; }
+    .account-trigger { display:flex; align-items:center; gap:8px; border:1px solid var(--nav-border); background:var(--nav-bg); color:var(--nav-text); border-radius:99px; padding:4px 10px 4px 4px; cursor:pointer; font:inherit; font-weight:800; }
+    .account-trigger img { width:31px; height:31px; border-radius:50%; object-fit:cover; }
+    .account-trigger i { color:var(--nav-muted); font-size:.65rem; transition:.2s; }
+    .account-menu.open .account-trigger i { transform:rotate(180deg); }
+    .account-dropdown { position:absolute; top:calc(100% + 10px); right:0; width:300px; padding:9px; background:var(--nav-bg); border:1px solid var(--nav-border); border-radius:18px; box-shadow:0 24px 70px rgba(15,23,42,.16); opacity:0; visibility:hidden; transform:translateY(-6px); transition:.18s; }
+    .account-menu.open .account-dropdown { opacity:1; visibility:visible; transform:none; }
+    .account-summary { display:flex; gap:11px; align-items:center; padding:11px; margin-bottom:5px; }
+    .account-summary img { width:44px; height:44px; border-radius:13px; object-fit:cover; }
+    .account-summary strong,.account-summary small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .account-summary strong { color:var(--nav-text); font-size:.9rem; }
+    .account-summary small { color:var(--nav-muted); margin-top:3px; max-width:205px; }
+    .dropdown-links a { display:flex; align-items:center; gap:11px; padding:10px; border-radius:11px; color:var(--nav-text); text-decoration:none; font-size:.86rem; font-weight:700; }
+    .dropdown-links a:hover { background:var(--nav-soft); color:var(--nav-primary); }
+    .dropdown-links a i { width:29px; height:29px; border-radius:9px; display:grid; place-items:center; background:var(--nav-soft); color:var(--nav-primary); }
+    .dropdown-links b,.dropdown-links em { margin-left:auto; font-style:normal; font-size:.68rem; border-radius:99px; padding:2px 8px; background:var(--nav-soft); color:var(--nav-primary); }
+    .dropdown-links b { background:#ef4444; color:#fff; }
+    .dropdown-rule,.mobile-rule { height:1px; background:var(--nav-border); margin:7px 4px; }
+    .signout { display:flex; justify-content:center; gap:7px; padding:10px; margin-top:5px; border-radius:11px; color:#ef4444; text-decoration:none; font-size:.86rem; font-weight:800; }
+    .signout:hover { background:#fef2f2; }
+    .signin-link,.signup-link { text-decoration:none; font-size:.86rem; font-weight:800; }
+    .signin-link { color:var(--nav-text); padding:9px 11px; }
+    .signup-link { color:#fff; padding:10px 14px; border-radius:11px; background:linear-gradient(135deg,#635bff,#8b5cf6); box-shadow:0 7px 18px rgba(99,91,255,.22); }
+    .mobile-nav-toggle { display:none; }
+    .search-popover { position:absolute; left:0; right:0; top:70px; padding:14px 22px 16px; background:var(--nav-bg); border-bottom:1px solid var(--nav-border); box-shadow:0 15px 30px rgba(15,23,42,.08); display:none; }
+    .search-popover.open { display:block; }
+    .search-popover form { max-width:850px; margin:auto; display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--nav-border); border-radius:13px; background:var(--nav-soft); }
+    .search-popover i { color:var(--nav-muted); }
+    .search-popover input { flex:1; border:0; outline:0; background:transparent; color:var(--nav-text); font:inherit; }
+    .search-popover button { border:0; background:transparent; color:var(--nav-muted); cursor:pointer; }
+    .mobile-drawer { position:fixed; top:0; right:0; bottom:0; width:330px; max-width:88vw; z-index:1100; background:var(--nav-bg); transform:translateX(100%); transition:.24s; box-shadow:-25px 0 60px rgba(15,23,42,.16); }
+    .mobile-drawer.open { transform:none; }
+    .mobile-drawer-head { height:70px; padding:0 18px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--nav-border); color:var(--nav-text); font-size:1.05rem; }
+    .mobile-drawer-head button { width:38px; height:38px; border:0; border-radius:11px; background:var(--nav-soft); color:var(--nav-text); cursor:pointer; }
+    .mobile-drawer-links { padding:15px; }
+    .mobile-drawer-links a { display:flex; align-items:center; gap:13px; padding:13px; border-radius:12px; color:var(--nav-text); text-decoration:none; font-weight:750; }
+    .mobile-drawer-links a:hover { background:var(--nav-soft); color:var(--nav-primary); }
+    .mobile-drawer-links a i { width:33px; height:33px; border-radius:10px; display:grid; place-items:center; background:var(--nav-soft); color:var(--nav-primary); }
+    .mobile-drawer-links .danger-link { color:#ef4444; }
+    .mobile-drawer-links .primary-link { color:var(--nav-primary); }
+    .nav-backdrop { position:fixed; inset:0; z-index:1050; background:rgba(15,23,42,.35); backdrop-filter:blur(3px); opacity:0; visibility:hidden; transition:.2s; }
+    .nav-backdrop.open { opacity:1; visibility:visible; }
+    @media (max-width:900px) { .nav-center,.account-trigger span,.account-trigger i { display:none; } .mobile-nav-toggle { display:grid; } .account-trigger { padding:4px; } }
+    @media (max-width:560px) { .nav-shell { height:60px; padding:0 14px; } .brand-name { display:none; } .search-popover { top:60px; padding:10px 12px; } .signin-link { display:none; } }
 </style>
 
 <script>
-    // ===== THEME SYSTEM =====
-    const themeToggle = document.getElementById('themeToggle');
-    const themeIcon = document.getElementById('themeIcon');
+(function () {
     const html = document.documentElement;
-
-    function getSystemTheme() {
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-
-    function applyTheme(theme) {
-        if (theme === 'system') theme = getSystemTheme();
-        
-        html.setAttribute('data-theme', theme);
-        
-        if (theme === 'dark') {
-            themeIcon.className = 'fas fa-sun';
-            themeToggle.style.color = '#fbbf24';
-        } else {
-            themeIcon.className = 'fas fa-moon';
-            themeToggle.style.color = 'var(--nav-text-secondary)';
-        }
-
-        // Update theme buttons in modal
-        document.querySelectorAll('.theme-opt').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.theme === (html.getAttribute('data-theme') === 'system' ? 'system' : theme));
-        });
-    }
-
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    applyTheme(savedTheme);
-
-    themeToggle.addEventListener('click', () => {
-        const current = html.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        localStorage.setItem('theme', next);
-        applyTheme(next);
-    });
-
-    // ===== SEARCH OVERLAY =====
+    const accountMenu = document.getElementById('accountMenu');
+    const userTrigger = document.getElementById('userMenuTrigger');
     const searchToggle = document.getElementById('searchToggle');
     const searchOverlay = document.getElementById('searchOverlay');
     const searchClose = document.getElementById('searchClose');
-
-    searchToggle.addEventListener('click', () => {
-        searchOverlay.classList.add('active');
-        setTimeout(() => searchOverlay.querySelector('input').focus(), 100);
-    });
-
-    searchClose.addEventListener('click', () => {
-        searchOverlay.classList.remove('active');
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') searchOverlay.classList.remove('active');
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-            e.preventDefault();
-            searchOverlay.classList.toggle('active');
-            if (searchOverlay.classList.contains('active')) {
-                setTimeout(() => searchOverlay.querySelector('input').focus(), 100);
-            }
-        }
-    });
-
-    // ===== USER DROPDOWN =====
-    const userMenuTrigger = document.getElementById('userMenuTrigger');
-    const userMenu = document.querySelector('.user-menu');
-
-    if (userMenuTrigger) {
-        userMenuTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            userMenu.classList.toggle('open');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!userMenu.contains(e.target)) {
-                userMenu.classList.remove('open');
-            }
-        });
-    }
-
-    // ===== MOBILE MENU =====
     const mobileToggle = document.getElementById('mobileToggle');
     const mobileMenu = document.getElementById('mobileMenu');
     const mobileClose = document.getElementById('mobileClose');
+    const backdrop = document.getElementById('navBackdrop');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
 
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', () => {
-            mobileToggle.classList.toggle('active');
-            mobileMenu.classList.toggle('active');
-        });
-
-        mobileClose.addEventListener('click', () => {
-            mobileToggle.classList.remove('active');
-            mobileMenu.classList.remove('active');
-        });
+    function systemTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+    function applyTheme(theme) {
+        const actual = theme === 'system' ? systemTheme() : theme;
+        html.dataset.theme = actual;
+        if (themeIcon) themeIcon.className = actual === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
-
-    // ===== NOTIFICATION PANEL =====
-    const notificationBell = document.getElementById('notificationBell');
-    const notifPanel = document.getElementById('notifPanel');
-    const panelBackdrop = document.getElementById('panelBackdrop');
-    const closeNotifPanel = document.getElementById('closeNotifPanel');
-
-    function openNotifPanel() {
-        notifPanel.classList.add('active');
-        panelBackdrop.classList.add('active');
-        loadNotifications();
-    }
-
-    function closeNotifPanelFn() {
-        notifPanel.classList.remove('active');
-        panelBackdrop.classList.remove('active');
-    }
-
-    if (notificationBell) {
-        notificationBell.addEventListener('click', openNotifPanel);
-        closeNotifPanel.addEventListener('click', closeNotifPanelFn);
-        panelBackdrop.addEventListener('click', closeNotifPanelFn);
-    }
-
-    // ===== SETTINGS MODAL =====
-    const settingsBtn = document.getElementById('settingsBtn');
-    const mobileSettings = document.getElementById('mobileSettings');
-    const settingsModal = document.getElementById('settingsModal');
-    const closeSettings = document.getElementById('closeSettings');
-
-    function openSettings() {
-        settingsModal.classList.add('active');
-    }
-
-    function closeSettingsFn() {
-        settingsModal.classList.remove('active');
-    }
-
-    if (settingsBtn) settingsBtn.addEventListener('click', (e) => { e.preventDefault(); openSettings(); });
-    if (mobileSettings) mobileSettings.addEventListener('click', (e) => { e.preventDefault(); openSettings(); });
-    if (closeSettings) closeSettings.addEventListener('click', closeSettingsFn);
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) closeSettingsFn();
+    const savedTheme = localStorage.getItem('blogify-theme') || localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
+    if (themeToggle) themeToggle.addEventListener('click', async () => {
+        const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('blogify-theme', next);
+        localStorage.setItem('theme', next);
+        applyTheme(next);
+        if (document.body.dataset.settingsPage === 'true') return;
+        try { await fetch('/user/profile/settings/theme', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({theme:next}) }); } catch (_) {}
     });
 
-    // Theme options in settings
-    document.querySelectorAll('.theme-opt').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const theme = btn.dataset.theme;
-            localStorage.setItem('theme', theme);
-            applyTheme(theme);
-        });
-    });
+    if (userTrigger) userTrigger.addEventListener('click', e => { e.stopPropagation(); accountMenu.classList.toggle('open'); });
+    document.addEventListener('click', e => { if (accountMenu && !accountMenu.contains(e.target)) accountMenu.classList.remove('open'); });
 
-    // ===== NOTIFICATION SYSTEM =====
+    if (searchToggle) searchToggle.addEventListener('click', () => { searchOverlay.classList.toggle('open'); if (searchOverlay.classList.contains('open')) searchOverlay.querySelector('input').focus(); });
+    if (searchClose) searchClose.addEventListener('click', () => searchOverlay.classList.remove('open'));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { searchOverlay?.classList.remove('open'); accountMenu?.classList.remove('open'); closeMobile(); } });
+
+    function openMobile() { mobileMenu?.classList.add('open'); backdrop?.classList.add('open'); }
+    function closeMobile() { mobileMenu?.classList.remove('open'); backdrop?.classList.remove('open'); }
+    mobileToggle?.addEventListener('click', openMobile);
+    mobileClose?.addEventListener('click', closeMobile);
+    backdrop?.addEventListener('click', closeMobile);
+
     <% if (locals.user) { %>
-        async function loadUnreadCount() {
-            try {
-                const res = await fetch('/notifications/unread/count');
-                const data = await res.json();
-                if (data.success) {
-                    const badge = document.getElementById('notificationBadge');
-                    const count = document.getElementById('notificationCount');
-                    const dropdownBadge = document.getElementById('dropdownNotifBadge');
-                    const mobileBadge = document.getElementById('mobileNotifBadge');
-
-                    if (data.unreadCount > 0) {
-                        const display = data.unreadCount > 99 ? '99+' : data.unreadCount;
-                        count.textContent = display;
-                        badge.style.display = 'flex';
-                        if (dropdownBadge) { dropdownBadge.textContent = display; dropdownBadge.style.display = 'inline-block'; }
-                        if (mobileBadge) { mobileBadge.textContent = display; mobileBadge.style.display = 'inline-block'; }
-                    } else {
-                        badge.style.display = 'none';
-                        if (dropdownBadge) dropdownBadge.style.display = 'none';
-                        if (mobileBadge) mobileBadge.style.display = 'none';
-                    }
-                }
-            } catch (err) {
-                console.error('Error loading unread count:', err);
-            }
-        }
-
-        async function loadNotifications() {
-            try {
-                const res = await fetch('/notifications?page=1&limit=20', {
-                    headers: { 'Accept': 'application/json' }
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    renderNotifications(data.notifications);
-                }
-            } catch (err) {
-                console.error('Error loading notifications:', err);
-            }
-        }
-
-        function renderNotifications(notifications) {
-            const body = document.getElementById('notifBody');
-
-            if (!notifications || notifications.length === 0) {
-                body.innerHTML = `
-                    <div class="notif-empty">
-                        <i class="far fa-bell"></i>
-                        <p>No notifications yet</p>
-                    </div>
-                `;
-                return;
-            }
-
-            body.innerHTML = notifications.map(notif => {
-                const isUnread = !notif.isRead;
-                const actorName = notif.actor ? notif.actor.fullName : 'Someone';
-                const actorImg = notif.actor ? (notif.actor.profileImageURL || '/imgs/default.png') : '/imgs/default.png';
-                const blogImg = notif.blog ? (notif.blog.coverImageURL || '/imgs/default-blog.png') : null;
-                const blogTitle = notif.blog ? notif.blog.title : '';
-                const blogId = notif.blog ? notif.blog._id : '';
-                const timeAgo = getTimeAgo(notif.createdAt);
-
-                let iconClass = 'fa-bell';
-                let iconColor = '#6366f1';
-
-                switch(notif.type) {
-                    case 'blog_post': iconClass = 'fa-file-alt'; iconColor = '#10b981'; break;
-                    case 'like': iconClass = 'fa-heart'; iconColor = '#ef4444'; break;
-                    case 'comment': iconClass = 'fa-comment'; iconColor = '#3b82f6'; break;
-                    case 'reply': iconClass = 'fa-reply'; iconColor = '#8b5cf6'; break;
-                    case 'follow': iconClass = 'fa-user-plus'; iconColor = '#f59e0b'; break;
-                    case 'mention': iconClass = 'fa-at'; iconColor = '#ec4899'; break;
-                }
-
-                return `
-                    <div class="notif-item" 
-                         style="padding: 14px; border-radius: 14px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; ${isUnread ? 'background: var(--nav-hover);' : ''}"
-                         onclick="handleNotifClick('${notif._id}', '${notif.type}', '${blogId}', '${notif.actor ? notif.actor._id : ''}')">
-                        <div style="display: flex; gap: 12px; align-items: flex-start;">
-                            <div style="position: relative; flex-shrink: 0;">
-                                <img src="${actorImg}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid ${isUnread ? iconColor : 'transparent'};" onerror="this.src='/imgs/default.png';">
-                                <span style="position: absolute; bottom: -2px; right: -2px; width: 16px; height: 16px; background: ${iconColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--card-bg);">
-                                    <i class="fas ${iconClass}" style="font-size: 0.5rem; color: white;"></i>
-                                </span>
-                            </div>
-                            <div style="flex: 1; min-width: 0;">
-                                <p style="margin: 0; font-size: 0.9rem; color: var(--nav-text); line-height: 1.4;">
-                                    <strong>${actorName}</strong> 
-                                    ${notif.type === 'blog_post' ? 'published a new blog' :
-                                      notif.type === 'like' ? 'liked your blog' :
-                                      notif.type === 'comment' ? 'commented on your blog' :
-                                      notif.type === 'follow' ? 'started following you' :
-                                      notif.type === 'mention' ? 'mentioned you' : 'interacted'}
-                                </p>
-                                ${blogTitle ? `<p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--nav-text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"><i class="fas fa-book-open" style="margin-right: 4px; opacity: 0.5;"></i>${blogTitle}</p>` : ''}
-                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-                                    <span style="font-size: 0.75rem; color: var(--nav-text-secondary);">${timeAgo}</span>
-                                    ${isUnread ? '<span style="width: 8px; height: 8px; background: var(--nav-active); border-radius: 50%;"></span>' : ''}
-                                </div>
-                            </div>
-                        </div>
-                        ${blogImg ? `<div style="margin-top: 10px; margin-left: 52px; border-radius: 10px; overflow: hidden;"><img src="${blogImg}" style="width: 100%; height: 80px; object-fit: cover;" onerror="this.style.display='none';"></div>` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function getTimeAgo(date) {
-            const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-            const intervals = { year: 31536000, month: 2592000, week: 604800, day: 86400, hour: 3600, minute: 60 };
-            for (const [unit, secs] of Object.entries(intervals)) {
-                const count = Math.floor(seconds / secs);
-                if (count >= 1) return `${count} ${unit}${count > 1 ? 's' : ''} ago`;
-            }
-            return 'Just now';
-        }
-
-        async function handleNotifClick(id, type, blogId, actorId) {
-            try {
-                await fetch(`/notifications/${id}/read`, { method: 'PUT' });
-                loadUnreadCount();
-            } catch (e) {}
-
-            closeNotifPanelFn();
-
-            if (type === 'follow' && actorId) {
-                window.location.href = `/profile/${actorId}`;
-            } else if (blogId) {
-                window.location.href = `/blogs/${blogId}`;
-            }
-        }
-
-        async function markAllReadPanel() {
-            try {
-                await fetch('/notifications/all/read', { method: 'PUT' });
-                loadNotifications();
-                loadUnreadCount();
-            } catch (e) {}
-        }
-
-        loadUnreadCount();
-        setInterval(loadUnreadCount, 30000);
+    async function loadUnreadCount() {
+        try {
+            const res = await fetch('/notifications/unread/count');
+            const data = await res.json();
+            if (!data.success) return;
+            const display = data.unreadCount > 99 ? '99+' : data.unreadCount;
+            const badge = document.getElementById('notificationBadge');
+            const count = document.getElementById('notificationCount');
+            const dropdown = document.getElementById('dropdownNotifBadge');
+            if (data.unreadCount > 0) { badge.style.display='grid'; count.textContent=display; if(dropdown){dropdown.style.display='inline-block';dropdown.textContent=display;} }
+            else { badge.style.display='none'; if(dropdown) dropdown.style.display='none'; }
+        } catch (_) {}
+    }
+    loadUnreadCount();
+    setInterval(loadUnreadCount, 30000);
     <% } %>
+})();
 </script>
