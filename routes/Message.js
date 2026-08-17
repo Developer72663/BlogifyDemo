@@ -1,0 +1,13 @@
+const express=require("express");
+const mongoose=require("mongoose");
+const Conversation=require("../models/Conversation");
+const Message=require("../models/Message");
+const User=require("../models/user");
+const router=express.Router();
+const auth=(req,res,next)=>req.user?next():res.status(401).json({success:false,message:"Authentication required"});
+const id=x=>mongoose.Types.ObjectId.isValid(x);
+router.get("/",auth,async(req,res)=>{try{const list=await Conversation.find({participants:req.user._id}).sort({lastMessageAt:-1,updatedAt:-1}).populate("participants","fullName profileImageURL").populate("lastMessage","text senderId status createdAt").lean();res.json({success:true,conversations:list});}catch(e){console.error(e);res.status(500).json({success:false,message:"Unable to load conversations"});}});
+router.post("/conversation",auth,async(req,res)=>{try{const {userId}=req.body;if(!id(userId)||userId.toString()===req.user._id.toString())return res.status(400).json({success:false,message:"Invalid user"});const target=await User.findById(userId).select("_id");if(!target)return res.status(404).json({success:false,message:"User not found"});let conversation=await Conversation.findOne({participants:{$all:[req.user._id,target._id],$size:2}});if(!conversation)conversation=await Conversation.create({participants:[req.user._id,target._id]});res.json({success:true,conversationId:conversation._id});}catch(e){console.error(e);res.status(500).json({success:false,message:"Unable to create conversation"});}});
+router.get("/:conversationId",auth,async(req,res)=>{try{if(!id(req.params.conversationId))return res.status(400).json({success:false,message:"Invalid conversation"});const c=await Conversation.findOne({_id:req.params.conversationId,participants:req.user._id});if(!c)return res.status(403).json({success:false,message:"Conversation unavailable"});const messages=await Message.find({conversationId:c._id}).sort({createdAt:1}).populate("senderId","fullName profileImageURL").lean();await Message.updateMany({conversationId:c._id,receiverId:req.user._id,status:{$ne:"read"}},{status:"read"});res.json({success:true,messages});}catch(e){console.error(e);res.status(500).json({success:false,message:"Unable to load messages"});}});
+router.delete("/:messageId",auth,async(req,res)=>{try{if(!id(req.params.messageId))return res.status(400).json({success:false});const m=await Message.findOne({_id:req.params.messageId,senderId:req.user._id});if(!m)return res.status(404).json({success:false,message:"Message not found"});m.text="Message deleted";m.deleted=true;await m.save();res.json({success:true});}catch(e){res.status(500).json({success:false,message:"Unable to delete message"});}});
+module.exports=router;
