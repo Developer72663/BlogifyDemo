@@ -6,67 +6,13 @@ const FollowRequest = require("../models/FollowRequest");
 const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
 
-// Public profile page. Authentication is optional here so signed-out visitors can
-// still see the public profile fields (avatar, name, bio and counts).
+// These named routes must be registered before /:userId.
 router.get("/", async (req, res) => {
     if (!req.user) return res.redirect("/user/signin");
     return renderProfile(req, res, req.user._id);
 });
 
-router.get("/:userId", async (req, res) => {
-    return renderProfile(req, res, req.params.userId);
-});
-
-async function renderProfile(req, res, userId) {
-    try {
-        const user = await User.findById(userId).select("fullName email bio website location profileImageURL isPrivate followers following blockedUsers");
-        if (!user) return res.status(404).render("error", { error: "User not found" });
-
-        const viewerId = req.user?._id?.toString() || null;
-        const isOwnProfile = viewerId === user._id.toString();
-        const isFollower = !!(viewerId && user.followers.some(id => id.toString() === viewerId));
-        const canViewPrivateContent = isOwnProfile || !user.isPrivate || isFollower;
-
-        let followState = "none";
-        if (viewerId && !isOwnProfile) {
-            const viewer = await User.findById(viewerId).select("following").lean();
-            if (viewer?.following?.some(id => id.toString() === user._id.toString())) {
-                followState = "following";
-            } else if (user.isPrivate) {
-                const pending = await FollowRequest.exists({ requester: viewerId, recipient: user._id, status: "pending" });
-                if (pending) followState = "requested";
-            }
-        }
-
-        let blogs = [];
-        if (canViewPrivateContent) {
-            blogs = await Blog.find({ createdBy: user._id, isDeleted: false, status: { $ne: "draft" } })
-                .sort({ createdAt: -1 })
-                .lean();
-        }
-
-        return res.render("profile", {
-            user,
-            blogs,
-            isOwnProfile,
-            isLoggedIn: !!req.user,
-            isFollower,
-            contentLocked: !canViewPrivateContent,
-            followState,
-            followerCount: user.followers.length,
-            followingCount: user.following.length,
-            blogCount: canViewPrivateContent ? blogs.length : await Blog.countDocuments({ createdBy: user._id, isDeleted: false, status: { $ne: "draft" } })
-        });
-    } catch (error) {
-        console.error("Profile Route Error:", error);
-        return res.status(500).render("error", { error: error.message || "Internal Server Error" });
-    }
-}
-
-// Everything below this point requires an authenticated user.
-router.use(restrictToLoggedInUserOnly);
-
-router.get("/settings", async (req, res) => {
+router.get("/settings", restrictToLoggedInUserOnly, async (req, res) => {
     try {
         const user = await User.findById(req.user._id).populate("blockedUsers", "fullName profileImageURL");
         if (!user) return res.status(404).send("User not found");
@@ -74,10 +20,43 @@ router.get("/settings", async (req, res) => {
     } catch (error) { console.error("Settings Page Error:", error); res.status(500).render("error", { error: error.message }); }
 });
 
-router.get("/edit", async (req, res) => {
+router.get("/edit", restrictToLoggedInUserOnly, async (req, res) => {
     try { const user = await User.findById(req.user._id).populate("followers", "fullName profileImageURL").populate("following", "fullName profileImageURL"); res.render("editProfile", { user, success: null, error: null }); }
     catch (error) { console.error("Edit Profile Page Error:", error); res.status(500).render("error", { error: error.message }); }
 });
+
+// Public profile. Signed-out visitors can view public fields and counts.
+router.get("/:userId", async (req, res) => renderProfile(req, res, req.params.userId));
+
+async function renderProfile(req, res, userId) {
+    try {
+        const user = await User.findById(userId).select("fullName email bio website location profileImageURL isPrivate followers following blockedUsers");
+        if (!user) return res.status(404).render("error", { error: "User not found" });
+        const viewerId = req.user?._id?.toString() || null;
+        const isOwnProfile = viewerId === user._id.toString();
+        const isFollower = !!(viewerId && user.followers.some(id => id.toString() === viewerId));
+        const canViewPrivateContent = isOwnProfile || !user.isPrivate || isFollower;
+        let followState = "none";
+        if (viewerId && !isOwnProfile) {
+            const viewer = await User.findById(viewerId).select("following").lean();
+            if (viewer?.following?.some(id => id.toString() === user._id.toString())) followState = "following";
+            else if (user.isPrivate && await FollowRequest.exists({ requester: viewerId, recipient: user._id, status: "pending" })) followState = "requested";
+        }
+        const publishedFilter = { createdBy: user._id, isDeleted: false, status: { $ne: "draft" } };
+        const blogCount = await Blog.countDocuments(publishedFilter);
+        const blogs = canViewPrivateContent ? await Blog.find(publishedFilter).sort({ createdAt: -1 }).lean() : [];
+        return res.render("profile", {
+            user, blogs, isOwnProfile, isLoggedIn: !!req.user, isFollower,
+            contentLocked: !canViewPrivateContent, followState,
+            followerCount: user.followers.length, followingCount: user.following.length, blogCount
+        });
+    } catch (error) {
+        console.error("Profile Route Error:", error);
+        return res.status(500).render("error", { error: error.message || "Internal Server Error" });
+    }
+}
+
+router.use(restrictToLoggedInUserOnly);
 
 router.put("/update", async (req, res) => {
     try {
@@ -107,8 +86,8 @@ router.post("/upload-image", (req, res) => {
             if (!user) return res.status(404).json({ success: false, message: "User not found" });
             user.profileImageURL = uploadResult.secure_url;
             await user.save();
-            return res.json({ success: true, message: "Profile photo updated successfully", imageURL: uploadResult.secure_url, user: { id: user._id, profileImageURL: user.profileImageURL } });
-        } catch (error) { console.error("Profile image upload failed:", error); return res.status(500).json({ success: false, message: error.message || "Unable to upload profile photo" }); }
+            res.json({ success: true, message: "Profile photo updated successfully", imageURL: uploadResult.secure_url, user: { id: user._id, profileImageURL: user.profileImageURL } });
+        } catch (error) { console.error("Profile image upload failed:", error); res.status(500).json({ success: false, message: error.message || "Unable to upload profile photo" }); }
     });
 });
 
@@ -116,53 +95,18 @@ router.patch("/settings/theme", async (req, res) => {
     try { const theme = String(req.body.theme || "").toLowerCase(); if (!["light", "dark", "system"].includes(theme)) return res.status(400).json({ success: false, message: "Invalid theme" }); const user = await User.findByIdAndUpdate(req.user._id, { theme }, { new: true }); res.json({ success: true, theme: user.theme }); }
     catch (error) { res.status(500).json({ success: false, message: "Unable to save theme" }); }
 });
-
 router.patch("/settings/privacy", async (req, res) => {
     try { const isPrivate = req.body.isPrivate === true || req.body.isPrivate === "true"; const user = await User.findByIdAndUpdate(req.user._id, { isPrivate }, { new: true }); res.json({ success: true, isPrivate: user.isPrivate }); }
     catch (error) { res.status(500).json({ success: false, message: "Unable to save privacy setting" }); }
 });
-
 router.patch("/settings/general", async (req, res) => {
-    try {
-        const allowed = ["blogSettings", "commentSettings", "interfaceSettings", "notificationSettings"];
-        const update = {};
-        for (const group of allowed) {
-            if (!req.body[group] || typeof req.body[group] !== "object") continue;
-            for (const [key, value] of Object.entries(req.body[group])) {
-                if (group === "blogSettings" && key === "defaultTags") update[`${group}.${key}`] = Array.isArray(value) ? value.map(String).map(v => v.trim()).filter(Boolean).slice(0, 20) : [];
-                else if (group === "blogSettings" && key === "defaultVisibility") update[`${group}.${key}`] = ["public", "followers"].includes(value) ? value : "public";
-                else if (typeof value === "boolean" || typeof value === "string") update[`${group}.${key}`] = value;
-            }
-        }
-        if (!Object.keys(update).length) return res.status(400).json({ success: false, message: "No settings supplied" });
-        const user = await User.findByIdAndUpdate(req.user._id, { $set: update }, { new: true });
-        res.json({ success: true, settings: { blogSettings: user.blogSettings, commentSettings: user.commentSettings, interfaceSettings: user.interfaceSettings, notificationSettings: user.notificationSettings } });
-    } catch (error) { console.error("General Settings Error:", error); res.status(500).json({ success: false, message: "Unable to save settings" }); }
+    try { const allowed=["blogSettings","commentSettings","interfaceSettings","notificationSettings"],update={}; for(const group of allowed){if(!req.body[group]||typeof req.body[group]!=="object")continue;for(const [key,value] of Object.entries(req.body[group])){if(group==="blogSettings"&&key==="defaultTags")update[`${group}.${key}`]=Array.isArray(value)?value.map(String).map(v=>v.trim()).filter(Boolean).slice(0,20):[];else if(group==="blogSettings"&&key==="defaultVisibility")update[`${group}.${key}`]=["public","followers"].includes(value)?value:"public";else if(typeof value==="boolean"||typeof value==="string")update[`${group}.${key}`]=value;}} if(!Object.keys(update).length)return res.status(400).json({success:false,message:"No settings supplied"}); const user=await User.findByIdAndUpdate(req.user._id,{$set:update},{new:true});res.json({success:true,settings:{blogSettings:user.blogSettings,commentSettings:user.commentSettings,interfaceSettings:user.interfaceSettings,notificationSettings:user.notificationSettings}}); }
+    catch(error){res.status(500).json({success:false,message:"Unable to save settings"});}
 });
-
-router.patch("/settings/notifications", async (req, res) => {
-    try { const allowed = ["emailOnComment", "emailOnNewFollower", "emailOnFollowRequest", "emailOnRequestAccepted", "emailOnLike", "emailOnMention", "emailDigest"]; const update = {}; for (const key of allowed) if (typeof req.body[key] === "boolean") update[`notificationSettings.${key}`] = req.body[key]; if (!Object.keys(update).length) return res.status(400).json({ success: false, message: "No notification setting supplied" }); const user = await User.findByIdAndUpdate(req.user._id, { $set: update }, { new: true }); res.json({ success: true, notificationSettings: user.notificationSettings }); }
-    catch (error) { res.status(500).json({ success: false, message: "Unable to save notification settings" }); }
-});
-
-router.patch("/settings/block/:userId", async (req, res) => {
-    try { if (String(req.params.userId) === String(req.user._id)) return res.status(400).json({ success: false, message: "You cannot block yourself" }); const user = await User.findById(req.user._id); const target = await User.findById(req.params.userId); if (!target) return res.status(404).json({ success: false, message: "User not found" }); if (!user.blockedUsers.some(id => id.toString() === target._id.toString())) { user.blockedUsers.push(target._id); user.following = user.following.filter(id => id.toString() !== target._id.toString()); user.followers = user.followers.filter(id => id.toString() !== target._id.toString()); await user.save(); } res.json({ success: true, message: "User blocked" }); }
-    catch (error) { res.status(500).json({ success: false, message: "Unable to block user" }); }
-});
-
-router.patch("/settings/unblock/:userId", async (req, res) => {
-    try { const user = await User.findById(req.user._id); user.blockedUsers = user.blockedUsers.filter(id => id.toString() !== req.params.userId.toString()); await user.save(); res.json({ success: true, message: "User unblocked" }); }
-    catch (error) { res.status(500).json({ success: false, message: "Unable to unblock user" }); }
-});
-
-router.post("/change-password", async (req, res) => {
-    try { const { currentPassword, newPassword } = req.body; if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: "Current and new passwords are required" }); if (newPassword.length < 6) return res.status(400).json({ success: false, message: "New password must be at least 6 characters" }); const user = await User.findById(req.user._id); if (user.googleId && !user.password) return res.status(400).json({ success: false, message: "This account uses Google Sign-In. Cannot change password." }); const { createHmac } = require("crypto"); const currentHash = createHmac("sha256", user.salt).update(currentPassword).digest("hex"); if (user.password !== currentHash) return res.status(401).json({ success: false, message: "Current password is incorrect" }); user.password = newPassword; await user.save(); res.json({ success: true, message: "Password changed successfully" }); }
-    catch (error) { console.error("Change Password Error:", error); res.status(500).json({ success: false, message: "Failed to change password" }); }
-});
-
-router.delete("/delete-account", async (req, res) => {
-    try { const userId = req.user._id; await Blog.deleteMany({ createdBy: userId }); await User.findByIdAndDelete(userId); res.clearCookie("token"); res.json({ success: true, message: "Account deleted successfully" }); }
-    catch (error) { console.error("Delete Account Error:", error); res.status(500).json({ success: false, message: "Failed to delete account" }); }
-});
+router.patch("/settings/notifications", async (req,res)=>{try{const allowed=["emailOnComment","emailOnNewFollower","emailOnFollowRequest","emailOnRequestAccepted","emailOnLike","emailOnMention","emailDigest"],update={};for(const key of allowed)if(typeof req.body[key]==="boolean")update[`notificationSettings.${key}`]=req.body[key];if(!Object.keys(update).length)return res.status(400).json({success:false,message:"No notification setting supplied"});const user=await User.findByIdAndUpdate(req.user._id,{$set:update},{new:true});res.json({success:true,notificationSettings:user.notificationSettings});}catch(error){res.status(500).json({success:false,message:"Unable to save notification settings"});}});
+router.patch("/settings/block/:userId", async (req,res)=>{try{if(String(req.params.userId)===String(req.user._id))return res.status(400).json({success:false,message:"You cannot block yourself"});const user=await User.findById(req.user._id),target=await User.findById(req.params.userId);if(!target)return res.status(404).json({success:false,message:"User not found"});if(!user.blockedUsers.some(id=>id.toString()===target._id.toString())){user.blockedUsers.push(target._id);user.following=user.following.filter(id=>id.toString()!==target._id.toString());user.followers=user.followers.filter(id=>id.toString()!==target._id.toString());await user.save();}res.json({success:true,message:"User blocked"});}catch(error){res.status(500).json({success:false,message:"Unable to block user"});}});
+router.patch("/settings/unblock/:userId", async (req,res)=>{try{const user=await User.findById(req.user._id);user.blockedUsers=user.blockedUsers.filter(id=>id.toString()!==req.params.userId.toString());await user.save();res.json({success:true,message:"User unblocked"});}catch(error){res.status(500).json({success:false,message:"Unable to unblock user"});}});
+router.post("/change-password", async (req,res)=>{try{const {currentPassword,newPassword}=req.body;if(!currentPassword||!newPassword)return res.status(400).json({success:false,message:"Current and new passwords are required"});if(newPassword.length<6)return res.status(400).json({success:false,message:"New password must be at least 6 characters"});const user=await User.findById(req.user._id);if(user.googleId&&!user.password)return res.status(400).json({success:false,message:"This account uses Google Sign-In. Cannot change password."});const {createHmac}=require("crypto"),currentHash=createHmac("sha256",user.salt).update(currentPassword).digest("hex");if(user.password!==currentHash)return res.status(401).json({success:false,message:"Current password is incorrect"});user.password=newPassword;await user.save();res.json({success:true,message:"Password changed successfully"});}catch(error){res.status(500).json({success:false,message:"Failed to change password"});}});
+router.delete("/delete-account", async (req,res)=>{try{const userId=req.user._id;await Blog.deleteMany({createdBy:userId});await User.findByIdAndDelete(userId);res.clearCookie("token");res.json({success:true,message:"Account deleted successfully"});}catch(error){res.status(500).json({success:false,message:"Failed to delete account"});}});
 
 module.exports = router;
