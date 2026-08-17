@@ -1,0 +1,11 @@
+const Conversation=require("../models/Conversation");
+const Message=require("../models/Message");
+const mongoose=require("mongoose");
+const onlineUsers=new Map();
+function setupMessageSocket(io){io.on("connection",socket=>{const userId=socket.userId?.toString();if(!userId)return;const current=onlineUsers.get(userId)||new Set();current.add(socket.id);onlineUsers.set(userId,current);socket.join(`user:${userId}`);io.emit("user:online",{userId});
+socket.on("conversation:join",async conversationId=>{if(mongoose.Types.ObjectId.isValid(conversationId)){const c=await Conversation.findOne({_id:conversationId,participants:userId}).select("_id");if(c)socket.join(`conversation:${conversationId}`);}});
+socket.on("typing:start",({conversationId})=>socket.to(`conversation:${conversationId}`).emit("typing:start",{userId}));socket.on("typing:stop",({conversationId})=>socket.to(`conversation:${conversationId}`).emit("typing:stop",{userId}));
+socket.on("message:send",async({conversationId,text,replyTo=null}={})=>{try{if(!text||!text.trim()||text.length>5000)return;const c=await Conversation.findOne({_id:conversationId,participants:userId});if(!c)return;const receiverId=c.participants.find(x=>x.toString()!==userId);if(!receiverId)return;const m=await Message.create({conversationId,senderId:userId,receiverId,text:text.trim(),replyTo});c.lastMessage=m._id;c.lastMessageAt=new Date();await c.save();const payload=m.toObject();io.to(`conversation:${conversationId}`).emit("message:new",payload);io.to(`user:${receiverId}`).emit("message:new",payload);io.to(`user:${receiverId}`).emit("notification:message",{conversationId,senderId:userId});await Message.updateOne({_id:m._id},{$set:{status:"delivered"}});}catch(e){console.error("message socket:",e.message);}});
+socket.on("message:read",async({conversationId}={})=>{if(!mongoose.Types.ObjectId.isValid(conversationId))return;await Message.updateMany({conversationId,receiverId:userId,status:{$ne:"read"}},{status:"read"});io.to(`conversation:${conversationId}`).emit("message:read",{conversationId,userId});});
+socket.on("disconnect",()=>{const set=onlineUsers.get(userId);if(!set)return;set.delete(socket.id);if(!set.size){onlineUsers.delete(userId);io.emit("user:offline",{userId});}});});return onlineUsers;}
+module.exports={setupMessageSocket,onlineUsers};
