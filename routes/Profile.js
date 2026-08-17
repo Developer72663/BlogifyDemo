@@ -4,6 +4,13 @@ const Blog = require("../models/Blog");
 const User = require("../models/user");
 const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 router.use(restrictToLoggedInUserOnly);
 
@@ -61,7 +68,7 @@ router.put("/update", async (req, res) => {
     }
 });
 
-// Avatar upload is wrapped manually so Multer/Cloudinary errors are always returned as JSON.
+// Avatar upload: Multer validates the file, then Cloudinary receives the image buffer directly.
 router.post("/upload-image", (req, res) => {
     cloudinaryUpload.single("profileImage")(req, res, async (uploadError) => {
         if (uploadError) {
@@ -70,30 +77,55 @@ router.post("/upload-image", (req, res) => {
                 return res.status(413).json({ success: false, message: "Profile photo must be 10MB or smaller" });
             }
             if (uploadError.code === "INVALID_IMAGE_TYPE" || uploadError.code === "LIMIT_UNEXPECTED_FILE") {
-                return res.status(400).json({ success: false, message: "Please choose a valid image file (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF or AVIF)" });
+                return res.status(400).json({ success: false, message: "Please choose an image (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF or AVIF)" });
             }
-            return res.status(500).json({ success: false, message: uploadError.message || "Unable to upload profile photo" });
+            return res.status(400).json({ success: false, message: uploadError.message || "Unable to read the selected photo" });
         }
 
         try {
-            if (!req.file || !req.file.path) {
+            if (!req.file || !req.file.buffer) {
                 return res.status(400).json({ success: false, message: "Please select a profile photo" });
+            }
+
+            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+                console.error("Cloudinary environment variables are missing");
+                return res.status(500).json({ success: false, message: "Image upload is not configured on the server" });
+            }
+
+            const uploadResult = await new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: "blogifyer_uploads",
+                        resource_type: "image",
+                        transformation: [{ width: 800, height: 800, crop: "limit" }],
+                        format: "auto",
+                    },
+                    (error, result) => error ? reject(error) : resolve(result)
+                );
+                stream.end(req.file.buffer);
+            });
+
+            if (!uploadResult || !uploadResult.secure_url) {
+                return res.status(500).json({ success: false, message: "Cloudinary did not return an image URL" });
             }
 
             const user = await User.findById(req.user._id);
             if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-            user.profileImageURL = req.file.path;
+            user.profileImageURL = uploadResult.secure_url;
             await user.save();
 
             return res.json({
                 success: true,
                 message: "Profile photo updated successfully",
-                imageURL: req.file.path,
+                imageURL: uploadResult.secure_url,
             });
         } catch (error) {
             console.error("Save Profile Image Error:", error);
-            return res.status(500).json({ success: false, message: "Profile photo uploaded but could not be saved" });
+            return res.status(500).json({
+                success: false,
+                message: error?.message || "Unable to upload profile photo. Please try again."
+            });
         }
     });
 });
