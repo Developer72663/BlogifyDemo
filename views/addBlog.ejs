@@ -2,279 +2,73 @@
 <html lang="en">
 <head>
     <%- include("./partials/head") %>
-    <title>Write New Blog | Blogify</title>
-    <!-- Rich Text Editor (Quill) -->
+    <title>Write | Blogify</title>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        body{background:#f7f7f5;color:#18191c}.writer{max-width:1180px;margin:auto;padding:30px 18px 70px}.writer-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:.72rem;font-weight:800;color:#777}.writer h1{font-size:2rem;letter-spacing:-.04em;font-weight:850;margin:4px 0}.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px}.panel{background:#fff;border:1px solid #e6e6e3;border-radius:18px}.main-panel{padding:28px}.side-panel{padding:20px;height:max-content;position:sticky;top:18px}.field{margin-bottom:22px}.field label{font-weight:750;font-size:.88rem;margin-bottom:8px}.title-input{border:0;border-bottom:2px solid #e5e5e2;border-radius:0;font-size:2.1rem;font-weight:800;padding:8px 0;background:transparent}.title-input:focus{box-shadow:none;border-color:#222}.soft-input{background:#fafaf8;border:1px solid #e5e5e2;border-radius:11px;padding:11px 13px}.cover{border:1.5px dashed #cccfc9;border-radius:15px;padding:18px;background:#fafaf8}.cover-preview{width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-top:12px}.quill-wrap{border:1px solid #e2e2df;border-radius:14px;overflow:hidden}.ql-toolbar.ql-snow{border:0;border-bottom:1px solid #e2e2df;background:#fafaf8}.ql-container.ql-snow{border:0;font-size:16px}.ql-editor{min-height:430px;line-height:1.75}.tag{display:inline-flex;align-items:center;background:#f0f0ed;border-radius:999px;padding:5px 9px;margin:4px 4px 0 0;font-size:.75rem}.side-title{font-weight:800;font-size:.95rem;margin-bottom:12px}.status{border:1px solid #e5e5e2;border-radius:12px;padding:10px 12px;margin-bottom:8px}.actions{display:flex;gap:8px}.publish{border-radius:999px;font-weight:750;padding:10px 18px}.preview-box{background:#fafaf8;border-radius:12px;padding:15px;margin-top:12px;display:none}.counter{font-size:.72rem;color:#888;float:right}.hint{font-size:.75rem;color:#85868b}.danger{color:#b42318}.autosave{font-size:.75rem;color:#777}.mobile-actions{display:none}@media(max-width:900px){.layout{grid-template-columns:1fr}.side-panel{position:static}.mobile-actions{display:flex}.desktop-actions{display:none}}@media(max-width:600px){.writer{padding:20px 12px 50px}.writer-top{align-items:flex-start}.title-input{font-size:1.65rem}.main-panel{padding:18px}.actions{flex-direction:column}.actions>*{width:100%}}
+    </style>
 </head>
 <body>
     <%- include("./partials/nave") %>
-
-    <div class="container mt-5 mb-5" style="max-width: 900px;">
-        <div class="d-flex align-items-center justify-content-between mb-4">
-            <h2 class="fw-bold"><i class="fas fa-pen-fancy"></i> Write New Blog</h2>
-            <a href="/user/profile" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left"></i> My Blogs
-            </a>
+    <main class="writer">
+        <div class="writer-top">
+            <div><div class="eyebrow">Blogify / Studio</div><h1>Write a new story</h1><div class="autosave" id="autosaveState">Drafts are saved locally while you write.</div></div>
+            <a href="/user/profile" class="btn btn-outline-secondary rounded-pill desktop-actions"><i class="fas fa-arrow-left me-1"></i> My profile</a>
         </div>
-
-        <% if (locals.error) { %>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle"></i> <%= locals.error %>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <% } %>
-
+        <% if (locals.error) { %><div class="alert alert-danger rounded-4"><i class="fas fa-circle-exclamation me-2"></i><%= locals.error %></div><% } %>
         <form action="/blogs/add-new" method="POST" enctype="multipart/form-data" id="blogForm">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <!-- Title -->
-                    <div class="mb-4">
-                        <label class="form-label">Blog Title *</label>
-                        <input type="text" name="title" class="form-control form-control-lg" 
-                               placeholder="Enter an engaging title for your blog"
-                               maxlength="200" required>
-                        <small class="text-muted">Max 200 characters</small>
+            <div class="layout">
+                <section class="panel main-panel">
+                    <div class="field">
+                        <label for="title">Title <span class="text-danger">*</span></label>
+                        <input id="title" type="text" name="title" class="form-control title-input" placeholder="Give your story a title..." maxlength="200" required>
+                        <small class="hint"><span id="titleCount">0</span>/200</small>
                     </div>
-
-                    <!-- Excerpt -->
-                    <div class="mb-4">
-                        <label class="form-label">Blog Excerpt (Summary)</label>
-                        <textarea name="excerpt" class="form-control" rows="2"
-                                  placeholder="A brief summary of your blog (optional)"
-                                  maxlength="300"></textarea>
-                        <small class="text-muted">Max 300 characters - will show on blog cards</small>
+                    <div class="field">
+                        <label for="excerpt">Short description</label>
+                        <textarea id="excerpt" name="excerpt" class="form-control soft-input" rows="3" maxlength="300" placeholder="What is this story about?"></textarea>
+                        <small class="hint"><span id="excerptCount">0</span>/300</small>
                     </div>
-
-                    <!-- Meta Description -->
-                    <div class="mb-4">
-                        <label class="form-label">Meta Description (SEO)</label>
-                        <input type="text" name="metaDescription" class="form-control"
-                               placeholder="Description for search engines"
-                               maxlength="160">
-                        <small class="text-muted">Max 160 characters for SEO</small>
+                    <div class="field">
+                        <label for="coverImageInput">Cover image</label>
+                        <div class="cover"><input type="file" name="coverImage" class="form-control" accept="image/*" id="coverImageInput"><div class="hint mt-2">JPG, PNG, WEBP and other browser-supported image formats. Max 5MB.</div><div id="imagePreview"></div></div>
                     </div>
-
-                    <!-- Cover Image -->
-                    <div class="mb-4">
-                        <label class="form-label">Cover Image</label>
-                        <div class="input-group">
-                            <input type="file" name="coverImage" class="form-control" 
-                                   accept="image/*" id="coverImageInput">
-                            <label class="input-group-text" for="coverImageInput">
-                                <i class="fas fa-upload"></i>
-                            </label>
-                        </div>
-                        <small class="text-muted">Recommended size: 1200x600px, Max 5MB</small>
-                        <div id="imagePreview" class="mt-2"></div>
+                    <div class="field">
+                        <label>Story content <span class="text-danger">*</span></label>
+                        <div class="quill-wrap"><div id="editor"></div></div>
                     </div>
-
-                    <!-- Tags -->
-                    <div class="mb-4">
-                        <label class="form-label">Tags (Optional)</label>
-                        <input type="text" name="tags" class="form-control" 
-                               placeholder="Add tags separated by comma (e.g., javascript, web-development, nodejs)"
-                               id="tagsInput">
-                        <div id="tagsList" class="mt-2"></div>
-                        <small class="text-muted">Max 10 tags, separated by commas</small>
-                    </div>
-
-                    <!-- Category -->
-                    <div class="mb-4">
-                        <label class="form-label">Category</label>
-                        <select name="category" class="form-select">
-                            <option value="General">General</option>
-                            <option value="Technology">Technology</option>
-                            <option value="Business">Business</option>
-                            <option value="Lifestyle">Lifestyle</option>
-                            <option value="Travel">Travel</option>
-                            <option value="Health">Health</option>
-                            <option value="Education">Education</option>
-                            <option value="Entertainment">Entertainment</option>
-                        </select>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="mb-4">
-                        <label class="form-label">Status</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="status" 
-                                   id="statusPublished" value="published" checked>
-                            <label class="form-check-label" for="statusPublished">
-                                <i class="fas fa-globe"></i> Publish Now
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="status" 
-                                   id="statusDraft" value="draft">
-                            <label class="form-check-label" for="statusDraft">
-                                <i class="fas fa-file"></i> Save as Draft
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rich Text Editor -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Blog Content *</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div id="editor" class="form-control" style="height: 400px; border: none; border-radius: 0;"></div>
-                </div>
-            </div>
-            <input type="hidden" name="body" id="blogContent">
-
-            <!-- Preview Section -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Preview</h5>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="previewBtn">
-                        <i class="fas fa-eye"></i> Show Preview
-                    </button>
-                </div>
-                <div class="card-body" id="previewContent" style="display: none;">
-                    <img id="previewImage" src="" alt="Preview" class="img-fluid mb-3 rounded" style="display: none;">
-                    <h3 id="previewTitle">Blog Title</h3>
-                    <p id="previewExcerpt" class="text-muted">Blog excerpt will appear here...</p>
-                </div>
-            </div>
-
-            <!-- Submit Buttons -->
-            <div class="d-flex gap-2 justify-content-end">
-                <a href="/" class="btn btn-outline-secondary btn-lg">
-                    <i class="fas fa-times"></i> Cancel
-                </a>
-                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                    <i class="fas fa-save"></i> <span id="submitText">Publish Blog</span>
-                </button>
+                    <input type="hidden" name="body" id="blogContent">
+                    <div class="field mb-0"><label for="metaDescription">SEO description</label><input id="metaDescription" type="text" name="metaDescription" class="form-control soft-input" maxlength="160" placeholder="A short description for search engines"><small class="hint">Up to 160 characters.</small></div>
+                </section>
+                <aside class="panel side-panel">
+                    <div class="side-title">Publishing</div>
+                    <label class="status d-block"><input class="form-check-input me-2" type="radio" name="status" value="published" checked> <strong>Publish now</strong><small class="d-block text-muted ms-4">Make your story visible immediately.</small></label>
+                    <label class="status d-block"><input class="form-check-input me-2" type="radio" name="status" value="draft"> <strong>Save draft</strong><small class="d-block text-muted ms-4">Keep working on it later.</small></label>
+                    <hr>
+                    <div class="field"><label for="category">Category</label><select id="category" name="category" class="form-select soft-input"><option value="General">General</option><option>Technology</option><option>Business</option><option>Lifestyle</option><option>Travel</option><option>Health</option><option>Education</option><option>Entertainment</option></select></div>
+                    <div class="field"><label for="tagsInput">Tags</label><input id="tagsInput" type="text" name="tags" class="form-control soft-input" placeholder="javascript, nodejs, web"><div id="tagsList" class="mt-2"></div><small class="hint">Up to 10 comma-separated tags.</small></div>
+                    <div class="preview-box" id="previewContent"><div class="eyebrow">Preview</div><h4 id="previewTitle" class="fw-bold mt-2">Your title</h4><p id="previewExcerpt" class="text-muted mb-0">Your description will appear here.</p></div>
+                    <button type="button" id="previewBtn" class="btn btn-outline-secondary rounded-pill w-100 mb-2"><i class="fas fa-eye me-1"></i> Preview</button>
+                    <div class="actions"><a href="/" class="btn btn-light border publish flex-grow-1">Cancel</a><button type="submit" id="submitBtn" class="btn btn-dark publish flex-grow-1"><i class="fas fa-paper-plane me-1"></i><span id="submitText">Publish</span></button></div>
+                </aside>
             </div>
         </form>
-    </div>
-
+    </main>
     <%- include("./partials/scripts") %>
-
-    <!-- Quill Editor -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-
     <script>
-        // Initialize Quill Editor
-        const quill = new Quill('#editor', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    ['blockquote', 'code-block'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'color': [] }, { 'background': [] }],
-                    ['link', 'video'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Write your blog content here...'
-        });
-
-        // Image Preview
-        document.getElementById('coverImageInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const preview = document.getElementById('imagePreview');
-                    preview.innerHTML = `
-                        <img src="${event.target.result}" 
-                             class="img-thumbnail" 
-                             style="max-width: 200px; max-height: 150px; object-fit: cover;">
-                    `;
-                    document.getElementById('previewImage').src = event.target.result;
-                    document.getElementById('previewImage').style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Tags Handler
-        const tagsInput = document.getElementById('tagsInput');
-        tagsInput.addEventListener('change', () => {
-            const tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
-            const tagsList = document.getElementById('tagsList');
-            tagsList.innerHTML = tags.slice(0, 10).map(tag => `
-                <span class="badge bg-primary me-2 mb-2">
-                    ${tag}
-                    <i class="fas fa-times ms-1" style="cursor: pointer;"></i>
-                </span>
-            `).join('');
-        });
-
-        // Preview Toggle
-        document.getElementById('previewBtn').addEventListener('click', () => {
-            const previewContent = document.getElementById('previewContent');
-            previewContent.style.display = previewContent.style.display === 'none' ? 'block' : 'none';
-            
-            // Update preview
-            document.getElementById('previewTitle').textContent = 
-                document.querySelector('input[name="title"]').value || 'Blog Title';
-            document.getElementById('previewExcerpt').textContent = 
-                document.querySelector('textarea[name="excerpt"]').value || 'Blog excerpt...';
-        });
-
-        // Update submit button text based on status
-        document.querySelectorAll('input[name="status"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const submitText = document.getElementById('submitText');
-                submitText.textContent = e.target.value === 'draft' ? 'Save as Draft' : 'Publish Blog';
-            });
-        });
-
-        // Form Submit
-        document.getElementById('blogForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            // Get editor content
-            const editorContent = quill.root.innerHTML;
-            if (editorContent.trim() === '<p><br></p>' || editorContent.trim() === '') {
-                notify.error('Please write some content for your blog');
-                return;
-            }
-
-            document.getElementById('blogContent').value = editorContent;
-
-            // Validate
-            const title = document.querySelector('input[name="title"]').value.trim();
-            if (!title) {
-                notify.error('Please enter a blog title');
-                return;
-            }
-
-            if (title.length > 200) {
-                notify.error('Title cannot exceed 200 characters');
-                return;
-            }
-
-            // Submit form
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
-            // Actually submit the form via default action
-            setTimeout(() => {
-                document.getElementById('blogForm').submit();
-            }, 500);
-        });
-
-        // Auto-save to localStorage
-        const autoSaveKey = 'blogify_draft_' + Date.now();
-        setInterval(() => {
-            const blogData = {
-                title: document.querySelector('input[name="title"]').value,
-                excerpt: document.querySelector('textarea[name="excerpt"]').value,
-                tags: document.querySelector('input[name="tags"]').value,
-                category: document.querySelector('select[name="category"]').value,
-                content: quill.root.innerHTML
-            };
-            localStorage.setItem(autoSaveKey, JSON.stringify(blogData));
-        }, 30000); // Auto-save every 30 seconds
+        const quill=new Quill('#editor',{theme:'snow',modules:{toolbar:[[{header:[1,2,3,4,5,6,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['blockquote','code-block'],[{color:[]},{background:[]}],['link','image','video'],['clean']]},placeholder:'Start writing your story...'});
+        const $=id=>document.getElementById(id);
+        $('title').addEventListener('input',e=>$('titleCount').textContent=e.target.value.length);
+        $('excerpt').addEventListener('input',e=>$('excerptCount').textContent=e.target.value.length);
+        $('coverImageInput').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;if(f.size>5*1024*1024){e.target.value='';if(window.notify)notify.error('Cover image must be 5MB or smaller');return}if(!f.type.startsWith('image/')){e.target.value='';if(window.notify)notify.error('Please select an image file');return}const r=new FileReader();r.onload=x=>$('imagePreview').innerHTML='<img class="cover-preview" src="'+x.target.result+'" alt="Cover preview">';r.readAsDataURL(f)});
+        $('tagsInput').addEventListener('input',e=>{const tags=e.target.value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,10);$('tagsList').innerHTML=tags.map(t=>'<span class="tag">#'+t.replace(/[<>]/g,'')+'</span>').join('')});
+        $('previewBtn').addEventListener('click',()=>{$('previewContent').style.display=$('previewContent').style.display==='block'?'none':'block';$('previewTitle').textContent=$('title').value||'Your title';$('previewExcerpt').textContent=$('excerpt').value||'Your description will appear here.'});
+        document.querySelectorAll('input[name=status]').forEach(r=>r.addEventListener('change',e=>$('submitText').textContent=e.target.value==='draft'?'Save draft':'Publish'));
+        const draftKey='blogify_writer_draft';
+        const saved=localStorage.getItem(draftKey);if(saved){try{const d=JSON.parse(saved);$('title').value=d.title||'';$('excerpt').value=d.excerpt||'';$('tagsInput').value=d.tags||'';$('metaDescription').value=d.metaDescription||'';quill.root.innerHTML=d.body||'';$('titleCount').textContent=$('title').value.length;$('excerptCount').textContent=$('excerpt').value.length;$('tagsInput').dispatchEvent(new Event('input'));}catch(e){}}
+        setInterval(()=>{localStorage.setItem(draftKey,JSON.stringify({title:$('title').value,excerpt:$('excerpt').value,tags:$('tagsInput').value,metaDescription:$('metaDescription').value,body:quill.root.innerHTML}));$('autosaveState').textContent='Draft saved locally · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});},30000);
+        $('blogForm').addEventListener('submit',e=>{const body=quill.root.innerHTML;if(!body||body==='<p><br></p>'){e.preventDefault();if(window.notify)notify.error('Please write your story content');return}if(!$('title').value.trim()){e.preventDefault();if(window.notify)notify.error('Please enter a title');return}$('blogContent').value=body;$('submitBtn').disabled=true;$('submitText').textContent=document.querySelector('input[name=status]:checked').value==='draft'?'Saving...':'Publishing...';localStorage.removeItem(draftKey)});
     </script>
 </body>
 </html>
