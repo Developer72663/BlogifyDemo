@@ -18,10 +18,33 @@ const UserSchema = new Schema({
     isPrivate: { type: Boolean, default: false },
     followers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     following: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    blockedUsers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     notificationSettings: {
         emailOnComment: { type: Boolean, default: true },
         emailOnNewFollower: { type: Boolean, default: true },
+        emailOnFollowRequest: { type: Boolean, default: true },
+        emailOnRequestAccepted: { type: Boolean, default: true },
+        emailOnLike: { type: Boolean, default: true },
+        emailOnMention: { type: Boolean, default: true },
         emailDigest: { type: Boolean, default: true }
+    },
+    blogSettings: {
+        defaultVisibility: { type: String, enum: ["public", "followers"], default: "public" },
+        allowComments: { type: Boolean, default: true },
+        allowLikes: { type: Boolean, default: true },
+        showViewCount: { type: Boolean, default: true },
+        autoDrafts: { type: Boolean, default: true },
+        defaultCategory: { type: String, default: "" },
+        defaultTags: { type: [String], default: [] }
+    },
+    commentSettings: {
+        allowComments: { type: Boolean, default: true },
+        moderateComments: { type: Boolean, default: false },
+        notifyReplies: { type: Boolean, default: true }
+    },
+    interfaceSettings: {
+        compactLayout: { type: Boolean, default: false },
+        reduceAnimations: { type: Boolean, default: false }
     }
 }, { timestamps: true });
 
@@ -62,32 +85,17 @@ UserSchema.static("findOrCreateGoogleUser", async function (profile) {
             if (profile.photos?.[0]?.value) user.profileImageURL = profile.photos[0].value;
             await user.save();
         } else {
-            user = await this.create({
-                fullName: profile.displayName || "Google User",
-                email,
-                googleId,
-                profileImageURL: profile.photos?.[0]?.value || "/imgs/default.png"
-            });
+            user = await this.create({ fullName: profile.displayName || "Google User", email, googleId, profileImageURL: profile.photos?.[0]?.value || "/imgs/default.png" });
         }
     }
     return user;
 });
 
-UserSchema.methods.followUser = async function(userId) {
-    if (!this.following.includes(userId)) { this.following.push(userId); await this.save(); }
-};
-UserSchema.methods.unfollowUser = async function(userId) {
-    this.following = this.following.filter(id => id.toString() !== userId.toString()); await this.save();
-};
-UserSchema.methods.isFollowing = function(userId) {
-    return this.following.some(id => id.toString() === userId.toString());
-};
-UserSchema.methods.addFollower = async function(userId) {
-    if (!this.followers.includes(userId)) { this.followers.push(userId); await this.save(); }
-};
-UserSchema.methods.removeFollower = async function(userId) {
-    this.followers = this.followers.filter(id => id.toString() !== userId.toString()); await this.save();
-};
+UserSchema.methods.followUser = async function(userId) { if (!this.following.includes(userId)) { this.following.push(userId); await this.save(); } };
+UserSchema.methods.unfollowUser = async function(userId) { this.following = this.following.filter(id => id.toString() !== userId.toString()); await this.save(); };
+UserSchema.methods.isFollowing = function(userId) { return this.following.some(id => id.toString() === userId.toString()); };
+UserSchema.methods.addFollower = async function(userId) { if (!this.followers.includes(userId)) { this.followers.push(userId); await this.save(); } };
+UserSchema.methods.removeFollower = async function(userId) { this.followers = this.followers.filter(id => id.toString() !== userId.toString()); await this.save(); };
 
 const User = mongoose.models.user || model("user", UserSchema);
 module.exports = User;
