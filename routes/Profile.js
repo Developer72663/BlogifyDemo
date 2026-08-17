@@ -21,7 +21,6 @@ router.get("/", async (req, res) => {
     }
 });
 
-// Dedicated settings page. Supports /user/profile/settings?section=privacy.
 router.get("/settings", async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -62,58 +61,69 @@ router.put("/update", async (req, res) => {
     }
 });
 
-router.post("/upload-image", cloudinaryUpload.single("profileImage"), async (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ success: false, message: "No image uploaded" });
-        const user = await User.findById(req.user._id);
-        user.profileImageURL = req.file.path;
-        await user.save();
-        res.json({ success: true, message: "Profile image updated", imageURL: req.file.path });
-    } catch (error) {
-        console.error("Upload Image Error:", error);
-        res.status(500).json({ success: false, message: "Failed to upload image" });
-    }
+// Avatar upload is wrapped manually so Multer/Cloudinary errors are always returned as JSON.
+router.post("/upload-image", (req, res) => {
+    cloudinaryUpload.single("profileImage")(req, res, async (uploadError) => {
+        if (uploadError) {
+            console.error("Upload Image Error:", uploadError);
+            if (uploadError.code === "LIMIT_FILE_SIZE") {
+                return res.status(413).json({ success: false, message: "Profile photo must be 10MB or smaller" });
+            }
+            if (uploadError.code === "INVALID_IMAGE_TYPE" || uploadError.code === "LIMIT_UNEXPECTED_FILE") {
+                return res.status(400).json({ success: false, message: "Please choose a valid image file (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF or AVIF)" });
+            }
+            return res.status(500).json({ success: false, message: uploadError.message || "Unable to upload profile photo" });
+        }
+
+        try {
+            if (!req.file || !req.file.path) {
+                return res.status(400).json({ success: false, message: "Please select a profile photo" });
+            }
+
+            const user = await User.findById(req.user._id);
+            if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+            user.profileImageURL = req.file.path;
+            await user.save();
+
+            return res.json({
+                success: true,
+                message: "Profile photo updated successfully",
+                imageURL: req.file.path,
+            });
+        } catch (error) {
+            console.error("Save Profile Image Error:", error);
+            return res.status(500).json({ success: false, message: "Profile photo uploaded but could not be saved" });
+        }
+    });
 });
 
-// Theme: light, dark, or system.
 router.patch("/settings/theme", async (req, res) => {
     try {
         const theme = String(req.body.theme || "").toLowerCase();
-        if (!["light", "dark", "system"].includes(theme)) {
-            return res.status(400).json({ success: false, message: "Invalid theme" });
-        }
+        if (!["light", "dark", "system"].includes(theme)) return res.status(400).json({ success: false, message: "Invalid theme" });
         const user = await User.findByIdAndUpdate(req.user._id, { theme }, { new: true });
         res.json({ success: true, theme: user.theme });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Unable to save theme" });
-    }
+    } catch (error) { res.status(500).json({ success: false, message: "Unable to save theme" }); }
 });
 
-// Privacy: public/private account.
 router.patch("/settings/privacy", async (req, res) => {
     try {
         const isPrivate = req.body.isPrivate === true || req.body.isPrivate === "true";
         const user = await User.findByIdAndUpdate(req.user._id, { isPrivate }, { new: true });
         res.json({ success: true, isPrivate: user.isPrivate });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Unable to save privacy setting" });
-    }
+    } catch (error) { res.status(500).json({ success: false, message: "Unable to save privacy setting" }); }
 });
 
-// Notification switches are stored together so changing one never resets the others.
 router.patch("/settings/notifications", async (req, res) => {
     try {
         const allowed = ["emailOnComment", "emailOnNewFollower", "emailDigest"];
         const update = {};
-        for (const key of allowed) {
-            if (typeof req.body[key] === "boolean") update[`notificationSettings.${key}`] = req.body[key];
-        }
+        for (const key of allowed) if (typeof req.body[key] === "boolean") update[`notificationSettings.${key}`] = req.body[key];
         if (!Object.keys(update).length) return res.status(400).json({ success: false, message: "No notification setting supplied" });
         const user = await User.findByIdAndUpdate(req.user._id, { $set: update }, { new: true });
         res.json({ success: true, notificationSettings: user.notificationSettings });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Unable to save notification settings" });
-    }
+    } catch (error) { res.status(500).json({ success: false, message: "Unable to save notification settings" }); }
 });
 
 router.post("/change-password", async (req, res) => {
