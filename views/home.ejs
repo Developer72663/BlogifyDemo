@@ -91,7 +91,7 @@
                                 <h3><a href="/blogs/<%= blog._id %>"><%= truncate(blog.title, 80) %></a></h3>
                                 <p class="excerpt"><%= truncate(blog.excerpt || (blog.body ? blog.body.substring(0,170) : ''), 150) %></p>
                                 <div class="meta">
-                                    <a href="/user/profile/<%= blog.createdBy?._id || '' %>"><img class="avatar" src="<%= blog.createdBy?.profileImageURL || '/imgs/default.png' %>" alt="" onerror="this.src='/imgs/default.png'"></a>
+                                    <a href="/user/profile/<%= blog.createdBy?._id || '' %>"><img class="avatar" src="<%= blog.createdBy?.avatarURL || '/imgs/default.png' %>" alt="<%= blog.createdBy?.fullName || 'Blogify writer' %>" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/imgs/default.png'"></a>
                                     <span class="author"><%= blog.createdBy?.fullName || 'Blogify writer' %></span>
                                     <span>·</span><span><%= blog.readingTime || 1 %> min read</span>
                                     <span>·</span><span><%= blog.viewCount || 0 %> views</span>
