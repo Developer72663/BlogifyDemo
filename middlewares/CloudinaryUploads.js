@@ -1,17 +1,11 @@
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 
-// Accept both the current Blogify names and the common/legacy names used by
-// older Blogify deployments. This lets existing deployment variables work
-// without requiring users to rename their secrets.
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME || process.env.CLOUDINARY_NAME;
-const API_KEY = process.env.CLOUDINARY_API_KEY || process.env.API_KEY || process.env.CLOUDINARY_KEY;
-const API_SECRET = process.env.CLOUDINARY_API_SECRET || process.env.API_SECRET || process.env.CLOUDINARY_SECRET || process.env.CLOUDINARY_SECRET_KEY;
-
-cloudinary.config({
-    cloud_name: CLOUD_NAME,
-    api_key: API_KEY,
-    api_secret: API_SECRET
+// Blogify deployments may use either the legacy names or the CLOUDINARY_* names.
+const getCloudinaryConfig = () => ({
+    cloud_name: process.env.CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_NAME,
+    api_key: process.env.API_KEY || process.env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_KEY,
+    api_secret: process.env.API_SECRET || process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_SECRET || process.env.CLOUDINARY_SECRET_KEY
 });
 
 const cloudinaryUpload = multer({
@@ -32,26 +26,38 @@ function uploadBuffer(buffer, options = {}) {
         return Promise.reject(new Error('No image data received'));
     }
 
-    // Resolve env values at upload time as well, which is safer for hosting
-    // platforms that inject environment variables during application startup.
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME || process.env.CLOUDINARY_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY || process.env.API_KEY || process.env.CLOUDINARY_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET || process.env.API_SECRET || process.env.CLOUDINARY_SECRET || process.env.CLOUDINARY_SECRET_KEY;
-
-    if (!cloudName || !apiKey || !apiSecret) {
-        return Promise.reject(new Error('Image upload is not configured on the server. Set CLOUDINARY_CLOUD_NAME/CLOUD_NAME, CLOUDINARY_API_KEY/API_KEY and CLOUDINARY_API_SECRET/API_SECRET.'));
+    const config = getCloudinaryConfig();
+    if (!config.cloud_name || !config.api_key || !config.api_secret) {
+        return Promise.reject(new Error('Image upload is not configured on the server. Set CLOUD_NAME, API_KEY and API_SECRET.'));
     }
 
-    cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+    cloudinary.config(config);
 
     return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream({
+        // Do not use format: 'auto' here. Cloudinary can interpret it as an
+        // extension in this upload path and return "Invalid extension in
+        // transformation: auto". Cloudinary will preserve the uploaded image
+        // format unless an explicit format is requested.
+        const uploadOptions = {
             folder: options.folder || 'blogify_uploads',
             resource_type: 'image',
-            transformation: options.transformation || [{ width: 1600, height: 1000, crop: 'limit' }],
-            format: 'auto',
-            ...options
-        }, (error, result) => error ? reject(error) : resolve(result));
+            transformation: options.transformation || [{ width: 1600, height: 1000, crop: 'limit' }]
+        };
+
+        // Only copy supported explicit options; never let a caller reintroduce
+        // format:auto through the default upload path.
+        if (options.public_id) uploadOptions.public_id = options.public_id;
+        if (options.overwrite !== undefined) uploadOptions.overwrite = options.overwrite;
+        if (options.tags) uploadOptions.tags = options.tags;
+        if (options.context) uploadOptions.context = options.context;
+        if (options.format && options.format !== 'auto') uploadOptions.format = options.format;
+
+        const stream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+            if (error) return reject(error);
+            if (!result || !result.secure_url) return reject(new Error('Cloudinary did not return an image URL'));
+            resolve(result);
+        });
+        stream.on('error', reject);
         stream.end(buffer);
     });
 }
