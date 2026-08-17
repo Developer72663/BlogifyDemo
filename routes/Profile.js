@@ -4,13 +4,6 @@ const Blog = require("../models/Blog");
 const User = require("../models/user");
 const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
-const cloudinary = require("cloudinary").v2;
-
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 router.use(restrictToLoggedInUserOnly);
 
@@ -68,45 +61,34 @@ router.put("/update", async (req, res) => {
     }
 });
 
-// Avatar upload: Multer validates the file, then Cloudinary receives the image buffer directly.
+// Robust avatar upload. Multer parses the multipart request, then the shared
+// Cloudinary helper uploads the exact in-memory buffer and returns secure_url.
 router.post("/upload-image", (req, res) => {
     cloudinaryUpload.single("profileImage")(req, res, async (uploadError) => {
         if (uploadError) {
-            console.error("Upload Image Error:", uploadError);
+            console.error("Profile upload parsing error:", uploadError);
             if (uploadError.code === "LIMIT_FILE_SIZE") {
                 return res.status(413).json({ success: false, message: "Profile photo must be 10MB or smaller" });
             }
             if (uploadError.code === "INVALID_IMAGE_TYPE" || uploadError.code === "LIMIT_UNEXPECTED_FILE") {
-                return res.status(400).json({ success: false, message: "Please choose an image (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF or AVIF)" });
+                return res.status(400).json({ success: false, message: "Please choose a valid image file" });
             }
             return res.status(400).json({ success: false, message: uploadError.message || "Unable to read the selected photo" });
         }
 
         try {
-            if (!req.file || !req.file.buffer) {
+            if (!req.file?.buffer?.length) {
                 return res.status(400).json({ success: false, message: "Please select a profile photo" });
             }
 
-            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-                console.error("Cloudinary environment variables are missing");
-                return res.status(500).json({ success: false, message: "Image upload is not configured on the server" });
-            }
-
-            const uploadResult = await new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream(
-                    {
-                        folder: "blogifyer_uploads",
-                        resource_type: "image",
-                        transformation: [{ width: 800, height: 800, crop: "limit" }],
-                        format: "auto",
-                    },
-                    (error, result) => error ? reject(error) : resolve(result)
-                );
-                stream.end(req.file.buffer);
+            const uploadResult = await cloudinaryUpload.uploadBuffer(req.file.buffer, {
+                folder: "blogify/profile",
+                resource_type: "image",
+                transformation: [{ width: 800, height: 800, crop: "limit" }]
             });
 
-            if (!uploadResult || !uploadResult.secure_url) {
-                return res.status(500).json({ success: false, message: "Cloudinary did not return an image URL" });
+            if (!uploadResult?.secure_url) {
+                throw new Error("Cloudinary did not return an image URL");
             }
 
             const user = await User.findById(req.user._id);
@@ -115,16 +97,21 @@ router.post("/upload-image", (req, res) => {
             user.profileImageURL = uploadResult.secure_url;
             await user.save();
 
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 message: "Profile photo updated successfully",
                 imageURL: uploadResult.secure_url,
+                user: { id: user._id, profileImageURL: user.profileImageURL }
             });
         } catch (error) {
-            console.error("Save Profile Image Error:", error);
-            return res.status(500).json({
+            console.error("Profile image upload failed:", error);
+            const message = String(error?.message || "");
+            const isConfigError = message.toLowerCase().includes("not configured") || message.toLowerCase().includes("api_key") || message.toLowerCase().includes("cloud_name");
+            return res.status(isConfigError ? 503 : 500).json({
                 success: false,
-                message: error?.message || "Unable to upload profile photo. Please try again."
+                message: isConfigError
+                    ? "Image upload service is not configured. Please check the Cloudinary environment variables."
+                    : "Unable to upload profile photo. Please try again."
             });
         }
     });
