@@ -2,151 +2,125 @@
 <html lang="en">
 <head>
     <%- include("./partials/head") %>
-    <title>Blogify — Discover Stories</title>
+    <title>Blogify — Home</title>
     <style>
-        :root { --home-radius: 22px; }
-        body { background: #f7f8fc; }
-        .home-hero { background: linear-gradient(135deg, #eef2ff, #fff); border-radius: 0 0 34px 34px; }
-        .hero-title { letter-spacing: -1.5px; }
-        .search-shell { background: #fff; border: 1px solid #e8eaf0; border-radius: 18px; box-shadow: 0 10px 35px rgba(20,25,45,.06); }
-        .blog-card { border: 1px solid #e8eaf0; border-radius: var(--home-radius); overflow: hidden; background: #fff; transition: transform .2s ease, box-shadow .2s ease; }
-        .blog-card:hover { transform: translateY(-4px); box-shadow: 0 18px 45px rgba(20,25,45,.10); }
-        .blog-card-image { height: 230px; object-fit: cover; width: 100%; }
-        .featured-image { height: 300px; object-fit: cover; width: 100%; }
-        .author-avatar { width: 38px; height: 38px; object-fit: cover; }
-        .tag-pill { border-radius: 999px; padding: .35rem .65rem; font-size: .75rem; }
-        .section-title { letter-spacing: -.5px; }
-        .empty-state { border: 1px dashed #d9dce5; border-radius: 24px; background: #fff; }
-        .private-note { background: #f8f9fc; border-radius: 14px; }
+        :root { --ink:#17181c; --muted:#747780; --line:#e8e8eb; --surface:#fff; --soft:#f5f5f3; }
+        body{background:#fafaf8;color:var(--ink);}
+        .home-wrap{max-width:1180px;margin:auto;padding:28px 18px 70px;}
+        .intro{padding:34px 0 26px;border-bottom:1px solid var(--line);}
+        .eyebrow{font-size:.74rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#666;}
+        .intro h1{font-size:clamp(2.2rem,5vw,4.6rem);line-height:.98;letter-spacing:-.055em;max-width:760px;margin:10px 0 16px;font-weight:850;}
+        .intro p{max-width:620px;color:var(--muted);font-size:1.05rem;margin:0;}
+        .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;}
+        .btn-clean{border-radius:999px;padding:10px 18px;font-weight:700;}
+        .discover{display:grid;grid-template-columns:1fr 310px;gap:26px;margin-top:28px;}
+        .feed-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+        .feed-head h2{font-size:1.2rem;margin:0;font-weight:800;}
+        .search{display:flex;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;margin-bottom:20px;}
+        .search input{border:0;outline:0;background:transparent;min-width:0;flex:1;padding:8px 10px;}
+        .search select{border:1px solid var(--line);border-radius:9px;padding:0 10px;background:#fff;}
+        .story{display:grid;grid-template-columns:1fr 185px;gap:20px;padding:22px 0;border-bottom:1px solid var(--line);}
+        .story:first-of-type{border-top:1px solid var(--line);}
+        .story-img{width:185px;height:125px;border-radius:12px;object-fit:cover;background:#eee;}
+        .story h3{font-size:1.25rem;line-height:1.18;margin:7px 0 8px;font-weight:800;letter-spacing:-.025em;}
+        .story h3 a{color:inherit;text-decoration:none;}
+        .story h3 a:hover{color:#555;}
+        .excerpt{color:var(--muted);font-size:.91rem;line-height:1.5;margin:0 0 14px;}
+        .meta{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:.78rem;}
+        .avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#eee;}
+        .author{font-weight:700;color:#444;}
+        .tag{font-size:.7rem;background:#f0f0ee;border-radius:999px;padding:4px 8px;color:#555;text-decoration:none;}
+        .side{position:sticky;top:20px;height:max-content;}
+        .side-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;}
+        .side-card h3{font-size:1rem;font-weight:800;margin:0 0 14px;}
+        .topic{display:inline-block;background:var(--soft);border-radius:999px;padding:7px 11px;margin:0 5px 7px 0;color:#444;text-decoration:none;font-size:.78rem;}
+        .write-card{background:#18191c;color:#fff;border:0;}
+        .write-card p{color:#bfc0c4;font-size:.88rem;line-height:1.5;}
+        .write-card .btn{background:#fff;color:#17181c;border:0;}
+        .empty{border:1px dashed #d6d6d2;border-radius:18px;padding:55px 20px;text-align:center;color:var(--muted);background:#fff;}
+        .pagination .page-link{border-radius:999px!important;margin:2px;border:1px solid var(--line);color:#333;}
+        @media(max-width:850px){.discover{grid-template-columns:1fr}.side{position:static;display:grid;grid-template-columns:1fr 1fr;gap:12px}.side-card{margin:0}.intro{padding-top:20px}}
+        @media(max-width:560px){.home-wrap{padding-left:14px;padding-right:14px}.story{grid-template-columns:1fr}.story-img{width:100%;height:190px;order:-1}.search{flex-wrap:wrap}.search input{flex-basis:100%}.search select{height:42px;flex:1}.side{display:block}.side-card{margin-bottom:12px}.intro h1{font-size:2.55rem}}
     </style>
 </head>
 <body>
     <%- include("./partials/nave") %>
-
-    <header class="home-hero border-bottom">
-        <div class="container py-5 py-lg-6">
-            <div class="row align-items-center g-4 py-lg-4">
-                <div class="col-lg-8">
-                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 mb-3">BLOGIFY COMMUNITY</span>
-                    <h1 class="display-4 fw-bold hero-title mb-3">Ideas worth reading.<br><span class="text-primary">Stories worth sharing.</span></h1>
-                    <p class="lead text-muted mb-4">Discover thoughtful blogs from writers in the Blogify community.</p>
-                    <% if (!locals.user) { %>
-                        <a href="/user/signup" class="btn btn-primary btn-lg rounded-pill px-4 me-2"><i class="fas fa-pen-fancy me-1"></i> Start Writing</a>
-                        <a href="#latest" class="btn btn-outline-secondary btn-lg rounded-pill px-4">Explore Stories</a>
-                    <% } else { %>
-                        <a href="/blogs/add-new" class="btn btn-primary btn-lg rounded-pill px-4"><i class="fas fa-plus me-1"></i> Write a Blog</a>
-                    <% } %>
-                </div>
-                <div class="col-lg-4 d-none d-lg-block">
-                    <div class="p-4 bg-white rounded-4 shadow-sm border">
-                        <div class="d-flex align-items-center gap-3 mb-3"><span class="fs-3">✍️</span><div><strong>Share your voice</strong><small class="d-block text-muted">Publish your next idea</small></div></div>
-                        <div class="d-flex align-items-center gap-3 mb-3"><span class="fs-3">🔎</span><div><strong>Find new perspectives</strong><small class="d-block text-muted">Search topics you love</small></div></div>
-                        <div class="d-flex align-items-center gap-3"><span class="fs-3">👥</span><div><strong>Follow writers</strong><small class="d-block text-muted">Build your community</small></div></div>
-                    </div>
-                </div>
+    <main class="home-wrap">
+        <section class="intro">
+            <div class="eyebrow">Blogify / Discover</div>
+            <h1>Read something that stays with you.</h1>
+            <p>A quieter, cleaner home for ideas, stories and writers. Find your next read or share something of your own.</p>
+            <div class="actions">
+                <% if (locals.user) { %>
+                    <a href="/blogs/add-new" class="btn btn-dark btn-clean"><i class="fas fa-pen me-1"></i> Write a story</a>
+                <% } else { %>
+                    <a href="/user/signup" class="btn btn-dark btn-clean">Start writing</a>
+                <% } %>
+                <a href="#stories" class="btn btn-outline-secondary btn-clean">Explore stories</a>
             </div>
-        </div>
-    </header>
-
-    <main class="container py-5">
-        <section class="search-shell p-3 mb-5">
-            <form method="GET" class="row g-2 align-items-center">
-                <div class="col-lg-6">
-                    <div class="input-group input-group-lg">
-                        <span class="input-group-text bg-transparent border-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" name="search" value="<%= search || '' %>" class="form-control border-0 shadow-none" placeholder="Search blogs, ideas and stories...">
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <select name="sort" class="form-select form-select-lg rounded-pill" onchange="this.form.submit()">
-                        <option value="newest" <%= (sort === 'newest' || !sort) ? 'selected' : '' %>>Newest</option>
-                        <option value="oldest" <%= sort === 'oldest' ? 'selected' : '' %>>Oldest</option>
-                        <option value="title" <%= sort === 'title' ? 'selected' : '' %>>Title A–Z</option>
-                        <option value="trending" <%= sort === 'trending' ? 'selected' : '' %>>Trending</option>
-                    </select>
-                </div>
-                <div class="col-lg-3 d-flex gap-2">
-                    <button class="btn btn-primary btn-lg rounded-pill flex-grow-1" type="submit">Search</button>
-                    <% if (search) { %><a href="/" class="btn btn-outline-secondary btn-lg rounded-pill" title="Clear"><i class="fas fa-times"></i></a><% } %>
-                </div>
-            </form>
         </section>
 
-        <% if (typeof featuredBlogs !== 'undefined' && featuredBlogs.length > 0) { %>
-            <section class="mb-5">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div><span class="text-primary small fw-bold text-uppercase">Editor’s picks</span><h2 class="fw-bold section-title mb-0">Featured stories</h2></div>
-                </div>
-                <div class="row g-4">
-                    <% featuredBlogs.slice(0,3).forEach(blog => { %>
-                        <div class="col-lg-4">
-                            <article class="card blog-card h-100">
-                                <% if (blog.coverImageURL) { %><img src="<%= blog.coverImageURL %>" class="featured-image" alt="<%= blog.title %>" loading="lazy" onerror="this.style.display='none';"><% } else { %><div class="featured-image bg-body-tertiary d-flex align-items-center justify-content-center"><i class="fas fa-image fa-3x text-muted"></i></div><% } %>
-                                <div class="card-body p-4 d-flex flex-column">
-                                    <span class="badge bg-warning-subtle text-warning-emphasis align-self-start rounded-pill mb-3">★ Featured</span>
-                                    <h4 class="fw-bold"><%= truncate(blog.title, 65) %></h4>
-                                    <p class="text-muted flex-grow-1"><%= truncate(blog.excerpt || (blog.body ? blog.body.substring(0,120) : ''), 120) %></p>
-                                    <div class="d-flex justify-content-between align-items-center mt-2">
-                                        <div class="d-flex align-items-center gap-2"><img src="<%= blog.createdBy?.profileImageURL || '/imgs/default.png' %>" class="rounded-circle author-avatar" alt="Author" onerror="this.src='/imgs/default.png';"><div><strong class="small d-block"><%= blog.createdBy?.fullName || 'Unknown Author' %></strong><small class="text-muted"><%= blog.readingTime || 1 %> min read</small></div></div>
-                                        <a href="/blogs/<%= blog._id %>" class="btn btn-primary rounded-pill btn-sm">Read</a>
-                                    </div>
-                                </div>
-                            </article>
-                        </div>
-                    <% }) %>
-                </div>
-            </section>
-        <% } %>
+        <section class="discover" id="stories">
+            <div>
+                <form class="search" method="GET">
+                    <i class="fas fa-search text-muted align-self-center ms-2"></i>
+                    <input name="search" value="<%= search || '' %>" placeholder="Search stories or topics..." aria-label="Search stories">
+                    <select name="sort" onchange="this.form.submit()" aria-label="Sort stories">
+                        <option value="newest" <%= (!sort || sort==='newest')?'selected':'' %>>Newest</option>
+                        <option value="oldest" <%= sort==='oldest'?'selected':'' %>>Oldest</option>
+                        <option value="title" <%= sort==='title'?'selected':'' %>>A–Z</option>
+                        <option value="trending" <%= sort==='trending'?'selected':'' %>>Trending</option>
+                    </select>
+                    <button class="btn btn-dark btn-sm rounded-pill px-3" type="submit">Search</button>
+                </form>
 
-        <section id="latest">
-            <div class="d-flex justify-content-between align-items-end mb-4">
-                <div><span class="text-primary small fw-bold text-uppercase">Discover</span><h2 class="fw-bold section-title mb-0"><%= search ? 'Search results' : 'Latest stories' %></h2></div>
-                <% if (search) { %><span class="text-muted small">Results for “<%= search %>”</span><% } %>
+                <div class="feed-head">
+                    <h2><%= search ? 'Search results' : 'Latest stories' %></h2>
+                    <% if (search) { %><a href="/" class="small text-muted text-decoration-none">Clear search</a><% } %>
+                </div>
+
+                <% if (!blogs || blogs.length === 0) { %>
+                    <div class="empty"><i class="fas fa-book-open fa-2x mb-3"></i><h3 class="h5 fw-bold">Nothing here yet</h3><p class="mb-3">Try another search or publish the first story.</p><% if (locals.user) { %><a href="/blogs/add-new" class="btn btn-dark rounded-pill">Write a story</a><% } %></div>
+                <% } else { %>
+                    <% blogs.forEach(blog => { %>
+                        <article class="story">
+                            <div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <% if (blog.tags?.length) { blog.tags.slice(0,2).forEach(tag => { %><a class="tag" href="/blogs/tags/<%= tag %>">#<%= tag %></a><% }) } %>
+                                </div>
+                                <h3><a href="/blogs/<%= blog._id %>"><%= truncate(blog.title, 80) %></a></h3>
+                                <p class="excerpt"><%= truncate(blog.excerpt || (blog.body ? blog.body.substring(0,170) : ''), 150) %></p>
+                                <div class="meta">
+                                    <a href="/user/profile/<%= blog.createdBy?._id || '' %>"><img class="avatar" src="<%= blog.createdBy?.profileImageURL || '/imgs/default.png' %>" alt="" onerror="this.src='/imgs/default.png'"></a>
+                                    <span class="author"><%= blog.createdBy?.fullName || 'Blogify writer' %></span>
+                                    <span>·</span><span><%= blog.readingTime || 1 %> min read</span>
+                                    <span>·</span><span><%= blog.viewCount || 0 %> views</span>
+                                </div>
+                            </div>
+                            <% if (blog.coverImageURL) { %><img class="story-img" src="<%= blog.coverImageURL %>" alt="<%= blog.title %>" loading="lazy" onerror="this.style.visibility='hidden'"> <% } else { %><div class="story-img d-flex align-items-center justify-content-center"><i class="fas fa-image text-muted"></i></div><% } %>
+                        </article>
+                    <% }) %>
+                    <% if (totalPages > 1) { %>
+                        <nav class="mt-4" aria-label="Pagination"><ul class="pagination justify-content-center flex-wrap">
+                            <% for(let i=1;i<=totalPages;i++){ %><li class="page-item <%= currentPage===i?'active':'' %>"><a class="page-link" href="/?page=<%= i %><%= search?'&search='+encodeURIComponent(search):'' %><%= sort?'&sort='+encodeURIComponent(sort):'' %>"><%= i %></a></li><% } %>
+                        </ul></nav>
+                    <% } %>
+                <% } %>
             </div>
 
-            <% if (!blogs || blogs.length === 0) { %>
-                <div class="empty-state text-center py-5 px-3">
-                    <i class="fas fa-compass fa-3x text-muted mb-3"></i>
-                    <h4 class="fw-bold">No stories found</h4>
-                    <p class="text-muted">Try another search or be the first to publish a story.</p>
-                    <% if (locals.user) { %><a href="/blogs/add-new" class="btn btn-primary rounded-pill px-4">Write a Blog</a><% } else { %><a href="/user/signup" class="btn btn-primary rounded-pill px-4">Join Blogify</a><% } %>
+            <aside class="side">
+                <div class="side-card write-card">
+                    <h3>Have a story?</h3>
+                    <p>Turn an idea into something people can read, discuss and remember.</p>
+                    <% if (locals.user) { %><a href="/blogs/add-new" class="btn rounded-pill w-100 fw-bold">Create a blog</a><% } else { %><a href="/user/signup" class="btn rounded-pill w-100 fw-bold">Join Blogify</a><% } %>
                 </div>
-            <% } else { %>
-                <div class="row g-4">
-                    <% blogs.forEach(blog => { %>
-                        <div class="col-md-6 col-xl-4">
-                            <article class="card blog-card h-100">
-                                <div class="position-relative">
-                                    <% if (blog.coverImageURL) { %><img src="<%= blog.coverImageURL %>" class="blog-card-image" alt="<%= blog.title %>" loading="lazy" onerror="this.style.display='none';"><% } else { %><div class="blog-card-image bg-body-tertiary d-flex align-items-center justify-content-center"><i class="fas fa-image fa-2x text-muted"></i></div><% } %>
-                                </div>
-                                <div class="card-body p-4 d-flex flex-column">
-                                    <div class="mb-3"><% if (blog.tags?.length) { blog.tags.slice(0,3).forEach(tag => { %><a href="/blogs/tags/<%= tag %>" class="badge bg-primary-subtle text-primary tag-pill text-decoration-none me-1"><%= tag %></a><% }) } %></div>
-                                    <h5 class="fw-bold mb-2"><%= truncate(blog.title, 65) %></h5>
-                                    <p class="text-muted flex-grow-1"><%= truncate(blog.excerpt || (blog.body ? blog.body.substring(0,130) : ''), 115) %></p>
-                                    <div class="border-top pt-3 mt-2">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <a href="/user/profile/<%= blog.createdBy?._id || '' %>" class="d-flex align-items-center gap-2 text-decoration-none text-body">
-                                                <img src="<%= blog.createdBy?.profileImageURL || '/imgs/default.png' %>" class="rounded-circle author-avatar" alt="Author" onerror="this.src='/imgs/default.png';">
-                                                <div><strong class="small d-block"><%= blog.createdBy?.fullName || 'Unknown Author' %></strong><small class="text-muted"><%= blog.readingTime || 1 %> min read</small></div>
-                                            </a>
-                                            <div class="text-muted small d-flex gap-2"><span title="Views"><i class="fas fa-eye"></i> <%= blog.viewCount || 0 %></span><span title="Likes"><i class="fas fa-heart"></i> <%= blog.likes?.length || 0 %></span></div>
-                                        </div>
-                                        <a href="/blogs/<%= blog._id %>" class="btn btn-outline-primary rounded-pill w-100 mt-3">Read story <i class="fas fa-arrow-right ms-1"></i></a>
-                                    </div>
-                                </div>
-                            </article>
-                        </div>
-                    <% }) %>
+                <div class="side-card">
+                    <h3>Explore topics</h3>
+                    <a class="topic" href="/blogs/tags/technology">Technology</a><a class="topic" href="/blogs/tags/lifestyle">Lifestyle</a><a class="topic" href="/blogs/tags/programming">Programming</a><a class="topic" href="/blogs/tags/travel">Travel</a><a class="topic" href="/blogs/tags/education">Education</a><a class="topic" href="/blogs/tags/business">Business</a>
                 </div>
-                <% if (totalPages > 1) { %>
-                    <nav class="mt-5" aria-label="Blog pagination"><ul class="pagination justify-content-center flex-wrap gap-1">
-                        <% for (let i = 1; i <= totalPages; i++) { %><li class="page-item <%= currentPage === i ? 'active' : '' %>"><a class="page-link rounded-pill" href="/?page=<%= i %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= sort ? '&sort=' + encodeURIComponent(sort) : '' %>"><%= i %></a></li><% } %>
-                    </ul></nav>
-                <% } %>
-            <% } %>
+            </aside>
         </section>
     </main>
-
     <%- include("./partials/scripts") %>
 </body>
 </html>
