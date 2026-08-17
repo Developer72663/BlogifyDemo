@@ -3,7 +3,7 @@
     <a href="/" class="nav-brand"><span class="brand-mark">B</span><span>Blogify</span></a>
     <% if (locals.user) { %>
       <div class="nav-actions">
-        <a href="/user/blog/add" class="nav-add-blog" aria-label="Add Blog" title="Add Blog"><i class="fas fa-plus"></i><span>Add Blog</span></a>
+        <a href="/blogs/add-new" class="nav-add-blog" aria-label="Add Blog" title="Add Blog"><i class="fas fa-plus"></i><span>Add Blog</span></a>
         <a href="/notifications" class="nav-icon-btn" aria-label="Notifications" title="Notifications"><i class="far fa-bell"></i><span class="nav-badge" id="notificationBadge" style="display:none"><span id="notificationCount">0</span></span></a>
         <div class="profile-menu" id="profileMenu">
           <button class="profile-trigger" id="profileTrigger" type="button" aria-expanded="false">
@@ -13,7 +13,7 @@
           <div class="profile-dropdown" id="profileDropdown">
             <div class="profile-summary"><img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" alt="<%= locals.user.fullName %>" onerror="this.src='/imgs/default.png';"><div><strong><%= locals.user.fullName %></strong><small><%= locals.user.email %></small></div></div>
             <div class="dropdown-divider"></div>
-            <a href="/profile/<%= locals.user._id %>" class="profile-item"><span class="menu-icon profile-icon"><i class="fas fa-user"></i></span><span>Profile</span></a>
+            <a href="/user/profile" class="profile-item"><span class="menu-icon profile-icon"><i class="fas fa-user"></i></span><span>Profile</span></a>
             <a href="/notifications" class="profile-item"><span class="menu-icon notification-icon"><i class="fas fa-bell"></i></span><span>Notifications</span></a>
             <a href="/user/profile/settings" class="profile-item"><span class="menu-icon settings-icon"><i class="fas fa-cog"></i></span><span>Settings</span></a>
             <div class="dropdown-divider"></div>
