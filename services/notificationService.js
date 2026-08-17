@@ -1,59 +1,16 @@
-const Notification = require("../models/Notification");
-const User = require("../models/user");
-const { sendEmail, sendCommentNotificationEmail, sendFollowNotificationEmail } = require("./email");
-
-class NotificationService {
-    static async createNotification(recipientId, type, data) {
-        try {
-            return await Notification.create({
-                recipient: recipientId, type, title: data.title, message: data.message,
-                blog: data.blog || null, actor: data.actor || null, request: data.request || null
-            });
-        } catch (error) { console.error("❌ Error creating notification:", error.message); throw error; }
-    }
-
-    static async createBlogPostNotifications(authorId, blogId, blogTitle) {
-        try {
-            const author = await User.findById(authorId);
-            if (!author?.followers?.length) return;
-            await Notification.insertMany(author.followers.map(followerId => ({ recipient:followerId, type:"blog_post", title:"New blog post", message:`${author.fullName} published a new blog: "${blogTitle}"`, blog:blogId, actor:authorId })));
-        } catch (error) { console.error("❌ Error creating blog post notifications:", error.message); }
-    }
-
-    static async sendEmailNotification(user, type, data) {
-        try {
-            if (!user?.email) return;
-            if (user.notificationSettings) {
-                let canSend = true;
-                if (type === "comment") canSend = user.notificationSettings.emailOnComment !== false;
-                if (type === "follow") canSend = user.notificationSettings.emailOnNewFollower !== false;
-                if (type === "digest") canSend = user.notificationSettings.emailDigest !== false;
-                if (!canSend) return;
-            }
-            switch(type) {
-                case "comment": if (data.blogTitle && data.actorName && data.comment) await sendCommentNotificationEmail(user.email,{blogTitle:data.blogTitle,actorName:data.actorName,comment:data.comment.substring(0,100),blogLink:data.blogLink||process.env.APP_URL||"http://localhost:8000"}); break;
-                case "follow": if (data.actorName) await sendFollowNotificationEmail(user.email,{followerName:data.actorName,followerImage:data.followerImage||"/imgs/default.png",profileLink:data.profileLink||process.env.APP_URL||"http://localhost:8000"}); break;
-                case "like": if (data.blogTitle && data.actorName) await sendEmail(user.email,`Someone liked your blog "${data.blogTitle}"`,`<p><strong>${data.actorName}</strong> liked your blog <strong>"${data.blogTitle}"</strong>.</p>`); break;
-                default: break;
-            }
-        } catch (error) { console.error(`❌ Error sending ${type} email notification:`, error.message); }
-    }
-
-    static async getUserNotifications(userId, limit=10, page=1) {
-        try {
-            const skip=(parseInt(page)-1)*parseInt(limit);
-            const [notifications,total]=await Promise.all([
-                Notification.find({recipient:userId}).sort({createdAt:-1}).skip(skip).limit(parseInt(limit)).populate("actor","fullName profileImageURL email").populate("blog","title slug coverImageURL createdAt").populate("request").lean(),
-                Notification.countDocuments({recipient:userId})
-            ]);
-            return {notifications,total,pages:Math.ceil(total/limit),currentPage:parseInt(page)};
-        } catch(error) { console.error("❌ Error getting notifications:",error.message); return {notifications:[],total:0,pages:0,currentPage:parseInt(page)}; }
-    }
-    static async markAsRead(notificationId){ return Notification.findByIdAndUpdate(notificationId,{isRead:true},{new:true}); }
-    static async markAllAsRead(userId){ return Notification.updateMany({recipient:userId,isRead:false},{isRead:true}); }
-    static async getUnreadCount(userId){ return Notification.countDocuments({recipient:userId,isRead:false}); }
-    static async deleteNotification(notificationId,userId){ return Notification.findOneAndDelete({_id:notificationId,recipient:userId}); }
-    static async deleteAllNotifications(userId){ return Notification.deleteMany({recipient:userId}); }
-    static async getUnreadNotifications(userId,limit=5){ return Notification.find({recipient:userId,isRead:false}).sort({createdAt:-1}).limit(parseInt(limit)).populate("actor","fullName profileImageURL").populate("blog","title slug coverImageURL").populate("request").lean(); }
+const Notification=require("../models/Notification");
+const User=require("../models/user");
+const {sendEmail,sendCommentNotificationEmail,sendFollowNotificationEmail}=require("./email");
+class NotificationService{
+static async createNotification(recipientId,type,data){try{return await Notification.create({recipient:recipientId,type,title:data.title,message:data.message,blog:data.blog||null,actor:data.actor||null,request:data.request||null,messageRef:data.messageRef||null,conversationId:data.conversationId||null});}catch(error){console.error("Error creating notification:",error.message);throw error;}}
+static async createBlogPostNotifications(authorId,blogId,blogTitle){try{const author=await User.findById(authorId);if(!author?.followers?.length)return;await Notification.insertMany(author.followers.map(f=>({recipient:f,type:"blog_post",title:"New blog post",message:`${author.fullName} published a new blog: "${blogTitle}"`,blog:blogId,actor:authorId})));}catch(error){console.error("Error creating blog post notifications:",error.message);}}
+static async sendEmailNotification(user,type,data){try{if(!user?.email)return;if(user.notificationSettings){let canSend=true;if(type==="comment")canSend=user.notificationSettings.emailOnComment!==false;if(type==="follow")canSend=user.notificationSettings.emailOnNewFollower!==false;if(type==="digest")canSend=user.notificationSettings.emailDigest!==false;if(!canSend)return;}switch(type){case"comment":if(data.blogTitle&&data.actorName&&data.comment)await sendCommentNotificationEmail(user.email,{blogTitle:data.blogTitle,actorName:data.actorName,comment:data.comment.substring(0,100),blogLink:data.blogLink||process.env.APP_URL||"http://localhost:8000"});break;case"follow":if(data.actorName)await sendFollowNotificationEmail(user.email,{followerName:data.actorName,followerImage:data.followerImage||"/imgs/default.png",profileLink:data.profileLink||process.env.APP_URL||"http://localhost:8000"});break;case"like":if(data.blogTitle&&data.actorName)await sendEmail(user.email,`Someone liked your blog "${data.blogTitle}"`,`<p><strong>${data.actorName}</strong> liked your blog <strong>"${data.blogTitle}"</strong>.</p>`);break;default:break;}}catch(error){console.error(`Error sending ${type} email notification:`,error.message);}}
+static async getUserNotifications(userId,limit=10,page=1){try{const skip=(parseInt(page)-1)*parseInt(limit);const [notifications,total]=await Promise.all([Notification.find({recipient:userId}).sort({createdAt:-1}).skip(skip).limit(parseInt(limit)).populate("actor","fullName profileImageURL email").populate("blog","title slug coverImageURL createdAt").populate("request").populate("messageRef","text senderId likes createdAt").lean(),Notification.countDocuments({recipient:userId})]);return{notifications,total,pages:Math.ceil(total/limit),currentPage:parseInt(page)};}catch(error){console.error("Error getting notifications:",error.message);return{notifications:[],total:0,pages:0,currentPage:parseInt(page)};}}
+static async markAsRead(notificationId){return Notification.findByIdAndUpdate(notificationId,{isRead:true},{new:true});}
+static async markAllAsRead(userId){return Notification.updateMany({recipient:userId,isRead:false},{isRead:true});}
+static async getUnreadCount(userId){return Notification.countDocuments({recipient:userId,isRead:false});}
+static async deleteNotification(notificationId,userId){return Notification.findOneAndDelete({_id:notificationId,recipient:userId});}
+static async deleteAllNotifications(userId){return Notification.deleteMany({recipient:userId});}
+static async getUnreadNotifications(userId,limit=5){return Notification.find({recipient:userId,isRead:false}).sort({createdAt:-1}).limit(parseInt(limit)).populate("actor","fullName profileImageURL").populate("blog","title slug coverImageURL").populate("request").populate("messageRef","text senderId likes createdAt").lean();}
 }
 module.exports=NotificationService;
