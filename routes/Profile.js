@@ -2,19 +2,69 @@ const express = require("express");
 const router = express.Router();
 const Blog = require("../models/Blog");
 const User = require("../models/user");
+const FollowRequest = require("../models/FollowRequest");
 const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
 
-router.use(restrictToLoggedInUserOnly);
-
+// Public profile page. Authentication is optional here so signed-out visitors can
+// still see the public profile fields (avatar, name, bio and counts).
 router.get("/", async (req, res) => {
-    try {
-        const fullUser = await User.findById(req.user._id).populate("followers", "fullName email profileImageURL bio").populate("following", "fullName email profileImageURL bio");
-        if (!fullUser) return res.status(404).send("User not found");
-        const blogs = await Blog.find({ createdBy: req.user._id, isDeleted: false }).sort({ createdAt: -1 });
-        res.render("profile", { user: fullUser, blogs: blogs || [] });
-    } catch (error) { console.error("🚨 Profile Route Error:", error.message); res.status(500).send("Internal Server Error"); }
+    if (!req.user) return res.redirect("/user/signin");
+    return renderProfile(req, res, req.user._id);
 });
+
+router.get("/:userId", async (req, res) => {
+    return renderProfile(req, res, req.params.userId);
+});
+
+async function renderProfile(req, res, userId) {
+    try {
+        const user = await User.findById(userId).select("fullName email bio website location profileImageURL isPrivate followers following blockedUsers");
+        if (!user) return res.status(404).render("error", { error: "User not found" });
+
+        const viewerId = req.user?._id?.toString() || null;
+        const isOwnProfile = viewerId === user._id.toString();
+        const isFollower = !!(viewerId && user.followers.some(id => id.toString() === viewerId));
+        const canViewPrivateContent = isOwnProfile || !user.isPrivate || isFollower;
+
+        let followState = "none";
+        if (viewerId && !isOwnProfile) {
+            const viewer = await User.findById(viewerId).select("following").lean();
+            if (viewer?.following?.some(id => id.toString() === user._id.toString())) {
+                followState = "following";
+            } else if (user.isPrivate) {
+                const pending = await FollowRequest.exists({ requester: viewerId, recipient: user._id, status: "pending" });
+                if (pending) followState = "requested";
+            }
+        }
+
+        let blogs = [];
+        if (canViewPrivateContent) {
+            blogs = await Blog.find({ createdBy: user._id, isDeleted: false, status: { $ne: "draft" } })
+                .sort({ createdAt: -1 })
+                .lean();
+        }
+
+        return res.render("profile", {
+            user,
+            blogs,
+            isOwnProfile,
+            isLoggedIn: !!req.user,
+            isFollower,
+            contentLocked: !canViewPrivateContent,
+            followState,
+            followerCount: user.followers.length,
+            followingCount: user.following.length,
+            blogCount: canViewPrivateContent ? blogs.length : await Blog.countDocuments({ createdBy: user._id, isDeleted: false, status: { $ne: "draft" } })
+        });
+    } catch (error) {
+        console.error("Profile Route Error:", error);
+        return res.status(500).render("error", { error: error.message || "Internal Server Error" });
+    }
+}
+
+// Everything below this point requires an authenticated user.
+router.use(restrictToLoggedInUserOnly);
 
 router.get("/settings", async (req, res) => {
     try {
