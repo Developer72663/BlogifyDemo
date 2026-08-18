@@ -8,129 +8,43 @@
     const notify = { success:(m)=>toastr.success(m), error:(m)=>toastr.error(m), info:(m)=>toastr.info(m), warning:(m)=>toastr.warning(m) };
     axios.defaults.headers.common['Content-Type'] = 'application/json';
     axios.interceptors.response.use(r=>r,e=>{ if(e.response?.status===401){ notify.error('Session expired. Please login again.'); window.location.href='/user/signin'; } return Promise.reject(e); });
-
     function formatDate(dateString) { return new Date(dateString).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
-    function timeAgo(dateString) {
-        const seconds=Math.floor((new Date()-new Date(dateString))/1000); let interval=seconds/31536000;
-        if(interval>1)return Math.floor(interval)+' years ago'; interval=seconds/2592000;
-        if(interval>1)return Math.floor(interval)+' months ago'; interval=seconds/86400;
-        if(interval>1)return Math.floor(interval)+' days ago'; interval=seconds/3600;
-        if(interval>1)return Math.floor(interval)+' hours ago'; interval=seconds/60;
-        if(interval>1)return Math.floor(interval)+' minutes ago'; return Math.floor(seconds)+' seconds ago';
-    }
+    function timeAgo(dateString) { const seconds=Math.floor((new Date()-new Date(dateString))/1000); let interval=seconds/31536000; if(interval>1)return Math.floor(interval)+' years ago'; interval=seconds/2592000; if(interval>1)return Math.floor(interval)+' months ago'; interval=seconds/86400; if(interval>1)return Math.floor(interval)+' days ago'; interval=seconds/3600; if(interval>1)return Math.floor(interval)+' hours ago'; interval=seconds/60; if(interval>1)return Math.floor(interval)+' minutes ago'; return Math.floor(seconds)+' seconds ago'; }
     function truncate(str,length=60){ if(!str)return ''; str=String(str); return str.length<=length?str:str.substring(0,length).trim()+'...'; }
-
-    const scrollToTopBtn=document.createElement('button');
-    scrollToTopBtn.className='btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-4 shadow';
-    scrollToTopBtn.style.cssText='width:50px;height:50px;display:none;z-index:999;';
-    scrollToTopBtn.innerHTML='<i class="fas fa-arrow-up"></i>'; document.body.appendChild(scrollToTopBtn);
-    window.addEventListener('scroll',()=>scrollToTopBtn.style.display=window.pageYOffset>300?'block':'none');
-    scrollToTopBtn.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
-
-    window.toggleFollow=async function(userId,buttonElement){
-        if(!userId){notify.error('Invalid user');return;} buttonElement.disabled=true;
-        try{const {data}=await axios.post(`/follow/${userId}/follow`); if(data.success){
-            buttonElement.innerHTML=data.following?'<i class="fas fa-user-check"></i> Following':'<i class="fas fa-user-plus"></i> Follow';
-            buttonElement.classList.toggle('btn-success',data.following); buttonElement.classList.toggle('btn-outline-primary',!data.following); notify.success(data.message);
-        }else notify.error(data.message||'Action failed');}catch(err){console.error('Follow Error:',err);notify.error(err.response?.data?.message||'Failed to follow user');}finally{buttonElement.disabled=false;}
-    };
-
+    const scrollToTopBtn=document.createElement('button'); scrollToTopBtn.className='btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-4 shadow'; scrollToTopBtn.style.cssText='width:50px;height:50px;display:none;z-index:999;'; scrollToTopBtn.innerHTML='<i class="fas fa-arrow-up"></i>'; document.body.appendChild(scrollToTopBtn); document.addEventListener('scroll',()=>scrollToTopBtn.style.display=window.pageYOffset>300?'block':'none'); scrollToTopBtn.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+    window.toggleFollow=async function(userId,buttonElement){ if(!userId){notify.error('Invalid user');return;} buttonElement.disabled=true; try{const {data}=await axios.post(`/follow/${userId}/follow`); if(data.success){buttonElement.innerHTML=data.following?'<i class="fas fa-user-check"></i> Following':'<i class="fas fa-user-plus"></i> Follow'; buttonElement.classList.toggle('btn-success',data.following); buttonElement.classList.toggle('btn-outline-primary',!data.following); notify.success(data.message);}else notify.error(data.message||'Action failed');}catch(err){console.error('Follow Error:',err);notify.error(err.response?.data?.message||'Failed to follow user');}finally{buttonElement.disabled=false;} };
     function showLoader(){const loader=document.createElement('div');loader.className='spinner-border text-primary position-fixed';loader.style.cssText='top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;';loader.id='globalLoader';document.body.appendChild(loader);}
     function hideLoader(){document.getElementById('globalLoader')?.remove();}
+    window.confirmAction=function(message){return new Promise(resolve=>{document.getElementById('confirmModal')?.remove();document.body.insertAdjacentHTML('beforeend',`<div class="modal fade" id="confirmModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirm Action</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${message}</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger" id="confirmYesBtn">Yes, Proceed</button></div></div></div></div>`); const modal=new bootstrap.Modal(document.getElementById('confirmModal')); modal.show(); document.getElementById('confirmYesBtn').addEventListener('click',()=>{resolve(true);modal.hide();}); document.getElementById('confirmModal').addEventListener('hidden.bs.modal',()=>{resolve(false);document.getElementById('confirmModal')?.remove();});});};
+    document.addEventListener('click',(event)=>{const settingsTrigger=event.target.closest('#settingsBtn, #mobileSettings'); if(settingsTrigger){event.preventDefault();window.location.href='/user/profile/settings';}});
 
-    window.confirmAction=function(message){return new Promise(resolve=>{
-        document.getElementById('confirmModal')?.remove();
-        document.body.insertAdjacentHTML('beforeend',`<div class="modal fade" id="confirmModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirm Action</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${message}</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger" id="confirmYesBtn">Yes, Proceed</button></div></div></div></div>`);
-        const modal=new bootstrap.Modal(document.getElementById('confirmModal')); modal.show();
-        document.getElementById('confirmYesBtn').addEventListener('click',()=>{resolve(true);modal.hide();});
-        document.getElementById('confirmModal').addEventListener('hidden.bs.modal',()=>{resolve(false);document.getElementById('confirmModal')?.remove();});
-    });};
-
-    document.addEventListener('click',(event)=>{
-        const settingsTrigger=event.target.closest('#settingsBtn, #mobileSettings');
-        if(settingsTrigger){event.preventDefault();window.location.href='/user/profile/settings';}
-    });
-
-    /* Profile three-dot bottom-sheet menu */
+    /* Profile three-dot menu: one reliable full-width bottom action sheet. */
     (function(){
-        const STYLE_ID='blogify-profile-sheet-style';
-        if(!document.getElementById(STYLE_ID)){
-            const style=document.createElement('style');
-            style.id=STYLE_ID;
-            style.textContent=`
-                #profileMenu.blogify-sheet{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:100%!important;margin:0!important;padding:10px 12px calc(12px + env(safe-area-inset-bottom))!important;border:0!important;border-top:1px solid var(--line,#e7eaf1)!important;border-radius:22px 22px 0 0!important;box-shadow:0 -18px 55px rgba(0,0,0,.22)!important;background:var(--card,#fff)!important;transform:translateY(105%)!important;opacity:0!important;visibility:hidden!important;display:block!important;z-index:10001!important;max-height:min(78vh,620px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;transition:transform .24s ease,opacity .2s ease,visibility 0s linear .24s!important;-webkit-overflow-scrolling:touch!important}
-                #profileMenu.blogify-sheet.open{transform:translateY(0)!important;opacity:1!important;visibility:visible!important;transition:transform .24s ease,opacity .2s ease!important}
-                #profileMenu.blogify-sheet::before{content:'';display:block!important;width:42px;height:5px;border-radius:99px;background:var(--line,#e7eaf1);margin:2px auto 10px}
-                #profileMenu.blogify-sheet button,#profileMenu.blogify-sheet a{box-sizing:border-box!important;width:100%!important;min-height:50px!important;margin:2px 0!important;padding:13px 14px!important;border:0!important;border-radius:12px!important;background:transparent!important;color:var(--text,#182033)!important;text-decoration:none!important;text-align:left!important;display:flex!important;align-items:center!important;gap:11px!important;cursor:pointer!important;font:inherit!important;font-size:.96rem!important;font-weight:700!important;line-height:1.25!important;opacity:1!important;visibility:visible!important;position:relative!important;z-index:10002!important}
-                #profileMenu.blogify-sheet button i,#profileMenu.blogify-sheet a i{display:inline-flex!important;width:22px!important;min-width:22px!important;justify-content:center!important;color:currentColor!important;opacity:1!important;visibility:visible!important}
-                #profileMenu.blogify-sheet button:hover,#profileMenu.blogify-sheet a:hover,#profileMenu.blogify-sheet button:focus-visible,#profileMenu.blogify-sheet a:focus-visible{background:var(--soft,#efedff)!important;outline:none!important}
-                #profileMenu.blogify-sheet .danger{color:var(--danger,#e5484d)!important}
-                #blogify-profile-sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility 0s linear .2s;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
-                #blogify-profile-sheet-backdrop.open{opacity:1;visibility:visible;transition:opacity .2s ease}
-                body.blogify-sheet-open{overflow:hidden!important;touch-action:none}
-                @media(max-width:760px){#profileMenu.blogify-sheet{max-height:82vh!important;padding-left:12px!important;padding-right:12px!important}#profileMenu.blogify-sheet button,#profileMenu.blogify-sheet a{min-height:52px!important;font-size:1rem!important}}
-            `;
-            document.head.appendChild(style);
-        }
-        function getParts(){return {menu:document.getElementById('profileMenu'),trigger:document.getElementById('moreBtn')};}
-        function ensureBackdrop(){
-            let b=document.getElementById('blogify-profile-sheet-backdrop');
-            if(!b){b=document.createElement('div');b.id='blogify-profile-sheet-backdrop';b.setAttribute('aria-hidden','true');document.body.appendChild(b);b.addEventListener('click',closeProfileSheet);}
-            return b;
-        }
-        function openProfileSheet(){
-            const {menu,trigger}=getParts(); if(!menu||!trigger)return;
-            const backdrop=ensureBackdrop();
-            menu.classList.add('blogify-sheet','open');
-            trigger.setAttribute('aria-expanded','true');
-            menu.setAttribute('aria-hidden','false');
-            backdrop.classList.add('open');
-            document.body.classList.add('blogify-sheet-open');
-        }
-        function closeProfileSheet(){
-            const {menu,trigger}=getParts();
-            if(!menu)return;
-            menu.classList.remove('open');
-            trigger?.setAttribute('aria-expanded','false');
-            menu.setAttribute('aria-hidden','true');
-            document.getElementById('blogify-profile-sheet-backdrop')?.classList.remove('open');
-            document.body.classList.remove('blogify-sheet-open');
-        }
-        window.closeProfileSheet=closeProfileSheet;
-        document.addEventListener('click',function(event){
-            const trigger=event.target.closest('#moreBtn');
-            const menu=document.getElementById('profileMenu');
-            if(!trigger||!menu)return;
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-            if(menu.classList.contains('open')) closeProfileSheet(); else openProfileSheet();
-        },true);
-        document.addEventListener('click',function(event){
-            const menu=document.getElementById('profileMenu');
-            if(!menu?.classList.contains('open'))return;
-            if(event.target.closest('#profileMenu')||event.target.closest('#moreBtn'))return;
-            closeProfileSheet();
-        });
-        document.addEventListener('keydown',function(event){
-            if(event.key==='Escape'&&document.getElementById('profileMenu')?.classList.contains('open'))closeProfileSheet();
-        });
-        window.toggleMenu=function(event){
-            event?.preventDefault();
-            event?.stopPropagation();
-            const menu=document.getElementById('profileMenu');
-            if(menu?.classList.contains('open'))closeProfileSheet();else openProfileSheet();
-        };
-        window.addEventListener('resize',()=>{
-            if(document.getElementById('profileMenu')?.classList.contains('open'))document.getElementById('profileMenu').style.maxHeight=Math.min(window.innerHeight*.82,620)+'px';
-        });
+        const style=document.createElement('style');
+        style.id='blogify-profile-sheet-style';
+        style.textContent=`
+          #profileMenu.blogify-sheet{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100vw!important;max-width:none!important;box-sizing:border-box!important;margin:0!important;padding:10px 12px calc(12px + env(safe-area-inset-bottom))!important;background:var(--card,#fff)!important;color:var(--text,#182033)!important;border:0!important;border-top:1px solid var(--line,#e7eaf1)!important;border-radius:22px 22px 0 0!important;box-shadow:0 -18px 55px rgba(0,0,0,.22)!important;z-index:2147483001!important;display:block!important;visibility:hidden!important;opacity:0!important;transform:translateY(105%)!important;pointer-events:none!important;max-height:82vh!important;overflow-y:auto!important;transition:transform .24s ease,opacity .2s ease!important}
+          #profileMenu.blogify-sheet.open{visibility:visible!important;opacity:1!important;transform:translateY(0)!important;pointer-events:auto!important}
+          #profileMenu.blogify-sheet::before{content:'';display:block!important;width:42px!important;height:5px!important;border-radius:99px!important;background:#c9ced8!important;margin:2px auto 10px!important}
+          #profileMenu.blogify-sheet button,#profileMenu.blogify-sheet a{appearance:none!important;-webkit-appearance:none!important;width:100%!important;min-height:52px!important;box-sizing:border-box!important;margin:2px 0!important;padding:13px 14px!important;border:0!important;border-radius:12px!important;background:transparent!important;color:var(--text,#182033)!important;text-decoration:none!important;text-align:left!important;display:flex!important;align-items:center!important;gap:12px!important;cursor:pointer!important;font-family:inherit!important;font-size:16px!important;font-weight:700!important;line-height:1.25!important;opacity:1!important;visibility:visible!important}
+          #profileMenu.blogify-sheet button i,#profileMenu.blogify-sheet a i{display:inline-flex!important;width:24px!important;min-width:24px!important;justify-content:center!important;color:currentColor!important;opacity:1!important;visibility:visible!important}
+          #profileMenu.blogify-sheet button:hover,#profileMenu.blogify-sheet a:hover,#profileMenu.blogify-sheet button:active,#profileMenu.blogify-sheet a:active{background:var(--soft,#efedff)!important}
+          #profileMenu.blogify-sheet .danger{color:var(--danger,#e5484d)!important}
+          #blogify-profile-sheet-backdrop{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;background:rgba(0,0,0,.45)!important;z-index:2147483000!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .2s ease!important}
+          #blogify-profile-sheet-backdrop.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+          body.blogify-sheet-open{overflow:hidden!important}
+        `;
+        document.head.appendChild(style);
+        function parts(){return {menu:document.getElementById('profileMenu'),trigger:document.getElementById('moreBtn')};}
+        function backdrop(){let b=document.getElementById('blogify-profile-sheet-backdrop');if(!b){b=document.createElement('div');b.id='blogify-profile-sheet-backdrop';document.body.appendChild(b);b.addEventListener('click',close);}return b;}
+        function open(){const {menu,trigger}=parts();if(!menu)return;const b=backdrop();menu.classList.add('blogify-sheet','open');menu.setAttribute('aria-hidden','false');trigger?.setAttribute('aria-expanded','true');b.classList.add('open');document.body.classList.add('blogify-sheet-open');}
+        function close(){const {menu,trigger}=parts();if(!menu)return;menu.classList.remove('open');menu.setAttribute('aria-hidden','true');trigger?.setAttribute('aria-expanded','false');document.getElementById('blogify-profile-sheet-backdrop')?.classList.remove('open');document.body.classList.remove('blogify-sheet-open');}
+        window.closeProfileSheet=close;
+        window.toggleMenu=function(event){event?.preventDefault();event?.stopPropagation();if(document.getElementById('profileMenu')?.classList.contains('open'))close();else open();};
+        document.addEventListener('click',function(event){if(event.target.closest('#moreBtn')){event.preventDefault();event.stopPropagation();window.toggleMenu(event);}},true);
+        document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+        document.addEventListener('click',e=>{if(e.target.closest('#profileMenu')){if(e.target.closest('button,a'))setTimeout(close,0);}});
     })();
 
-    (function(){
-        const saved=document.documentElement.dataset.theme || localStorage.getItem('blogify-theme');
-        const theme=saved || 'system';
-        const dark=theme==='dark' || (theme==='system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.theme=dark?'dark':'light';
-        if(theme==='system') window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',e=>document.documentElement.dataset.theme=e.matches?'dark':'light');
-    })();
+    (function(){ const saved=document.documentElement.dataset.theme || localStorage.getItem('blogify-theme'); const theme=saved || 'system'; const dark=theme==='dark' || (theme==='system' && window.matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.dataset.theme=dark?'dark':'light'; if(theme==='system') window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',e=>document.documentElement.dataset.theme=e.matches?'dark':'light'); })();
 </script>
