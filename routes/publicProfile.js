@@ -6,13 +6,17 @@ const User = require("../models/user");
 const FollowRequest = require("../models/FollowRequest");
 
 router.get("/:userId", async (req,res)=>{
-    try {
+    try{
         const {userId}=req.params;
         if(!mongoose.Types.ObjectId.isValid(userId)) return res.status(404).render("404",{user:req.user||null});
-        const profileUser=await User.findById(userId).select("fullName email profileImageURL bio website location isPrivate followers following createdAt").lean();
+        // Never expose private account fields such as email from a public profile query.
+        const profileUser=await User.findById(userId).select("fullName profileImageURL bio website location isPrivate followers following createdAt blockedUsers").lean();
         if(!profileUser) return res.status(404).render("404",{user:req.user||null});
         const viewerId=req.user?._id?.toString();
         const isOwner=viewerId===userId;
+        const viewerBlocked=!!viewerId && profileUser.blockedUsers?.some(id=>id.toString()===viewerId);
+        const blockedViewer=!!viewerId && !!(await User.exists({_id:viewerId,blockedUsers:userId}));
+        if(!isOwner && (viewerBlocked || blockedViewer)) return res.status(404).render("404",{user:req.user||null});
         const isFollowing=!!viewerId && profileUser.followers.some(id=>id.toString()===viewerId);
         const canSeePrivateContent=isOwner || !profileUser.isPrivate || isFollowing;
         const [blogCount, pendingRequest]=await Promise.all([
