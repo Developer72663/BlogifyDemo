@@ -41,7 +41,7 @@
         function close(){const {menu,trigger}=parts();if(!menu)return;menu.classList.remove('open');menu.setAttribute('aria-hidden','true');trigger?.setAttribute('aria-expanded','false');document.getElementById('blogify-profile-sheet-backdrop')?.classList.remove('open');document.body.classList.remove('blogify-sheet-open');}
         window.closeProfileSheet=close;
         window.toggleMenu=function(event){event?.preventDefault();event?.stopPropagation();if(document.getElementById('profileMenu')?.classList.contains('open'))close();else open();};
-        document.addEventListener('click',function(event){if(event.target.closest('#moreBtn')){event.preventDefault();event.stopPropagation();window.toggleMenu(event);}},true);
+        document.addEventListener('click',function(event){const trigger=event.target.closest('#moreBtn');if(trigger){event.preventDefault();event.stopImmediatePropagation();window.toggleMenu(event);}},true);
         document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
         document.addEventListener('click',e=>{if(e.target.closest('#profileMenu')){if(e.target.closest('button,a'))setTimeout(close,0);}});
     })();
