@@ -1,3 +1,4 @@
+```ejs
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -109,12 +110,12 @@
       font-size: .72rem;
     }
 
-    /* ── actions: NO position:relative, NO overflow hidden ── */
     .actions {
       display: flex;
       gap: 9px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      position: relative;
     }
 
     .btn {
@@ -164,8 +165,9 @@
     }
 
     /* =========================================================
-       BACKDROP  — lives at <body> level
+       PROFILE INSTAGRAM-STYLE ACTION SHEET
        ========================================================= */
+
     .profile-menu-backdrop {
       position: fixed;
       inset: 0;
@@ -187,9 +189,6 @@
       pointer-events: auto;
     }
 
-    /* =========================================================
-       ACTION SHEET — lives at <body> level
-       ========================================================= */
     .profile-action-sheet {
       position: fixed;
       left: 0;
@@ -197,8 +196,7 @@
       bottom: 0;
 
       width: 100%;
-      max-width: 520px;          /* nice cap on wide screens   */
-      margin: 0 auto;            /* centre on desktop          */
+      max-width: 100%;
       max-height: 82vh;
 
       overflow-y: auto;
@@ -211,11 +209,14 @@
       border: 1px solid var(--line);
       border-bottom: 0;
 
-      box-shadow: 0 -18px 55px rgba(0, 0, 0, .25);
+      box-shadow:
+        0 -18px 55px rgba(0, 0, 0, .25);
 
-      padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+      padding: 12px 10px calc(
+        12px + env(safe-area-inset-bottom)
+      );
 
-      z-index: 9999;             /* above backdrop             */
+      z-index: 9999;
 
       visibility: hidden;
       opacity: 0;
@@ -225,28 +226,31 @@
 
       transition:
         transform .28s cubic-bezier(.22, 1, .36, 1),
-        opacity   .2s  ease,
-        visibility 0s  linear .28s;
+        opacity .2s ease,
+        visibility 0s linear .28s;
     }
 
     .profile-action-sheet.open {
       visibility: visible;
       opacity: 1;
       pointer-events: auto;
+
       transform: translate3d(0, 0, 0);
 
       transition:
         transform .28s cubic-bezier(.22, 1, .36, 1),
-        opacity   .2s  ease;
+        opacity .2s ease;
     }
 
-    /* drag-handle pill */
     .profile-action-sheet::before {
       content: "";
       display: block;
+
       width: 42px;
       height: 5px;
+
       margin: 2px auto 10px;
+
       border-radius: 999px;
       background: var(--line);
     }
@@ -254,19 +258,28 @@
     .profile-action-sheet button {
       width: 100%;
       min-height: 52px;
+
       border: 0;
       outline: none;
+
       background: transparent;
       color: var(--text);
+
       display: flex;
       align-items: center;
+
       gap: 13px;
+
       padding: 14px;
+
       border-radius: 12px;
+
       font: inherit;
       font-weight: 700;
+
       cursor: pointer;
       text-align: left;
+
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -289,43 +302,6 @@
     .profile-action-sheet button.danger:hover,
     .profile-action-sheet button.danger:active {
       background: rgba(229, 72, 77, .08);
-    }
-
-    /* sheet header row */
-    .sheet-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 6px 10px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 6px;
-    }
-
-    .sheet-header h4 {
-      margin: 0;
-      font-size: .95rem;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .sheet-close {
-      width: 32px;
-      height: 32px;
-      border: 0;
-      background: var(--bg);
-      border-radius: 50%;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      color: var(--text);
-      min-height: unset !important;
-      padding: 0 !important;
-    }
-
-    .sheet-close:hover {
-      background: var(--line) !important;
     }
 
     /* ========================================================= */
@@ -485,21 +461,29 @@
       position: fixed;
       right: 20px;
       bottom: 20px;
+
       background: #182033;
       color: #fff;
+
       padding: 12px 16px;
       border-radius: 11px;
+
       display: none;
+
       z-index: 10002;
     }
 
     .modal {
       position: fixed;
       inset: 0;
+
       background: rgba(0, 0, 0, .5);
+
       display: none;
       place-items: center;
+
       padding: 18px;
+
       z-index: 10001;
     }
 
@@ -510,7 +494,9 @@
     .modal-card {
       background: var(--card);
       color: var(--text);
+
       width: min(460px, 100%);
+
       border-radius: 20px;
       padding: 22px;
     }
@@ -532,10 +518,13 @@
     .share-url {
       width: 100%;
       padding: 11px;
+
       border: 1px solid var(--line);
       border-radius: 10px;
+
       background: var(--bg);
       color: var(--text);
+
       margin: 12px 0;
     }
 
@@ -585,7 +574,6 @@
       }
 
       .profile-action-sheet {
-        max-width: 100%;
         max-height: 84vh;
         border-radius: 20px 20px 0 0;
       }
@@ -636,6 +624,7 @@
             <% } %>
 
             <div class="meta">
+
               <% if (user.location) { %>
                 <span>
                   <i class="fas fa-map-marker-alt"></i>
@@ -644,11 +633,16 @@
               <% } %>
 
               <% if (user.website) { %>
-                <a href="<%= user.website %>" target="_blank" rel="noopener">
+                <a
+                  href="<%= user.website %>"
+                  target="_blank"
+                  rel="noopener"
+                >
                   <i class="fas fa-link"></i>
                   Website
                 </a>
               <% } %>
+
             </div>
 
           </div>
@@ -657,12 +651,18 @@
 
             <% if (isOwnProfile) { %>
 
-              <a class="btn primary" href="/user/profile/edit">
+              <a
+                class="btn primary"
+                href="/user/profile/edit"
+              >
                 <i class="fas fa-edit"></i>
                 Edit profile
               </a>
 
-              <a class="btn secondary" href="/user/profile/settings">
+              <a
+                class="btn secondary"
+                href="/user/profile/settings"
+              >
                 <i class="fas fa-cog"></i>
                 Settings
               </a>
@@ -681,6 +681,7 @@
                     ? 'fa-clock'
                     : 'fa-user-plus'
                 %>"></i>
+
                 <%= followState === 'following'
                   ? 'Following'
                   : followState === 'requested'
@@ -696,11 +697,17 @@
               %>
 
               <% if (canMessage) { %>
-                <a class="btn primary" href="/messages?user=<%= user._id %>">
+
+                <a
+                  class="btn primary"
+                  href="/messages?user=<%= user._id %>"
+                >
                   <i class="fas fa-comment-dots"></i>
                   Message
                 </a>
+
               <% } else { %>
+
                 <button
                   type="button"
                   class="btn secondary"
@@ -709,9 +716,11 @@
                   <i class="fas fa-lock"></i>
                   Message
                 </button>
+
               <% } %>
 
-              <!-- THREE-DOT BUTTON (only trigger, NO menu inside here) -->
+              <!-- THREE DOT BUTTON -->
+
               <button
                 type="button"
                 class="more-btn"
@@ -722,6 +731,105 @@
                 <i class="fas fa-ellipsis-h"></i>
               </button>
 
+              <!-- BACKDROP -->
+
+              <div
+                class="profile-menu-backdrop"
+                id="profileMenuBackdrop"
+                aria-hidden="true"
+              ></div>
+
+              <!-- ACTION SHEET -->
+
+              <div
+                class="profile-action-sheet"
+                id="profileMenu"
+                aria-hidden="true"
+              >
+
+                <button
+                  type="button"
+                  onclick="profileAction('restrict')"
+                >
+                  <i class="fas fa-user-lock"></i>
+                  <span>Restrict</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="danger"
+                  onclick="blockUser()"
+                >
+                  <i class="fas fa-ban"></i>
+                  <span>Block</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="profileAction('report')"
+                >
+                  <i class="fas fa-flag"></i>
+                  <span>Report</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="showAbout()"
+                >
+                  <i class="fas fa-info-circle"></i>
+                  <span>About this account</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="profileAction('shared')"
+                >
+                  <i class="fas fa-user-friends"></i>
+                  <span>See shared activity</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="profileAction('hide')"
+                >
+                  <i class="fas fa-eye-slash"></i>
+                  <span>Hide your blog, photo &amp; videos</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="removeFollower()"
+                >
+                  <i class="fas fa-user-minus"></i>
+                  <span>Remove follower</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="copyProfile()"
+                >
+                  <i class="fas fa-link"></i>
+                  <span>Copy profile URL</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="shareProfile()"
+                >
+                  <i class="fas fa-share"></i>
+                  <span>Share this profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="showQR()"
+                >
+                  <i class="fas fa-qrcode"></i>
+                  <span>QR code</span>
+                </button>
+
+              </div>
+
             <% } %>
 
           </div>
@@ -729,17 +837,29 @@
 
         <div class="stats">
 
-          <button type="button" class="stat" onclick="openPanel('followers')">
+          <button
+            type="button"
+            class="stat"
+            onclick="openPanel('followers')"
+          >
             <strong><%= followerCount %></strong>
             <span>Followers</span>
           </button>
 
-          <button type="button" class="stat" onclick="openPanel('following')">
+          <button
+            type="button"
+            class="stat"
+            onclick="openPanel('following')"
+          >
             <strong><%= followingCount %></strong>
             <span>Following</span>
           </button>
 
-          <button type="button" class="stat" onclick="openPanel('blogs')">
+          <button
+            type="button"
+            class="stat"
+            onclick="openPanel('blogs')"
+          >
             <strong><%= blogCount %></strong>
             <span>Blogs</span>
           </button>
@@ -749,15 +869,37 @@
       </section>
 
       <nav class="tabs">
-        <button type="button" class="tab active" data-panel="blogs" onclick="openPanel('blogs')">
-          <i class="fas fa-book"></i> Blogs
+
+        <button
+          type="button"
+          class="tab active"
+          data-panel="blogs"
+          onclick="openPanel('blogs')"
+        >
+          <i class="fas fa-book"></i>
+          Blogs
         </button>
-        <button type="button" class="tab" data-panel="followers" onclick="openPanel('followers')">
-          <i class="fas fa-users"></i> Followers
+
+        <button
+          type="button"
+          class="tab"
+          data-panel="followers"
+          onclick="openPanel('followers')"
+        >
+          <i class="fas fa-users"></i>
+          Followers
         </button>
-        <button type="button" class="tab" data-panel="following" onclick="openPanel('following')">
-          <i class="fas fa-user-friends"></i> Following
+
+        <button
+          type="button"
+          class="tab"
+          data-panel="following"
+          onclick="openPanel('following')"
+        >
+          <i class="fas fa-user-friends"></i>
+          Following
         </button>
+
       </nav>
 
       <section class="content-card">
@@ -765,53 +907,79 @@
         <div id="blogs" class="panel active">
 
           <% if (contentLocked) { %>
+
             <div class="lock">
               <i class="fas fa-lock"></i>
+
               <h3>This account is private</h3>
-              <p>Follow <%= user.fullName %> and wait for approval to see their blogs and lists.</p>
+
+              <p>
+                Follow <%= user.fullName %>
+                and wait for approval to see their blogs and lists.
+              </p>
             </div>
 
           <% } else if (!blogs.length) { %>
+
             <div class="empty">
               <i class="fas fa-pen"></i>
               <h3>No blogs published yet</h3>
             </div>
 
           <% } else { %>
+
             <div class="blog-grid">
+
               <% blogs.forEach(blog => { %>
+
                 <article class="blog">
 
                   <% if (blog.coverImageURL) { %>
+
                     <img
                       class="cover"
                       src="<%= blog.coverImageURL %>"
                       alt="<%= blog.title %>"
                       onerror="this.src='/images/default-blog.png'"
                     >
+
                   <% } else { %>
+
                     <div class="cover"></div>
+
                   <% } %>
 
                   <div class="blog-body">
-                    <h3><%= blog.title %></h3>
+
+                    <h3>
+                      <%= blog.title %>
+                    </h3>
+
                     <p>
                       <%= blog.excerpt ||
-                        (blog.body ? blog.body.substring(0, 140) : '') %>
+                        (blog.body
+                          ? blog.body.substring(0, 140)
+                          : '')
+                      %>
                     </p>
 
                     <div class="blog-meta">
+
                       <span>
                         <i class="far fa-calendar"></i>
                         <%= new Date(blog.createdAt).toLocaleDateString() %>
                       </span>
+
                       <span>
                         <i class="far fa-heart"></i>
                         <%= blog.likes ? blog.likes.length : 0 %>
+
                         ·
+
                         <i class="far fa-eye"></i>
                         <%= blog.viewCount || 0 %>
                       </span>
+
                     </div>
 
                     <a
@@ -821,21 +989,35 @@
                     >
                       Read blog
                     </a>
+
                   </div>
 
                 </article>
+
               <% }) %>
+
             </div>
+
           <% } %>
 
         </div>
 
         <div id="followers" class="panel">
-          <div id="followersContent" class="empty">Loading followers…</div>
+          <div
+            id="followersContent"
+            class="empty"
+          >
+            Loading followers…
+          </div>
         </div>
 
         <div id="following" class="panel">
-          <div id="followingContent" class="empty">Loading following…</div>
+          <div
+            id="followingContent"
+            class="empty"
+          >
+            Loading following…
+          </div>
         </div>
 
       </section>
@@ -843,121 +1025,100 @@
     </div>
   </main>
 
-  <!-- =========================================================
-       BACKDROP — directly inside <body>, NOT inside any card
-       ========================================================= -->
+  <!-- TOAST -->
+
   <div
-    class="profile-menu-backdrop"
-    id="profileMenuBackdrop"
-    aria-hidden="true"
+    class="toast"
+    id="toast"
   ></div>
 
-  <!-- =========================================================
-       ACTION SHEET — directly inside <body>, NOT inside any card
-       ========================================================= -->
-  <div
-    class="profile-action-sheet"
-    id="profileMenu"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Profile options"
-    aria-hidden="true"
-  >
-    <!-- header row with close button -->
-    <div class="sheet-header">
-      <h4>Options</h4>
-      <button
-        type="button"
-        class="sheet-close"
-        aria-label="Close menu"
-        onclick="closeProfileMenu()"
-      >
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-
-    <button type="button" onclick="profileAction('restrict')">
-      <i class="fas fa-user-lock"></i>
-      <span>Restrict</span>
-    </button>
-
-    <button type="button" class="danger" onclick="blockUser()">
-      <i class="fas fa-ban"></i>
-      <span>Block</span>
-    </button>
-
-    <button type="button" onclick="profileAction('report')">
-      <i class="fas fa-flag"></i>
-      <span>Report</span>
-    </button>
-
-    <button type="button" onclick="showAbout()">
-      <i class="fas fa-info-circle"></i>
-      <span>About this account</span>
-    </button>
-
-    <button type="button" onclick="profileAction('shared')">
-      <i class="fas fa-user-friends"></i>
-      <span>See shared activity</span>
-    </button>
-
-    <button type="button" onclick="profileAction('hide')">
-      <i class="fas fa-eye-slash"></i>
-      <span>Hide your blog, photo &amp; videos</span>
-    </button>
-
-    <button type="button" onclick="removeFollower()">
-      <i class="fas fa-user-minus"></i>
-      <span>Remove follower</span>
-    </button>
-
-    <button type="button" onclick="copyProfile()">
-      <i class="fas fa-link"></i>
-      <span>Copy profile URL</span>
-    </button>
-
-    <button type="button" onclick="shareProfile()">
-      <i class="fas fa-share"></i>
-      <span>Share this profile</span>
-    </button>
-
-    <button type="button" onclick="showQR()">
-      <i class="fas fa-qrcode"></i>
-      <span>QR code</span>
-    </button>
-
-  </div>
-
-  <!-- TOAST -->
-  <div class="toast" id="toast"></div>
-
   <!-- ABOUT MODAL -->
-  <div class="modal" id="aboutModal">
+
+  <div
+    class="modal"
+    id="aboutModal"
+  >
+
     <div class="modal-card">
+
       <div class="modal-head">
-        <h3>About this account</h3>
-        <button type="button" class="modal-close" onclick="closeModal('aboutModal')">×</button>
+
+        <h3>
+          About this account
+        </h3>
+
+        <button
+          type="button"
+          class="modal-close"
+          onclick="closeModal('aboutModal')"
+        >
+          ×
+        </button>
+
       </div>
-      <p><strong><%= user.fullName %></strong></p>
-      <p>Account: <%= user.isPrivate ? 'Private' : 'Public' %></p>
+
       <p>
-        Followers: <%= followerCount %>
-        · Following: <%= followingCount %>
-        · Blogs: <%= blogCount %>
+        <strong>
+          <%= user.fullName %>
+        </strong>
       </p>
+
+      <p>
+        Account:
+        <%= user.isPrivate ? 'Private' : 'Public' %>
+      </p>
+
+      <p>
+        Followers:
+        <%= followerCount %>
+        · Following:
+        <%= followingCount %>
+        · Blogs:
+        <%= blogCount %>
+      </p>
+
     </div>
   </div>
 
   <!-- QR MODAL -->
-  <div class="modal" id="qrModal">
+
+  <div
+    class="modal"
+    id="qrModal"
+  >
+
     <div class="modal-card">
+
       <div class="modal-head">
-        <h3>Profile QR code</h3>
-        <button type="button" class="modal-close" onclick="closeModal('qrModal')">×</button>
+
+        <h3>
+          Profile QR code
+        </h3>
+
+        <button
+          type="button"
+          class="modal-close"
+          onclick="closeModal('qrModal')"
+        >
+          ×
+        </button>
+
       </div>
-      <div class="qr">▦</div>
-      <p style="text-align:center">Scan or share this profile URL</p>
-      <input class="share-url" readonly id="profileUrl">
+
+      <div class="qr">
+        ▦
+      </div>
+
+      <p style="text-align:center">
+        Scan or share this profile URL
+      </p>
+
+      <input
+        class="share-url"
+        readonly
+        id="profileUrl"
+      >
+
       <button
         type="button"
         class="btn primary"
@@ -966,6 +1127,7 @@
       >
         Copy profile URL
       </button>
+
     </div>
   </div>
 
@@ -977,82 +1139,156 @@
        ========================================================= */
 
     const profileUserId = '<%= user._id %>';
-    const isLoggedIn    = <%= isLoggedIn ? 'true' : 'false' %>;
+    const isLoggedIn = <%= isLoggedIn ? 'true' : 'false' %>;
 
     /* =========================================================
        PROFILE ACTION SHEET
        ========================================================= */
 
-    const profileMenu        = document.getElementById('profileMenu');
-    const profileMenuBackdrop = document.getElementById('profileMenuBackdrop');
-    const moreBtn            = document.getElementById('moreBtn');
+    const profileMenu =
+      document.getElementById('profileMenu');
+
+    const profileMenuBackdrop =
+      document.getElementById('profileMenuBackdrop');
+
+    const moreBtn =
+      document.getElementById('moreBtn');
 
     function openProfileMenu() {
+
       if (!profileMenu) return;
 
       profileMenu.classList.add('open');
+
       profileMenuBackdrop?.classList.add('open');
 
-      profileMenu.setAttribute('aria-hidden', 'false');
-      profileMenuBackdrop?.setAttribute('aria-hidden', 'false');
-      moreBtn?.setAttribute('aria-expanded', 'true');
+      profileMenu.setAttribute(
+        'aria-hidden',
+        'false'
+      );
 
-      document.body.classList.add('profile-menu-open');
+      profileMenuBackdrop?.setAttribute(
+        'aria-hidden',
+        'false'
+      );
+
+      moreBtn?.setAttribute(
+        'aria-expanded',
+        'true'
+      );
+
+      document.body.classList.add(
+        'profile-menu-open'
+      );
     }
 
     function closeProfileMenu() {
+
       if (!profileMenu) return;
 
       profileMenu.classList.remove('open');
+
       profileMenuBackdrop?.classList.remove('open');
 
-      profileMenu.setAttribute('aria-hidden', 'true');
-      profileMenuBackdrop?.setAttribute('aria-hidden', 'true');
-      moreBtn?.setAttribute('aria-expanded', 'false');
+      profileMenu.setAttribute(
+        'aria-hidden',
+        'true'
+      );
 
-      document.body.classList.remove('profile-menu-open');
+      profileMenuBackdrop?.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+
+      moreBtn?.setAttribute(
+        'aria-expanded',
+        'false'
+      );
+
+      document.body.classList.remove(
+        'profile-menu-open'
+      );
     }
 
     function toggleProfileMenu() {
+
       if (!profileMenu) return;
-      profileMenu.classList.contains('open')
-        ? closeProfileMenu()
-        : openProfileMenu();
+
+      if (profileMenu.classList.contains('open')) {
+        closeProfileMenu();
+      } else {
+        openProfileMenu();
+      }
     }
 
-    /* Attach listener on the button */
-    moreBtn?.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleProfileMenu();
-    });
+    /*
+     * IMPORTANT:
+     * We attach the event listener here instead of using
+     * onclick="toggleMenu(event)".
+     *
+     * This prevents conflicts with scripts.ejs.
+     */
 
-    /* Clicks inside the sheet stay inside */
-    profileMenu?.addEventListener('click', function (e) {
-      e.stopPropagation();
-    });
+    moreBtn?.addEventListener(
+      'click',
+      function (event) {
 
-    /* Tap backdrop → close */
-    profileMenuBackdrop?.addEventListener('click', closeProfileMenu);
+        event.preventDefault();
+        event.stopPropagation();
 
-    /* Esc key → close */
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeProfileMenu();
-    });
+        toggleProfileMenu();
+      }
+    );
+
+    profileMenu?.addEventListener(
+      'click',
+      function (event) {
+
+        event.stopPropagation();
+      }
+    );
+
+    profileMenuBackdrop?.addEventListener(
+      'click',
+      function () {
+
+        closeProfileMenu();
+      }
+    );
+
+    document.addEventListener(
+      'keydown',
+      function (event) {
+
+        if (event.key === 'Escape') {
+          closeProfileMenu();
+        }
+      }
+    );
 
     /* =========================================================
        TOAST
        ========================================================= */
 
     function toast(message) {
-      const el = document.getElementById('toast');
-      if (!el) return;
-      el.textContent = message;
-      el.style.display = 'block';
+
+      const element =
+        document.getElementById('toast');
+
+      if (!element) return;
+
+      element.textContent = message;
+
+      element.style.display = 'block';
+
       clearTimeout(window.__profileToast);
-      window.__profileToast = setTimeout(function () {
-        el.style.display = 'none';
-      }, 2800);
+
+      window.__profileToast =
+        setTimeout(function () {
+
+          element.style.display = 'none';
+
+        }, 2800);
     }
 
     /* =========================================================
@@ -1060,14 +1296,24 @@
        ========================================================= */
 
     function profileAction(action) {
+
       closeProfileMenu();
 
       if (action === 'hide') {
-        toast('Content hidden for this session.');
+
+        toast(
+          'Content hidden for this session.'
+        );
+
         return;
       }
+
       if (action === 'shared') {
-        toast('Shared activity selected.');
+
+        toast(
+          'Shared activity selected.'
+        );
+
         return;
       }
 
@@ -1083,28 +1329,57 @@
        ========================================================= */
 
     async function blockUser() {
-      const confirmed = confirm(
-        'Block this user? They will not be able to message or follow you.'
-      );
+
+      const confirmed =
+        confirm(
+          'Block this user? They will not be able to message or follow you.'
+        );
+
       if (!confirmed) return;
+
       closeProfileMenu();
 
       try {
-        const res  = await fetch('/messages/block/' + profileUserId, {
-          method: 'POST',
-          credentials: 'same-origin'
-        });
-        const data = await res.json();
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.message || 'Unable to block user');
+        const response =
+          await fetch(
+            '/messages/block/' +
+            profileUserId,
+            {
+              method: 'POST',
+              credentials: 'same-origin'
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok || !data.success) {
+
+          throw new Error(
+            data.message ||
+            'Unable to block user'
+          );
         }
 
-        toast(data.message || 'User blocked.');
-        setTimeout(function () { location.href = '/home'; }, 800);
+        toast(
+          data.message ||
+          'User blocked.'
+        );
 
-      } catch (err) {
-        toast(err.message || 'Unable to block user.');
+        setTimeout(
+          function () {
+            location.href = '/home';
+          },
+          800
+        );
+
+      } catch (error) {
+
+        toast(
+          error.message ||
+          'Unable to block user.'
+        );
       }
     }
 
@@ -1113,17 +1388,42 @@
        ========================================================= */
 
     async function removeFollower() {
+
       closeProfileMenu();
+
       try {
-        const res  = await fetch('/follow/' + profileUserId + '/follow', {
-          method: 'POST',
-          credentials: 'same-origin'
-        });
-        const data = await res.json();
-        toast(data.message || 'Follower updated');
-        setTimeout(function () { location.reload(); }, 700);
-      } catch (err) {
-        toast('Unable to remove follower');
+
+        const response =
+          await fetch(
+            '/follow/' +
+            profileUserId +
+            '/follow',
+            {
+              method: 'POST',
+              credentials: 'same-origin'
+            }
+          );
+
+        const data =
+          await response.json();
+
+        toast(
+          data.message ||
+          'Follower updated'
+        );
+
+        setTimeout(
+          function () {
+            location.reload();
+          },
+          700
+        );
+
+      } catch (error) {
+
+        toast(
+          'Unable to remove follower'
+        );
       }
     }
 
@@ -1132,29 +1432,59 @@
        ========================================================= */
 
     function copyProfile() {
-      const url = location.href;
 
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(url)
+      const url =
+        location.href;
+
+      if (
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+
+        navigator.clipboard
+          .writeText(url)
           .then(function () {
+
             closeProfileMenu();
-            toast('Profile URL copied');
+
+            toast(
+              'Profile URL copied'
+            );
+
           })
-          .catch(function () { fallbackCopyProfile(url); });
+          .catch(function () {
+
+            fallbackCopyProfile(url);
+          });
+
       } else {
+
         fallbackCopyProfile(url);
       }
     }
 
     function fallbackCopyProfile(url) {
-      const input = document.getElementById('profileUrl');
+
+      const input =
+        document.getElementById(
+          'profileUrl'
+        );
+
       if (input) {
+
         input.value = url;
+
         input.focus();
+
         input.select();
+
       }
+
       closeProfileMenu();
-      toast('Copy the profile URL');
+
+      toast(
+        'Copy the profile URL'
+      );
     }
 
     /* =========================================================
@@ -1162,29 +1492,52 @@
        ========================================================= */
 
     function shareProfile() {
+
       closeProfileMenu();
+
       location.href =
-        '/messages/chatlog?share=' + encodeURIComponent(profileUserId);
+        '/messages/chatlog?share=' +
+        encodeURIComponent(
+          profileUserId
+        );
     }
 
     /* =========================================================
-       ABOUT MODAL
+       ABOUT
        ========================================================= */
 
     function showAbout() {
+
       closeProfileMenu();
-      document.getElementById('aboutModal')?.classList.add('open');
+
+      const modal =
+        document.getElementById(
+          'aboutModal'
+        );
+
+      modal?.classList.add('open');
     }
 
     /* =========================================================
-       QR MODAL
+       QR
        ========================================================= */
 
     function showQR() {
+
       closeProfileMenu();
-      const input = document.getElementById('profileUrl');
-      if (input) input.value = location.href;
-      document.getElementById('qrModal')?.classList.add('open');
+
+      const input =
+        document.getElementById(
+          'profileUrl'
+        );
+
+      if (input) {
+        input.value = location.href;
+      }
+
+      document
+        .getElementById('qrModal')
+        ?.classList.add('open');
     }
 
     /* =========================================================
@@ -1192,72 +1545,138 @@
        ========================================================= */
 
     function closeModal(id) {
-      document.getElementById(id)?.classList.remove('open');
+
+      document
+        .getElementById(id)
+        ?.classList.remove('open');
     }
 
-    document.querySelectorAll('.modal').forEach(function (modal) {
-      modal.addEventListener('click', function (e) {
-        if (e.target === modal) modal.classList.remove('open');
-      });
-    });
-
     /* =========================================================
-       PANELS / TABS
+       PANELS
        ========================================================= */
 
     function openPanel(name) {
-      document.querySelectorAll('.panel').forEach(function (p) {
-        p.classList.toggle('active', p.id === name);
-      });
-      document.querySelectorAll('.tab').forEach(function (t) {
-        t.classList.toggle('active', t.dataset.panel === name);
-      });
-      if (name === 'followers' || name === 'following') {
+
+      document
+        .querySelectorAll('.panel')
+        .forEach(function (panel) {
+
+          panel.classList.toggle(
+            'active',
+            panel.id === name
+          );
+
+        });
+
+      document
+        .querySelectorAll('.tab')
+        .forEach(function (tab) {
+
+          tab.classList.toggle(
+            'active',
+            tab.dataset.panel === name
+          );
+
+        });
+
+      if (
+        name === 'followers' ||
+        name === 'following'
+      ) {
+
         loadPeople(name);
       }
     }
 
     /* =========================================================
-       FOLLOW TOGGLE
+       FOLLOW
        ========================================================= */
 
     async function toggleFollow() {
+
       if (!isLoggedIn) {
-        location.href = '/user/signin';
+
+        location.href =
+          '/user/signin';
+
         return;
       }
 
-      const button = document.getElementById('followBtn');
+      const button =
+        document.getElementById(
+          'followBtn'
+        );
+
       if (!button) return;
+
       button.disabled = true;
 
       try {
-        const res  = await fetch('/follow/' + profileUserId + '/follow', {
-          method: 'POST',
-          credentials: 'same-origin'
-        });
-        const data = await res.json();
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.message || 'Unable to follow');
+        const response =
+          await fetch(
+            '/follow/' +
+            profileUserId +
+            '/follow',
+            {
+              method: 'POST',
+              credentials: 'same-origin'
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+
+          throw new Error(
+            data.message ||
+            'Unable to follow'
+          );
         }
 
         if (data.following) {
-          button.innerHTML = '<i class="fas fa-user-check"></i> Following';
-          button.className = 'btn success';
+
+          button.innerHTML =
+            '<i class="fas fa-user-check"></i> Following';
+
+          button.className =
+            'btn success';
+
         } else if (data.requested) {
-          button.innerHTML = '<i class="fas fa-clock"></i> Request sent';
-          button.className = 'btn secondary';
+
+          button.innerHTML =
+            '<i class="fas fa-clock"></i> Request sent';
+
+          button.className =
+            'btn secondary';
+
         } else {
-          button.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
-          button.className = 'btn secondary';
+
+          button.innerHTML =
+            '<i class="fas fa-user-plus"></i> Follow';
+
+          button.className =
+            'btn secondary';
         }
 
-        toast(data.message || 'Follow status updated');
+        toast(
+          data.message ||
+          'Follow status updated'
+        );
 
-      } catch (err) {
-        toast(err.message || 'Unable to follow');
+      } catch (error) {
+
+        toast(
+          error.message ||
+          'Unable to follow'
+        );
+
       } finally {
+
         button.disabled = false;
       }
     }
@@ -1267,54 +1686,149 @@
        ========================================================= */
 
     async function loadPeople(type) {
-      const box = document.getElementById(type + 'Content');
+
+      const box =
+        document.getElementById(
+          type + 'Content'
+        );
+
       if (!box) return;
 
       try {
-        const res  = await fetch('/follow/' + profileUserId + '/' + type);
-        const data = await res.json();
 
-        if (!res.ok) {
+        const response =
+          await fetch(
+            '/follow/' +
+            profileUserId +
+            '/' +
+            type
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+
           box.innerHTML =
             '<div class="lock">' +
-            (data.message || 'Unable to load list.') +
+            (data.message ||
+              'Unable to load list.') +
             '</div>';
+
           return;
         }
 
-        const list = data[type] || [];
+        const list =
+          data[type] || [];
+
         if (!list.length) {
+
           box.className = 'empty';
-          box.innerHTML = 'No ' + type + ' yet.';
+
+          box.innerHTML =
+            'No ' +
+            type +
+            ' yet.';
+
           return;
         }
 
         box.className = 'people';
-        box.innerHTML = list.map(function (person) {
-          const name  = String(person.fullName || 'User').replace(/[<>&]/g, '');
-          const bio   = String(person.bio || '').replace(/[<>&]/g, '');
-          const image = person.profileImageURL || '/imgs/default.png';
 
-          return `
-            <div class="person">
-              <img src="${image}" alt="${name}" onerror="this.src='/imgs/default.png'">
-              <strong>${name}</strong>
-              <small>${bio}</small>
-              <br>
-              <a class="btn secondary" href="/user/profile/${person._id}">
-                View profile
-              </a>
-            </div>
-          `;
-        }).join('');
+        box.innerHTML =
+          list
+            .map(function (person) {
 
-      } catch (err) {
+              const name =
+                String(
+                  person.fullName ||
+                  'User'
+                )
+                .replace(
+                  /[<>&]/g,
+                  ''
+                );
+
+              const bio =
+                String(
+                  person.bio || ''
+                )
+                .replace(
+                  /[<>&]/g,
+                  ''
+                );
+
+              const image =
+                person.profileImageURL ||
+                '/imgs/default.png';
+
+              return `
+                <div class="person">
+
+                  <img
+                    src="${image}"
+                    alt="${name}"
+                    onerror="this.src='/imgs/default.png'"
+                  >
+
+                  <strong>
+                    ${name}
+                  </strong>
+
+                  <small>
+                    ${bio}
+                  </small>
+
+                  <br>
+
+                  <a
+                    class="btn secondary"
+                    href="/user/profile/${person._id}"
+                  >
+                    View profile
+                  </a>
+
+                </div>
+              `;
+
+            })
+            .join('');
+
+      } catch (error) {
+
         box.className = 'empty';
-        box.innerHTML = 'Unable to load this list.';
+
+        box.innerHTML =
+          'Unable to load this list.';
       }
     }
+
+    /* =========================================================
+       CLOSE MODAL WHEN CLICKING OUTSIDE
+       ========================================================= */
+
+    document
+      .querySelectorAll('.modal')
+      .forEach(function (modal) {
+
+        modal.addEventListener(
+          'click',
+          function (event) {
+
+            if (
+              event.target === modal
+            ) {
+
+              modal.classList.remove(
+                'open'
+              );
+            }
+          }
+        );
+
+      });
   </script>
 
 </body>
 </html>
-
+```
