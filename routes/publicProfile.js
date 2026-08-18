@@ -9,13 +9,20 @@ router.get("/:userId", async (req,res)=>{
     try{
         const {userId}=req.params;
         if(!mongoose.Types.ObjectId.isValid(userId)) return res.status(404).render("404",{user:req.user||null});
-        // Never expose private account fields such as email from a public profile query.
-        const profileUser=await User.findById(userId).select("fullName profileImageURL bio website location isPrivate followers following createdAt blockedUsers").lean();
+        const profileUser=await User.findById(userId).select("fullName profileImageURL bio website location isPrivate followers following createdAt").lean();
         if(!profileUser) return res.status(404).render("404",{user:req.user||null});
         const viewerId=req.user?._id?.toString();
         const isOwner=viewerId===userId;
-        const viewerBlocked=!!viewerId && profileUser.blockedUsers?.some(id=>id.toString()===viewerId);
-        const blockedViewer=!!viewerId && !!(await User.exists({_id:viewerId,blockedUsers:userId}));
+        let viewerBlocked=false;
+        let blockedViewer=false;
+        if(!isOwner && viewerId){
+            const [viewer, target]=await Promise.all([
+                User.findById(viewerId).select("blockedUsers").lean(),
+                User.findById(userId).select("blockedUsers").lean()
+            ]);
+            viewerBlocked=!!viewer?.blockedUsers?.some(id=>id.toString()===userId);
+            blockedViewer=!!target?.blockedUsers?.some(id=>id.toString()===viewerId);
+        }
         if(!isOwner && (viewerBlocked || blockedViewer)) return res.status(404).render("404",{user:req.user||null});
         const isFollowing=!!viewerId && profileUser.followers.some(id=>id.toString()===viewerId);
         const canSeePrivateContent=isOwner || !profileUser.isPrivate || isFollowing;
