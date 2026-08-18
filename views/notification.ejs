@@ -2,73 +2,244 @@
 <html lang="en">
 <head>
   <%- include('./partials/head') %>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
   <title>Notifications | Blogify</title>
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
   <style>
-    /* Notification page uses the same global Blogify theme as every other page. */
     .notification-page{
-      --n-bg:#f6f7fb;
-      --n-card:#fff;
-      --n-text:#172033;
-      --n-muted:#738096;
-      --n-line:#e6eaf1;
-      --n-primary:#635bff;
-      --n-soft:#efedff;
-      --n-danger:#dc3545;
-      --n-ok:#149b72;
+      --n-page:var(--page,#fff);
+      --n-surface:var(--surface,#fff);
+      --n-soft:var(--soft,#f8fafc);
+      --n-text:var(--text,#1e293b);
+      --n-heading:var(--heading,#0f172a);
+      --n-muted:var(--muted,#64748b);
+      --n-border:var(--border,#e2e8f0);
+      --n-primary:var(--primary,#6366f1);
+      --n-primary-dark:var(--primary-dark,#4f46e5);
+      --n-danger:#ef4444;
+      --n-success:#16a34a;
       min-height:calc(100vh - 30px);
-      background:var(--n-bg);
+      min-height:calc(100dvh - 30px);
+      background:var(--n-page);
       color:var(--n-text);
-      padding:0 0 30px;
-      transition:background-color .2s ease,color .2s ease;
+      padding:0 0 36px;
+      transition:background .2s ease,color .2s ease;
     }
+
     html[data-theme="dark"] .notification-page{
-      --n-bg:#000;
-      --n-card:#111;
+      --n-page:#000;
+      --n-surface:#111;
+      --n-soft:#181818;
       --n-text:#f5f5f5;
+      --n-heading:#fff;
       --n-muted:#a3a3a3;
-      --n-line:#2b2b2b;
+      --n-border:#292929;
       --n-primary:#8b84ff;
-      --n-soft:#211f43;
-      --n-danger:#ff6b75;
-      --n-ok:#25b88a;
+      --n-primary-dark:#756df5;
     }
+
     .notification-page *{box-sizing:border-box}
-    .notification-top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--n-card) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--n-line)}
-    .notification-topin{max-width:760px;margin:auto;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .notification-title{font-weight:850;font-size:1.25rem;display:flex;gap:9px;align-items:center;color:var(--n-text)}
-    .notification-count{font-size:.7rem;background:var(--n-primary);color:#fff;border-radius:99px;padding:3px 8px}
-    .notification-mark{border:0;background:var(--n-soft);color:var(--n-primary);border-radius:99px;padding:9px 13px;font-weight:750;cursor:pointer}
-    .notification-wrap{max-width:760px;margin:auto;padding:16px}
-    .notification-tabs{display:flex;gap:7px;overflow:auto;margin-bottom:14px;padding-bottom:2px}
-    .notification-tab{white-space:nowrap;border:1px solid var(--n-line);background:var(--n-card);color:var(--n-muted);border-radius:99px;padding:8px 13px;font-weight:700;cursor:pointer}
-    .notification-tab.active{background:var(--n-primary);color:#fff;border-color:var(--n-primary)}
-    .notification-swipe-wrap{position:relative;overflow:hidden;border-radius:18px;margin-bottom:10px;background:#dc3545}
-    .notification-delete-bg{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:center;padding-right:24px;color:#fff;font-weight:800;gap:7px}
-    .notification-delete-bg i{font-size:1.35rem}
-    .notification-item{position:relative;display:flex;gap:12px;padding:14px;border:1px solid var(--n-line);background:var(--n-card);border-radius:18px;transition:transform .22s ease,opacity .22s ease;touch-action:pan-y;will-change:transform;color:var(--n-text)}
-    .notification-item.unread{background:var(--n-soft);border-color:var(--n-primary)}
-    .notification-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:0 0 48px;background:var(--n-bg)}
-    .notification-body{min-width:0;flex:1}
-    .notification-text{line-height:1.45;color:var(--n-text)}
-    .notification-text strong{color:var(--n-primary)}
-    .notification-meta{font-size:.75rem;color:var(--n-muted);margin-top:5px}
-    .notification-message-box{margin-top:10px;padding:12px;border:1px solid var(--n-line);border-radius:14px;background:var(--n-bg)}
-    .notification-message-content{white-space:pre-wrap;word-break:break-word;color:var(--n-text)}
-    .notification-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-    .notification-action{border:1px solid var(--n-line);background:var(--n-card);color:var(--n-text);border-radius:10px;padding:7px 11px;font-weight:750;text-decoration:none;cursor:pointer}
-    .notification-action.primary{background:var(--n-primary);border-color:var(--n-primary);color:#fff}
-    .notification-action.liked{color:#e33;background:#fff0f2;border-color:#ffc6cf}
-    html[data-theme="dark"] .notification-action.liked{background:#35171c;border-color:#633039;color:#ff8790}
-    .notification-request-actions{display:flex;gap:8px;margin-top:10px}
-    .notification-accept,.notification-reject{border:0;border-radius:10px;padding:8px 13px;font-weight:800;cursor:pointer}
-    .notification-accept{background:var(--n-ok);color:#fff}.notification-reject{background:#fee2e2;color:#b42318}
-    html[data-theme="dark"] .notification-reject{background:#32171a;color:#ff9ca3}
-    .notification-empty{text-align:center;padding:70px 20px;color:var(--n-muted)}
-    .notification-empty i{font-size:3rem;display:block;margin-bottom:10px}
+    .notification-shell{width:min(100%,860px);margin:0 auto}
+
+    .notification-top{
+      position:sticky;
+      top:0;
+      z-index:20;
+      background:color-mix(in srgb,var(--n-surface) 94%,transparent);
+      border-bottom:1px solid var(--n-border);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+    }
+
+    .notification-topin{
+      min-height:68px;
+      padding:12px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+    }
+
+    .notification-title{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      color:var(--n-heading);
+      font-size:1.2rem;
+      font-weight:800;
+      letter-spacing:-.02em;
+    }
+
+    .notification-title i{font-size:1.35rem;color:var(--n-primary)}
+    .notification-count{min-width:22px;text-align:center;padding:3px 7px;border-radius:999px;background:var(--n-primary);color:#fff;font-size:.7rem;font-weight:800}
+
+    .notification-mark{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border:1px solid var(--n-border);
+      background:var(--n-soft);
+      color:var(--n-text);
+      border-radius:999px;
+      padding:9px 13px;
+      font-size:.78rem;
+      font-weight:750;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    .notification-mark:hover{border-color:var(--n-primary);color:var(--n-primary)}
+
+    .notification-wrap{padding:18px}
+    .notification-tabs{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 12px;scrollbar-width:none}
+    .notification-tabs::-webkit-scrollbar{display:none}
+
+    .notification-tab{
+      flex:0 0 auto;
+      border:1px solid var(--n-border);
+      background:var(--n-surface);
+      color:var(--n-muted);
+      border-radius:999px;
+      padding:8px 14px;
+      font-size:.8rem;
+      font-weight:750;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    .notification-tab:hover{color:var(--n-text);border-color:var(--n-primary)}
+    .notification-tab.active{background:var(--n-primary);border-color:var(--n-primary);color:#fff}
+
     .notification-swipe-hint{font-size:.7rem;color:var(--n-muted);text-align:center;margin:0 0 12px}
-    @media(max-width:600px){.notification-wrap{padding:10px}.notification-item{padding:12px}.notification-topin{padding:13px}.notification-title{font-size:1.05rem}.notification-mark{padding:8px 10px}}
+
+    .notification-swipe-wrap{
+      position:relative;
+      overflow:hidden;
+      border-radius:18px;
+      margin-bottom:9px;
+      background:var(--n-danger);
+    }
+
+    .notification-delete-bg{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+      padding-right:24px;
+      color:#fff;
+      font-size:.8rem;
+      font-weight:800;
+    }
+
+    .notification-delete-bg i{font-size:1.25rem}
+
+    .notification-item{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      width:100%;
+      padding:14px;
+      border:1px solid var(--n-border);
+      border-radius:18px;
+      background:var(--n-surface);
+      color:var(--n-text);
+      transform:translateX(0);
+      opacity:1;
+      transition:transform .22s ease,opacity .22s ease,background .2s ease,border-color .2s ease;
+      touch-action:pan-y;
+      will-change:transform;
+    }
+
+    .notification-item:hover{border-color:color-mix(in srgb,var(--n-primary) 38%,var(--n-border))}
+    .notification-item.unread{background:color-mix(in srgb,var(--n-primary) 8%,var(--n-surface));border-color:color-mix(in srgb,var(--n-primary) 45%,var(--n-border))}
+
+    .notification-avatar{
+      width:48px;
+      height:48px;
+      flex:0 0 48px;
+      border-radius:50%;
+      object-fit:cover;
+      background:var(--n-soft);
+      border:1px solid var(--n-border);
+    }
+
+    .notification-body{min-width:0;flex:1}
+    .notification-text{color:var(--n-text);font-size:.9rem;line-height:1.45;word-break:break-word}
+    .notification-text strong{color:var(--n-heading);font-weight:800}
+    .notification-meta{display:flex;align-items:center;gap:4px;margin-top:5px;color:var(--n-muted);font-size:.72rem}
+    .notification-meta i{font-size:.82rem}
+
+    .notification-message-box{
+      margin-top:10px;
+      padding:11px 12px;
+      border:1px solid var(--n-border);
+      border-radius:14px;
+      background:var(--n-soft);
+    }
+
+    .notification-message-content{
+      color:var(--n-text);
+      white-space:pre-wrap;
+      word-break:break-word;
+      line-height:1.45;
+      font-size:.86rem;
+    }
+
+    .notification-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}
+
+    .notification-action{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:5px;
+      min-height:34px;
+      padding:7px 11px;
+      border:1px solid var(--n-border);
+      border-radius:10px;
+      background:var(--n-surface);
+      color:var(--n-text);
+      font-size:.76rem;
+      font-weight:750;
+      text-decoration:none;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    .notification-action:hover{border-color:var(--n-primary);color:var(--n-primary)}
+    .notification-action.primary{background:var(--n-primary);border-color:var(--n-primary);color:#fff}
+    .notification-action.primary:hover{background:var(--n-primary-dark);color:#fff}
+    .notification-action.liked{color:#ef4444;border-color:#fda4af;background:#fff1f2}
+    html[data-theme="dark"] .notification-action.liked{background:#291316;border-color:#5b292f;color:#ff8b95}
+
+    .notification-request-actions{display:flex;gap:8px;margin-top:10px}
+    .notification-accept,.notification-reject{min-height:34px;padding:7px 13px;border:0;border-radius:10px;font-size:.76rem;font-weight:800;cursor:pointer}
+    .notification-accept{background:var(--n-success);color:#fff}
+    .notification-reject{background:#fee2e2;color:#b42318}
+    html[data-theme="dark"] .notification-reject{background:#321719;color:#ff9ca3}
+
+    .notification-empty{text-align:center;padding:76px 20px;color:var(--n-muted)}
+    .notification-empty i{display:block;margin-bottom:12px;font-size:3rem;color:var(--n-primary)}
+    .notification-empty h3{margin:0 0 5px;color:var(--n-heading);font-size:1rem}
+    .notification-empty p{margin:0;font-size:.82rem}
+
+    @media(max-width:600px){
+      .notification-page{padding-bottom:22px}
+      .notification-topin{min-height:62px;padding:10px 12px}
+      .notification-title{font-size:1.05rem}
+      .notification-title i{font-size:1.2rem}
+      .notification-mark{padding:8px 10px;font-size:.72rem}
+      .notification-wrap{padding:10px}
+      .notification-item{padding:12px;border-radius:16px}
+      .notification-avatar{width:44px;height:44px;flex-basis:44px}
+      .notification-text{font-size:.84rem}
+      .notification-message-content{font-size:.82rem}
+      .notification-swipe-wrap{border-radius:16px}
+    }
+
     @media(min-width:601px){.notification-swipe-hint{display:none}}
   </style>
 </head>
@@ -76,84 +247,240 @@
   <%- include('./partials/nave') %>
 
   <main class="notification-page">
-    <header class="notification-top">
-      <div class="notification-topin">
-        <div class="notification-title">
-          <i class="ri-notification-3-line"></i>
-          Notifications
-          <% if(notifications.some(n=>!n.isRead)){ %>
-            <span class="notification-count" id="count"><%=notifications.filter(n=>!n.isRead).length%></span>
-          <% } %>
+    <div class="notification-shell">
+      <header class="notification-top">
+        <div class="notification-topin">
+          <div class="notification-title">
+            <i class="ri-notification-3-line"></i>
+            <span>Notifications</span>
+            <% const notificationList = notifications || []; const unreadCount = notificationList.filter(n => !n.isRead).length; %>
+            <% if(unreadCount > 0){ %>
+              <span class="notification-count" id="count"><%= unreadCount %></span>
+            <% } %>
+          </div>
+          <button type="button" class="notification-mark" onclick="markAll()">
+            <i class="ri-check-double-line"></i>
+            <span>Mark all read</span>
+          </button>
         </div>
-        <button class="notification-mark" onclick="markAll()"><i class="ri-check-double-line"></i> Mark all read</button>
-      </div>
-    </header>
+      </header>
 
-    <div class="notification-wrap">
-      <div class="notification-tabs">
-        <button class="notification-tab active" onclick="filterType('all',this)">All</button>
-        <button class="notification-tab" onclick="filterType('message',this)">Messages</button>
-        <button class="notification-tab" onclick="filterType('follow',this)">Follows</button>
-        <button class="notification-tab" onclick="filterType('like',this)">Likes</button>
-        <button class="notification-tab" onclick="filterType('comment',this)">Comments</button>
-        <button class="notification-tab" onclick="filterType('blog_post',this)">Posts</button>
-      </div>
-      <p class="notification-swipe-hint">Swipe a notification left to delete it</p>
+      <div class="notification-wrap">
+        <nav class="notification-tabs" aria-label="Notification filters">
+          <button type="button" class="notification-tab active" onclick="filterType('all',this)">All</button>
+          <button type="button" class="notification-tab" onclick="filterType('message',this)">Messages</button>
+          <button type="button" class="notification-tab" onclick="filterType('follow',this)">Follows</button>
+          <button type="button" class="notification-tab" onclick="filterType('like',this)">Likes</button>
+          <button type="button" class="notification-tab" onclick="filterType('comment',this)">Comments</button>
+          <button type="button" class="notification-tab" onclick="filterType('blog_post',this)">Posts</button>
+        </nav>
 
-      <section id="list">
-        <% if(notifications&&notifications.length){ %>
-          <% notifications.forEach(n=>{ const actor=n.actor; const isMessage=n.type==='message'; const targetUser=actor?actor._id:''; const convo=n.conversationId||''; %>
-            <div class="notification-swipe-wrap" data-notification-id="<%=n._id%>">
-              <div class="notification-delete-bg"><i class="ri-delete-bin-6-line"></i> Delete</div>
-              <article class="notification-item <%=n.isRead?'':'unread'%>" data-type="<%=n.type%>" data-id="<%=n._id%>">
-                <img class="notification-avatar" src="<%=actor&&actor.profileImageURL?actor.profileImageURL:'/imgs/default.png'%>" onerror="this.src='/imgs/default.png'" alt="">
-                <div class="notification-body">
-                  <div class="notification-text">
-                    <% if(isMessage){ %><strong><%=actor?actor.fullName:'Someone'%></strong> sent you a message
-                    <% }else if(n.type==='blog_post'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> published a new blog
-                    <% }else if(n.type==='like'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> liked your blog
-                    <% }else if(n.type==='comment'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> commented on your blog
-                    <% }else if(n.type==='reply'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> replied to your comment
-                    <% }else if(n.type==='follow'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> started following you
-                    <% }else if(n.type==='follow_request'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> wants to follow you
-                    <% }else{ %><strong><%=actor?actor.fullName:'Someone'%></strong> mentioned you
+        <p class="notification-swipe-hint">Swipe left on a notification to delete it</p>
+
+        <section id="list">
+          <% if(notificationList.length){ %>
+            <% notificationList.forEach(n => { const actor=n.actor; const isMessage=n.type==='message'; const targetUser=actor ? actor._id : ''; const convo=n.conversationId || ''; const currentUserId=(typeof user!=='undefined' && user) ? user._id : ''; const messageLikes=n.messageRef && n.messageRef.likes ? n.messageRef.likes : []; const likedByMe=messageLikes.map(String).includes(String(currentUserId)); %>
+              <div class="notification-swipe-wrap" data-notification-id="<%= n._id %>">
+                <div class="notification-delete-bg"><i class="ri-delete-bin-6-line"></i><span>Delete</span></div>
+
+                <article class="notification-item <%= n.isRead ? '' : 'unread' %>" data-type="<%= n.type %>" data-id="<%= n._id %>">
+                  <img class="notification-avatar" src="<%= actor && actor.profileImageURL ? actor.profileImageURL : '/imgs/default.png' %>" onerror="this.src='/imgs/default.png'" alt="">
+
+                  <div class="notification-body">
+                    <div class="notification-text">
+                      <% if(isMessage){ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> sent you a message
+                      <% }else if(n.type==='blog_post'){ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> published a new blog
+                      <% }else if(n.type==='like'){ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> liked your blog
+                      <% }else if(n.type==='comment'){ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> commented on your blog
+                      <% }else if(n.type==='reply'){ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> replied to your comment
+                      <% }else if(n.type==='follow'){ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> started following you
+                      <% }else if(n.type==='follow_request'){ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> wants to follow you
+                      <% }else{ %>
+                        <strong><%= actor ? actor.fullName : 'Someone' %></strong> mentioned you
+                      <% } %>
+                    </div>
+
+                    <div class="notification-meta">
+                      <i class="ri-time-line"></i>
+                      <span><%= new Date(n.createdAt).toLocaleString() %></span>
+                    </div>
+
+                    <% if(isMessage){ %>
+                      <div class="notification-message-box">
+                        <div class="notification-message-content"><%= n.message || (n.messageRef && n.messageRef.text) || 'New message' %></div>
+                        <div class="notification-actions">
+                          <a class="notification-action primary" href="/messages?user=<%= targetUser %>&conversation=<%= convo %>" onclick="readNotif('<%= n._id %>')">
+                            <i class="ri-reply-line"></i> Reply
+                          </a>
+                          <button type="button" class="notification-action <%= likedByMe ? 'liked' : '' %>" onclick="likeMessage('<%= n.messageRef ? n.messageRef._id : '' %>',this)">
+                            <i class="ri-heart-<%= likedByMe ? 'fill' : 'line' %>"></i>
+                            Like <span><%= messageLikes.length %></span>
+                          </button>
+                        </div>
+                      </div>
+                    <% }else if(n.blog){ %>
+                      <div class="notification-actions">
+                        <a class="notification-action primary" href="/blogs/<%= n.blog._id %>" onclick="readNotif('<%= n._id %>')">View blog</a>
+                      </div>
+                    <% }else if(n.type==='follow_request'){ %>
+                      <div class="notification-request-actions">
+                        <button type="button" class="notification-accept" onclick="respondRequest('<%= n.request %>','accept',this)">Accept</button>
+                        <button type="button" class="notification-reject" onclick="respondRequest('<%= n.request %>','reject',this)">Reject</button>
+                      </div>
+                    <% }else if(actor){ %>
+                      <div class="notification-actions">
+                        <a class="notification-action" href="/user/profile/<%= actor._id %>" onclick="readNotif('<%= n._id %>')">View profile</a>
+                      </div>
                     <% } %>
                   </div>
-                  <div class="notification-meta"><i class="ri-time-line"></i> <%=new Date(n.createdAt).toLocaleString()%></div>
-
-                  <% if(isMessage){ %>
-                    <div class="notification-message-box">
-                      <div class="notification-message-content"><%=n.message||n.messageRef?.text||'New message'%></div>
-                      <div class="notification-actions">
-                        <a class="notification-action primary" href="/messages?user=<%=targetUser%>&conversation=<%=convo%>" onclick="readNotif('<%=n._id%>')"><i class="ri-reply-line"></i> Reply</a>
-                        <button class="notification-action <%=n.messageRef&&n.messageRef.likes&&n.messageRef.likes.map(String).includes(String(user._id))?'liked':''%>" onclick="likeMessage('<%=n.messageRef?._id||''%>',this)"><i class="ri-heart-<%=n.messageRef&&n.messageRef.likes&&n.messageRef.likes.map(String).includes(String(user._id))?'fill':'line'%>"></i> Like <span><%=n.messageRef?.likes?.length||0%></span></button>
-                      </div>
-                    </div>
-                  <% }else if(n.blog){ %>
-                    <div class="notification-actions"><a class="notification-action primary" href="/blogs/<%=n.blog._id%>" onclick="readNotif('<%=n._id%>')">View blog</a></div>
-                  <% }else if(n.type==='follow_request'){ %>
-                    <div class="notification-request-actions"><button class="notification-accept" onclick="respondRequest('<%=n.request%>','accept',this)">Accept</button><button class="notification-reject" onclick="respondRequest('<%=n.request%>','reject',this)">Reject</button></div>
-                  <% }else if(actor){ %>
-                    <div class="notification-actions"><a class="notification-action" href="/user/profile/<%=actor._id%>" onclick="readNotif('<%=n._id%>')">View profile</a></div>
-                  <% } %>
-                </div>
-              </article>
+                </article>
+              </div>
+            <% }) %>
+          <% }else{ %>
+            <div class="notification-empty">
+              <i class="ri-notification-off-line"></i>
+              <h3>No notifications</h3>
+              <p>New activity will appear here.</p>
             </div>
-          <% }) %>
-        <% }else{ %>
-          <div class="notification-empty"><i class="ri-notification-off-line"></i><h3>No notifications</h3><p>New activity will appear here.</p></div>
-        <% } %>
-      </section>
+          <% } %>
+        </section>
+      </div>
     </div>
   </main>
 
   <script>
-    async function readNotif(id){try{await fetch('/notifications/'+id+'/read',{method:'PUT'})}catch(e){}}
-    async function markAll(){try{const r=await fetch('/notifications/all/read',{method:'PUT'});if(r.ok)location.reload()}catch(e){}}
-    function filterType(type,btn){document.querySelectorAll('.notification-tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.notification-item').forEach(x=>{x.style.display=type==='all'||x.dataset.type===type?'flex':'none'})}
-    async function likeMessage(id,btn){if(!id)return alert('This message is not available to like.');btn.disabled=true;try{const r=await fetch('/messages/'+id+'/like',{method:'POST',headers:{'Content-Type':'application/json'}});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.message||'Unable to like');btn.classList.toggle('liked',d.liked);btn.innerHTML='<i class="ri-heart-'+(d.liked?'fill':'line')+'"></i> Like <span>'+d.likes+'</span>'}catch(e){alert(e.message)}finally{btn.disabled=false}}
-    async function respondRequest(id,action,btn){btn.disabled=true;try{const urls=action==='accept'?['/follow/requests/'+id+'/accept','/follow/request/'+id+'/accept']:['/follow/requests/'+id+'/reject','/follow/request/'+id+'/reject'];let r;for(const u of urls){r=await fetch(u,{method:'POST'});if(r.status!==404)break}if(!r.ok)throw new Error('Unable to '+action+' request');btn.parentElement.innerHTML='<span style="color:var(--n-muted);font-weight:700">Request '+(action==='accept'?'accepted':'rejected')+'</span>'}catch(e){btn.disabled=false;alert(e.message)}}
-    function initSwipe(){document.querySelectorAll('.notification-swipe-wrap').forEach(wrap=>{const item=wrap.querySelector('.notification-item');let startX=0,startY=0,currentX=0,dragging=false,open=false;const close=()=>{item.style.transform='translateX(0)';open=false};const remove=async()=>{const id=wrap.dataset.notificationId;if(!id)return;item.style.transition='transform .2s ease,opacity .2s ease';item.style.transform='translateX(-110%)';item.style.opacity='0';try{const r=await fetch('/notifications/'+encodeURIComponent(id),{method:'DELETE',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('Delete failed');setTimeout(()=>{wrap.remove();const remaining=document.querySelectorAll('.notification-swipe-wrap').length;if(!remaining&&!document.querySelector('.notification-empty'))document.getElementById('list').innerHTML='<div class="notification-empty"><i class="ri-notification-off-line"></i><h3>No notifications</h3><p>New activity will appear here.</p></div>'},210)}catch(e){item.style.transform='translateX(0)';item.style.opacity='1';alert('Unable to delete notification. Please try again.')}};item.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;startX=e.touches[0].clientX;startY=e.touches[0].clientY;currentX=0;dragging=true;item.style.transition='none'},{passive:true});item.addEventListener('touchmove',e=>{if(!dragging)return;const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dx)<12){dragging=false;return}if(dx<0){currentX=Math.max(dx,-Math.min(120,window.innerWidth*.3));item.style.transform='translateX('+currentX+'px')}},{passive:true});item.addEventListener('touchend',()=>{if(!dragging)return;dragging=false;item.style.transition='transform .22s ease';if(currentX<-70){open=true;item.style.transform='translateX(-96px)'}else{close()}});item.addEventListener('click',e=>{if(open&&!e.target.closest('a,button'))close()});wrap.querySelector('.notification-delete-bg').addEventListener('click',remove)})}
+    async function readNotif(id){
+      try{ await fetch('/notifications/'+encodeURIComponent(id)+'/read',{method:'PUT'}); }catch(e){}
+    }
+
+    async function markAll(){
+      try{
+        const r=await fetch('/notifications/all/read',{method:'PUT'});
+        if(r.ok) location.reload();
+      }catch(e){}
+    }
+
+    function filterType(type,btn){
+      document.querySelectorAll('.notification-tab').forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.notification-item').forEach(item=>{
+        item.style.display=(type==='all'||item.dataset.type===type)?'flex':'none';
+      });
+    }
+
+    async function likeMessage(id,btn){
+      if(!id){ alert('This message is not available to like.'); return; }
+      btn.disabled=true;
+      try{
+        const r=await fetch('/messages/'+encodeURIComponent(id)+'/like',{method:'POST',headers:{'Content-Type':'application/json'}});
+        const d=await r.json();
+        if(!r.ok||!d.success) throw new Error(d.message||'Unable to like');
+        btn.classList.toggle('liked',d.liked);
+        btn.innerHTML='<i class="ri-heart-'+(d.liked?'fill':'line')+'"></i> Like <span>'+d.likes+'</span>';
+      }catch(e){ alert(e.message); }
+      finally{ btn.disabled=false; }
+    }
+
+    async function respondRequest(id,action,btn){
+      if(!id)return;
+      btn.disabled=true;
+      try{
+        const urls=action==='accept'
+          ? ['/follow/requests/'+id+'/accept','/follow/request/'+id+'/accept']
+          : ['/follow/requests/'+id+'/reject','/follow/request/'+id+'/reject'];
+        let r;
+        for(const url of urls){
+          r=await fetch(url,{method:'POST'});
+          if(r.status!==404)break;
+        }
+        if(!r.ok)throw new Error('Unable to '+action+' request');
+        btn.parentElement.innerHTML='<span style="color:var(--n-muted);font-weight:700">Request '+(action==='accept'?'accepted':'rejected')+'</span>';
+      }catch(e){
+        btn.disabled=false;
+        alert(e.message);
+      }
+    }
+
+    function initSwipe(){
+      document.querySelectorAll('.notification-swipe-wrap').forEach(wrap=>{
+        const item=wrap.querySelector('.notification-item');
+        const deleteBg=wrap.querySelector('.notification-delete-bg');
+        let startX=0,startY=0,currentX=0,dragging=false,open=false;
+
+        const close=()=>{
+          item.style.transform='translateX(0)';
+          open=false;
+          currentX=0;
+        };
+
+        const remove=async()=>{
+          const id=wrap.dataset.notificationId;
+          if(!id)return;
+          item.style.transition='transform .2s ease,opacity .2s ease';
+          item.style.transform='translateX(-110%)';
+          item.style.opacity='0';
+          try{
+            const r=await fetch('/notifications/'+encodeURIComponent(id),{method:'DELETE',headers:{Accept:'application/json'}});
+            if(!r.ok)throw new Error('Delete failed');
+            setTimeout(()=>{
+              wrap.remove();
+              const remaining=document.querySelectorAll('.notification-swipe-wrap').length;
+              if(!remaining&&!document.querySelector('.notification-empty')){
+                document.getElementById('list').innerHTML='<div class="notification-empty"><i class="ri-notification-off-line"></i><h3>No notifications</h3><p>New activity will appear here.</p></div>';
+              }
+            },210);
+          }catch(e){
+            item.style.transform='translateX(0)';
+            item.style.opacity='1';
+            alert('Unable to delete notification. Please try again.');
+          }
+        };
+
+        item.addEventListener('touchstart',e=>{
+          if(e.touches.length!==1)return;
+          startX=e.touches[0].clientX;
+          startY=e.touches[0].clientY;
+          currentX=0;
+          dragging=true;
+          item.style.transition='none';
+        },{passive:true});
+
+        item.addEventListener('touchmove',e=>{
+          if(!dragging)return;
+          const dx=e.touches[0].clientX-startX;
+          const dy=e.touches[0].clientY-startY;
+          if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dx)<12){ dragging=false; return; }
+          if(dx<0){
+            currentX=Math.max(dx,-96);
+            item.style.transform='translateX('+currentX+'px)';
+          }
+        },{passive:true});
+
+        item.addEventListener('touchend',()=>{
+          if(!dragging)return;
+          dragging=false;
+          item.style.transition='transform .22s ease';
+          if(currentX<-55){
+            open=true;
+            item.style.transform='translateX(-96px)';
+          }else close();
+        });
+
+        item.addEventListener('click',e=>{
+          if(open&&!e.target.closest('a,button'))close();
+        });
+
+        deleteBg.addEventListener('click',remove);
+      });
+    }
+
     document.addEventListener('DOMContentLoaded',initSwipe);
   </script>
 </body>
