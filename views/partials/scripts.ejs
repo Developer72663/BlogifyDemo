@@ -58,18 +58,21 @@
             const style=document.createElement('style');
             style.id=STYLE_ID;
             style.textContent=`
-                #profileMenu.blogify-sheet{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:100%!important;margin:0!important;padding:10px 12px calc(12px + env(safe-area-inset-bottom))!important;border:0!important;border-top:1px solid var(--line,#e7eaf1)!important;border-radius:22px 22px 0 0!important;box-shadow:0 -18px 55px rgba(0,0,0,.22)!important;background:var(--card,#fff)!important;transform:translateY(105%)!important;opacity:0!important;display:block!important;visibility:hidden!important;z-index:10001!important;max-height:min(78vh,620px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;transition:transform .24s ease,opacity .2s ease,visibility 0s linear .24s!important}
+                #profileMenu.blogify-sheet{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:100%!important;margin:0!important;padding:10px 12px calc(12px + env(safe-area-inset-bottom))!important;border:0!important;border-top:1px solid var(--line,#e7eaf1)!important;border-radius:22px 22px 0 0!important;box-shadow:0 -18px 55px rgba(0,0,0,.22)!important;background:var(--card,#fff)!important;transform:translateY(105%)!important;opacity:0!important;visibility:hidden!important;display:block!important;z-index:10001!important;max-height:min(78vh,620px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;transition:transform .24s ease,opacity .2s ease,visibility 0s linear .24s!important;-webkit-overflow-scrolling:touch!important}
                 #profileMenu.blogify-sheet.open{transform:translateY(0)!important;opacity:1!important;visibility:visible!important;transition:transform .24s ease,opacity .2s ease!important}
-                #profileMenu.blogify-sheet::before{content:'';display:block;width:42px;height:5px;border-radius:99px;background:var(--line,#e7eaf1);margin:2px auto 10px}
-                #profileMenu.blogify-sheet button,#profileMenu.blogify-sheet a{min-height:48px;padding:13px 14px!important;border-radius:12px!important;font-size:.96rem!important}
+                #profileMenu.blogify-sheet::before{content:'';display:block!important;width:42px;height:5px;border-radius:99px;background:var(--line,#e7eaf1);margin:2px auto 10px}
+                #profileMenu.blogify-sheet button,#profileMenu.blogify-sheet a{box-sizing:border-box!important;width:100%!important;min-height:50px!important;margin:2px 0!important;padding:13px 14px!important;border:0!important;border-radius:12px!important;background:transparent!important;color:var(--text,#182033)!important;text-decoration:none!important;text-align:left!important;display:flex!important;align-items:center!important;gap:11px!important;cursor:pointer!important;font:inherit!important;font-size:.96rem!important;font-weight:700!important;line-height:1.25!important;opacity:1!important;visibility:visible!important;position:relative!important;z-index:10002!important}
+                #profileMenu.blogify-sheet button i,#profileMenu.blogify-sheet a i{display:inline-flex!important;width:22px!important;min-width:22px!important;justify-content:center!important;color:currentColor!important;opacity:1!important;visibility:visible!important}
+                #profileMenu.blogify-sheet button:hover,#profileMenu.blogify-sheet a:hover,#profileMenu.blogify-sheet button:focus-visible,#profileMenu.blogify-sheet a:focus-visible{background:var(--soft,#efedff)!important;outline:none!important}
                 #profileMenu.blogify-sheet .danger{color:var(--danger,#e5484d)!important}
-                #blogify-profile-sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility 0s linear .2s;backdrop-filter:blur(2px)}
+                #blogify-profile-sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility 0s linear .2s;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
                 #blogify-profile-sheet-backdrop.open{opacity:1;visibility:visible;transition:opacity .2s ease}
                 body.blogify-sheet-open{overflow:hidden!important;touch-action:none}
+                @media(max-width:760px){#profileMenu.blogify-sheet{max-height:82vh!important;padding-left:12px!important;padding-right:12px!important}#profileMenu.blogify-sheet button,#profileMenu.blogify-sheet a{min-height:52px!important;font-size:1rem!important}}
             `;
             document.head.appendChild(style);
         }
-        function getParts(){return {menu:document.getElementById('profileMenu'),trigger:document.getElementById('moreBtn'),actions:document.querySelector('.actions')};}
+        function getParts(){return {menu:document.getElementById('profileMenu'),trigger:document.getElementById('moreBtn')};}
         function ensureBackdrop(){
             let b=document.getElementById('blogify-profile-sheet-backdrop');
             if(!b){b=document.createElement('div');b.id='blogify-profile-sheet-backdrop';b.setAttribute('aria-hidden','true');document.body.appendChild(b);b.addEventListener('click',closeProfileSheet);}
@@ -94,8 +97,6 @@
             document.body.classList.remove('blogify-sheet-open');
         }
         window.closeProfileSheet=closeProfileSheet;
-
-        /* Capture phase guarantees the button works even if an older inline handler exists. */
         document.addEventListener('click',function(event){
             const trigger=event.target.closest('#moreBtn');
             const menu=document.getElementById('profileMenu');
@@ -105,7 +106,6 @@
             event.stopImmediatePropagation();
             if(menu.classList.contains('open')) closeProfileSheet(); else openProfileSheet();
         },true);
-
         document.addEventListener('click',function(event){
             const menu=document.getElementById('profileMenu');
             if(!menu?.classList.contains('open'))return;
@@ -115,18 +115,14 @@
         document.addEventListener('keydown',function(event){
             if(event.key==='Escape'&&document.getElementById('profileMenu')?.classList.contains('open'))closeProfileSheet();
         });
-
-        /* Make the existing inline toggle harmless: the capture listener above owns the state. */
         window.toggleMenu=function(event){
             event?.preventDefault();
             event?.stopPropagation();
             const menu=document.getElementById('profileMenu');
             if(menu?.classList.contains('open'))closeProfileSheet();else openProfileSheet();
         };
-
-        /* Keep the sheet usable after orientation/resize without changing its bottom position. */
         window.addEventListener('resize',()=>{
-            if(document.getElementById('profileMenu')?.classList.contains('open'))document.getElementById('profileMenu').style.maxHeight=Math.min(window.innerHeight*.78,620)+'px';
+            if(document.getElementById('profileMenu')?.classList.contains('open'))document.getElementById('profileMenu').style.maxHeight=Math.min(window.innerHeight*.82,620)+'px';
         });
     })();
 
