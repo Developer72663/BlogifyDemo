@@ -13,23 +13,19 @@ const UserSchema = new Schema({
     followers: [{ type: Schema.Types.ObjectId, ref: "user" }], following: [{ type: Schema.Types.ObjectId, ref: "user" }], blockedUsers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     notificationSettings: {
         emailOnComment: { type: Boolean, default: true }, emailOnNewFollower: { type: Boolean, default: true }, emailOnFollowRequest: { type: Boolean, default: true },
-        emailOnRequestAccepted: { type: Boolean, default: true }, emailOnLike: { type: Boolean, default: true }, emailOnMention: { type: Boolean, default: true }, emailDigest: { type: Boolean, default: true }
+        emailOnRequestAccepted: { type: Boolean, default: true }, emailOnLike: { type: Boolean, default: true }, emailOnMention: { type: Boolean, default: true }, emailDigest: { type: Boolean, default: true },
+        pushEnabled: { type: Boolean, default: false }, pushOnMessage: { type: Boolean, default: true }, pushOnComment: { type: Boolean, default: true },
+        pushOnReply: { type: Boolean, default: true }, pushOnLike: { type: Boolean, default: true }, pushOnFollow: { type: Boolean, default: true },
+        pushOnFollowRequest: { type: Boolean, default: true }, pushOnMention: { type: Boolean, default: true }, pushOnBlogPost: { type: Boolean, default: true }
     },
     messageSettings: {
         whoCanMessage: { type: String, enum: ["everyone", "followers", "no_one"], default: "everyone" },
-        messageRequests: { type: Boolean, default: true },
-        readReceipts: { type: Boolean, default: true },
-        typingIndicator: { type: Boolean, default: true },
-        onlineStatus: { type: String, enum: ["everyone", "followers", "off"], default: "everyone" },
-        messageNotifications: { type: Boolean, default: true },
-        messagePreview: { type: Boolean, default: true },
-        notificationSound: { type: Boolean, default: true },
-        mediaAutoDownload: { type: String, enum: ["wifi_mobile", "wifi_only", "never"], default: "wifi_mobile" },
-        allowPhotoMessages: { type: Boolean, default: true },
-        allowVideoMessages: { type: Boolean, default: true },
-        messageLikes: { type: Boolean, default: true },
-        groupInvites: { type: String, enum: ["everyone", "followers", "no_one"], default: "everyone" },
-        hiddenWords: { type: Boolean, default: false },
+        messageRequests: { type: Boolean, default: true }, readReceipts: { type: Boolean, default: true }, typingIndicator: { type: Boolean, default: true },
+        onlineStatus: { type: String, enum: ["everyone", "followers", "off"], default: "everyone" }, messageNotifications: { type: Boolean, default: true },
+        messagePreview: { type: Boolean, default: true }, notificationSound: { type: Boolean, default: true },
+        mediaAutoDownload: { type: String, enum: ["wifi_mobile", "wifi_only", "never"], default: "wifi_mobile" }, allowPhotoMessages: { type: Boolean, default: true },
+        allowVideoMessages: { type: Boolean, default: true }, messageLikes: { type: Boolean, default: true },
+        groupInvites: { type: String, enum: ["everyone", "followers", "no_one"], default: "everyone" }, hiddenWords: { type: Boolean, default: false },
         autoDelete: { type: String, enum: ["never", "24h", "7d", "30d"], default: "never" }
     },
     blogSettings: {
