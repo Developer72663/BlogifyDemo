@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { restrictToLoggedInUserOnly, restrictTo } = require("../middlewares/authentication");
+const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const AnalyticsService = require("../services/analyticsService");
+const Blog = require("../models/Blog");
 
-// ====================== GET TRENDING BLOGS ======================
 router.get("/trending", async (req, res) => {
     try {
-        const { limit = 5 } = req.query;
-        const trendingBlogs = await AnalyticsService.getTrendingBlogs(parseInt(limit));
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 5, 1), 20);
+        const trendingBlogs = await AnalyticsService.getTrendingBlogs(limit, req.user?._id);
         res.json({ success: true, blogs: trendingBlogs });
     } catch (error) {
         console.error("Error fetching trending blogs:", error);
@@ -15,11 +15,10 @@ router.get("/trending", async (req, res) => {
     }
 });
 
-// ====================== GET MOST LIKED BLOGS ======================
 router.get("/most-liked", async (req, res) => {
     try {
-        const { limit = 5 } = req.query;
-        const blogs = await AnalyticsService.getMostLikedBlogs(parseInt(limit));
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 5, 1), 20);
+        const blogs = await AnalyticsService.getMostLikedBlogs(limit, req.user?._id);
         res.json({ success: true, blogs });
     } catch (error) {
         console.error("Error fetching most liked blogs:", error);
@@ -27,31 +26,29 @@ router.get("/most-liked", async (req, res) => {
     }
 });
 
-// ====================== GET BLOG ANALYTICS (Protected) ======================
 router.get("/blog/:blogId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
-        const { blogId } = req.params;
-        const analytics = await AnalyticsService.getBlogAnalytics(blogId);
-
-        if (!analytics) {
-            return res.status(404).json({ success: false, message: "No analytics found" });
+        const blog = await Blog.findById(req.params.blogId).select("createdBy").lean();
+        if (!blog) return res.status(404).json({ success: false, message: "Blog not found" });
+        if (blog.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, message: "Not authorized to view these analytics" });
         }
-
+        const analytics = await AnalyticsService.getBlogAnalytics(req.params.blogId);
+        if (!analytics) return res.status(404).json({ success: false, message: "No analytics found" });
         res.json({ success: true, analytics });
     } catch (error) {
         console.error("Error fetching blog analytics:", error);
-        res.status(500).json({ success: false, message: "Failed to fetch blog analytics" });
+        res.status(500).json({ success: false, message: "Failed to fetch analytics" });
     }
 });
 
-// ====================== GET AUTHOR ANALYTICS (Protected) ======================
 router.get("/author/stats", restrictToLoggedInUserOnly, async (req, res) => {
     try {
         const stats = await AnalyticsService.getAuthorAnalytics(req.user._id);
         res.json({ success: true, stats });
     } catch (error) {
         console.error("Error fetching author analytics:", error);
-        res.status(500).json({ success: false, message: "Failed to fetch author analytics" });
+        res.status(500).json({ success: false, message: "Failed to fetch analytics" });
     }
 });
 
