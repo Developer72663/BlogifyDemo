@@ -28,7 +28,7 @@
     scrollToTopBtn.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 
     window.toggleFollow=async function(userId,buttonElement){
-        if(!userId){notify.error('Invalid user');return;} const originalHTML=buttonElement.innerHTML; buttonElement.disabled=true;
+        if(!userId){notify.error('Invalid user');return;} buttonElement.disabled=true;
         try{const {data}=await axios.post(`/follow/${userId}/follow`); if(data.success){
             buttonElement.innerHTML=data.following?'<i class="fas fa-user-check"></i> Following':'<i class="fas fa-user-plus"></i> Follow';
             buttonElement.classList.toggle('btn-success',data.following); buttonElement.classList.toggle('btn-outline-primary',!data.following); notify.success(data.message);
@@ -46,27 +46,65 @@
         document.getElementById('confirmModal').addEventListener('hidden.bs.modal',()=>{resolve(false);document.getElementById('confirmModal')?.remove();});
     });};
 
-    // Navbar Settings -> full settings page (replaces the old modal placeholder).
     document.addEventListener('click',(event)=>{
         const settingsTrigger=event.target.closest('#settingsBtn, #mobileSettings');
         if(settingsTrigger){event.preventDefault();window.location.href='/user/profile/settings';}
     });
 
-    // Robust profile three-dot menu handler.
-    // This runs during capture so it works even if a later page script has an error.
+    // Robust profile three-dot menu handler. It deliberately runs in capture phase so
+    // the old inline onclick cannot prevent the menu from opening.
+    function positionProfileMenu(menu, trigger){
+        if(!menu || !trigger) return;
+        menu.style.position='fixed';
+        menu.style.right='auto';
+        menu.style.transform='none';
+        menu.style.zIndex='10000';
+        menu.style.maxHeight=Math.max(180,window.innerHeight-24)+'px';
+        menu.style.overflowY='auto';
+        menu.style.display='block';
+        const rect=trigger.getBoundingClientRect();
+        const gap=8;
+        const width=menu.offsetWidth||285;
+        const height=menu.offsetHeight;
+        let left=rect.right-width;
+        left=Math.max(8,Math.min(left,window.innerWidth-width-8));
+        let top=rect.bottom+gap;
+        if(top+height>window.innerHeight-8) top=Math.max(8,rect.top-height-gap);
+        menu.style.left=left+'px';
+        menu.style.top=top+'px';
+    }
+    function closeProfileMenu(){
+        const menu=document.getElementById('profileMenu');
+        const trigger=document.getElementById('moreBtn');
+        if(!menu) return;
+        menu.classList.remove('open');
+        menu.style.display='';
+        menu.style.position='';
+        menu.style.left='';
+        menu.style.top='';
+        menu.style.right='';
+        menu.style.transform='';
+        menu.style.zIndex='';
+        menu.style.maxHeight='';
+        menu.style.overflowY='';
+        trigger?.setAttribute('aria-expanded','false');
+        menu.setAttribute('aria-hidden','true');
+    }
+
     document.addEventListener('click',(event)=>{
         const trigger=event.target.closest('#moreBtn');
         const menu=document.getElementById('profileMenu');
         if(!trigger || !menu) return;
-
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-
         const willOpen=!menu.classList.contains('open');
-        menu.classList.toggle('open',willOpen);
-        trigger.setAttribute('aria-expanded',String(willOpen));
-        menu.setAttribute('aria-hidden',String(!willOpen));
+        if(willOpen){
+            menu.classList.add('open');
+            trigger.setAttribute('aria-expanded','true');
+            menu.setAttribute('aria-hidden','false');
+            requestAnimationFrame(()=>positionProfileMenu(menu,trigger));
+        }else closeProfileMenu();
     },true);
 
     document.addEventListener('keydown',(event)=>{
@@ -74,24 +112,28 @@
         const menu=document.getElementById('profileMenu');
         const trigger=document.getElementById('moreBtn');
         if(!menu?.classList.contains('open')) return;
-        menu.classList.remove('open');
-        trigger?.setAttribute('aria-expanded','false');
-        menu.setAttribute('aria-hidden','true');
+        closeProfileMenu();
         trigger?.focus();
     });
 
-    // Close the profile menu when clicking anywhere outside the menu/trigger.
     document.addEventListener('click',(event)=>{
         const menu=document.getElementById('profileMenu');
-        const trigger=document.getElementById('moreBtn');
         if(!menu?.classList.contains('open')) return;
         if(event.target.closest('#profileMenu') || event.target.closest('#moreBtn')) return;
-        menu.classList.remove('open');
-        trigger?.setAttribute('aria-expanded','false');
-        menu.setAttribute('aria-hidden','true');
+        closeProfileMenu();
     });
 
-    // Apply saved/system theme early on every page. The settings page persists the server preference.
+    window.addEventListener('resize',()=>{
+        const menu=document.getElementById('profileMenu');
+        const trigger=document.getElementById('moreBtn');
+        if(menu?.classList.contains('open')) positionProfileMenu(menu,trigger);
+    });
+    window.addEventListener('scroll',()=>{
+        const menu=document.getElementById('profileMenu');
+        const trigger=document.getElementById('moreBtn');
+        if(menu?.classList.contains('open')) positionProfileMenu(menu,trigger);
+    },{passive:true});
+
     (function(){
         const saved=document.documentElement.dataset.theme || localStorage.getItem('blogify-theme');
         const theme=saved || 'system';
