@@ -1,5 +1,6 @@
 const webpush = require("web-push");
 const PushSubscription = require("../models/PushSubscription");
+const User = require("../models/user");
 
 let configured = false;
 
@@ -41,7 +42,7 @@ async function saveSubscription(userId, subscription, metadata = {}) {
     const normalized = normalizeSubscription(subscription);
     if (!normalized) throw new Error("Invalid push subscription");
 
-    return PushSubscription.findOneAndUpdate(
+    const saved = await PushSubscription.findOneAndUpdate(
         { endpoint: normalized.endpoint },
         {
             $set: {
@@ -54,15 +55,30 @@ async function saveSubscription(userId, subscription, metadata = {}) {
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    // A successful browser subscription means the user has explicitly opted in.
+    await User.updateOne(
+        { _id: userId },
+        { $set: { "notificationSettings.pushEnabled": true } }
+    );
+
+    return saved;
 }
 
 async function removeSubscription(userId, endpoint) {
     if (!endpoint) return { deletedCount: 0 };
-    return PushSubscription.deleteOne({ user: userId, endpoint: String(endpoint) });
+    const result = await PushSubscription.deleteOne({ user: userId, endpoint: String(endpoint) });
+    const remaining = await PushSubscription.countDocuments({ user: userId });
+    if (remaining === 0) {
+        await User.updateOne({ _id: userId }, { $set: { "notificationSettings.pushEnabled": false } });
+    }
+    return result;
 }
 
 async function removeAllSubscriptions(userId) {
-    return PushSubscription.deleteMany({ user: userId });
+    const result = await PushSubscription.deleteMany({ user: userId });
+    await User.updateOne({ _id: userId }, { $set: { "notificationSettings.pushEnabled": false } });
+    return result;
 }
 
 async function sendToSubscription(subscriptionDoc, payload, options = {}) {
