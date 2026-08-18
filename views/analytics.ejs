@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include("./partials/head") %>
+  <title>Analytics | Blogify</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#fff;--text:#182033;--muted:#718096;--line:#e7eaf1;--primary:#635bff;--soft:#efedff;--green:#159570}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}
+    .page{min-height:100vh;padding:95px 16px 60px}.shell{max-width:1180px;margin:auto}
+    .hero{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px}.hero h1{margin:0;font-size:2rem}.hero p{margin:7px 0 0;color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 35px rgba(24,32,51,.06)}
+    .card{padding:20px}.label{color:var(--muted);font-size:.78rem;font-weight:800}.value{font-size:1.75rem;font-weight:900;margin-top:7px}.sub{font-size:.75rem;color:var(--green);margin-top:5px}
+    .grid{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;margin-top:16px}.panel{padding:22px}.panel h2{font-size:1rem;margin:0 0 16px}.chart{height:245px;display:flex;align-items:flex-end;gap:5px;border-bottom:1px solid var(--line);padding:10px 0}.bar{flex:1;min-width:4px;background:var(--primary);opacity:.78;border-radius:6px 6px 0 0;position:relative}.bar span{position:absolute;bottom:-23px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);white-space:nowrap}.legend{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem;margin-top:25px}
+    .source{display:grid;gap:12px}.source-row{display:grid;grid-template-columns:105px 1fr 45px;gap:8px;align-items:center;font-size:.78rem}.track{height:8px;background:var(--bg);border-radius:99px;overflow:hidden}.fill{height:100%;background:var(--primary);border-radius:99px}
+    .insights{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.insight{border:1px solid var(--line);border-radius:15px;padding:15px}.insight small{color:var(--muted)}.insight strong{display:block;margin:6px 0;font-size:1rem}.insight span{font-size:.75rem;color:var(--muted)}
+    .table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--line);font-size:.8rem}.table th{color:var(--muted);font-size:.72rem}.title{font-weight:800}.score{font-weight:900;color:var(--primary)}
+    .empty{text-align:center;color:var(--muted);padding:35px}.section{margin-top:16px}.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:var(--soft);color:var(--primary);font-size:.7rem;font-weight:800}
+    @media(max-width:850px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.insights{grid-template-columns:1fr}}@media(max-width:520px){.page{padding:82px 10px 40px}.cards{grid-template-columns:1fr 1fr}.card{padding:15px}.value{font-size:1.35rem}.table th:nth-child(4),.table td:nth-child(4){display:none}.hero{display:block}}
+  </style>
+</head>
+<body>
+<%- include("./partials/nave") %>
+<main class="page"><div class="shell">
+  <div class="hero"><div><h1>📊 Analytics</h1><p>Understand how your Blogify content is performing.</p></div><span class="badge"><%= stats.totalBlogs %> published blogs</span></div>
+
+  <section class="cards">
+    <div class="card"><div class="label">👁 TOTAL VIEWS</div><div class="value"><%= stats.totalViews.toLocaleString() %></div><div class="sub">All your published content</div></div>
+    <div class="card"><div class="label">❤️ TOTAL LIKES</div><div class="value"><%= stats.totalLikes.toLocaleString() %></div><div class="sub">Reader appreciation</div></div>
+    <div class="card"><div class="label">💬 COMMENTS</div><div class="value"><%= stats.totalComments.toLocaleString() %></div><div class="sub">Conversations started</div></div>
+    <div class="card"><div class="label">📈 ENGAGEMENT</div><div class="value"><%= stats.engagementRate %>%</div><div class="sub">Likes + comments / views</div></div>
+  </section>
+
+  <div class="grid">
+    <section class="panel"><h2>📈 Views by day</h2>
+      <% const dailyMap = {}; (stats.blogs || []).forEach(b => {}); %>
+      <div class="chart"><% const days = []; for(let i=13;i>=0;i--){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); days.push(d); } const maxDay = Math.max(1,...days.map(d=>0)); %>
+        <div class="empty" style="width:100%;padding:60px 10px">Open an individual blog analytics endpoint to see its daily view history. The creator overview below shows your total performance and top content.</div>
+      </div>
+    </section>
+    <section class="panel"><h2>🔎 Traffic sources</h2><div class="source">
+      <% const traffic=stats.trafficSources||{}; const totalTraffic=Object.values(traffic).reduce((a,b)=>a+b,0)||1; const names={home:'Blogify Home',profile:'Profile',notification:'Notifications',direct:'Direct',search:'Search',social:'Social',referral:'Referral'}; Object.entries(names).forEach(([key,name])=>{const count=traffic[key]||0; const pct=Math.round(count/totalTraffic*100); %>
+        <div class="source-row"><span><%= name %></span><div class="track"><div class="fill" style="width:<%= pct %>%"></div></div><b><%= pct %>%</b></div>
+      <% }) %>
+    </div></section>
+  </div>
+
+  <section class="panel section"><h2>🏆 Content insights</h2><div class="insights">
+    <% const cards=[['Top by views',stats.topBlog,'views'],['Most engaging',stats.mostEngaging,'engagementRate'],['Best performance score',stats.growingBlog,'performanceScore']]; cards.forEach(([label,item,type])=>{ %>
+      <div class="insight"><small><%= label %></small><% if(item){ %><strong><%= item.blog.title %></strong><span>👁 <%= item.views.toLocaleString() %> · ❤️ <%= item.likes.toLocaleString() %> · 💬 <%= item.comments.toLocaleString() %></span><br><span><%= type==='engagementRate'?item.engagementRate+'% engagement':type==='performanceScore'?item.performanceScore+'/100 score':'Top reach' %></span><% }else{ %><strong>No data yet</strong><span>Publish a blog to start collecting analytics.</span><% } %></div>
+    <% }) %>
+  </div></section>
+
+  <section class="panel section"><h2>📝 Your blog performance</h2>
+    <% if(stats.blogs && stats.blogs.length){ %><div style="overflow:auto"><table class="table"><thead><tr><th>Blog</th><th>Views</th><th>Likes</th><th>Comments</th><th>Engagement</th><th>Score</th></tr></thead><tbody>
+      <% stats.blogs.forEach(row=>{ %><tr><td class="title"><%= row.blog.title %></td><td><%= row.views.toLocaleString() %></td><td>❤️ <%= row.likes.toLocaleString() %></td><td>💬 <%= row.comments.toLocaleString() %></td><td><%= row.engagementRate %>%</td><td class="score"><%= row.performanceScore %>/100</td></tr><% }) %>
+    </tbody></table></div><% }else{ %><div class="empty">No published blog analytics available yet.</div><% } %>
+  </section>
+
+  <section class="panel section"><h2>💡 How to read your analytics</h2><div style="color:var(--muted);font-size:.82rem;line-height:1.7"><b>Engagement rate</b> = (likes + comments) ÷ views × 100. A high rate means your readers are interacting, not just visiting. <b>Performance score</b> combines reach, engagement and recent views to help compare your own blogs; it is not a ranking against other users.</div></section>
+</div></main>
+</body></html>
