@@ -52,6 +52,45 @@
         if(settingsTrigger){event.preventDefault();window.location.href='/user/profile/settings';}
     });
 
+    // Robust profile three-dot menu handler.
+    // This runs during capture so it works even if a later page script has an error.
+    document.addEventListener('click',(event)=>{
+        const trigger=event.target.closest('#moreBtn');
+        const menu=document.getElementById('profileMenu');
+        if(!trigger || !menu) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        const willOpen=!menu.classList.contains('open');
+        menu.classList.toggle('open',willOpen);
+        trigger.setAttribute('aria-expanded',String(willOpen));
+        menu.setAttribute('aria-hidden',String(!willOpen));
+    },true);
+
+    document.addEventListener('keydown',(event)=>{
+        if(event.key!=='Escape') return;
+        const menu=document.getElementById('profileMenu');
+        const trigger=document.getElementById('moreBtn');
+        if(!menu?.classList.contains('open')) return;
+        menu.classList.remove('open');
+        trigger?.setAttribute('aria-expanded','false');
+        menu.setAttribute('aria-hidden','true');
+        trigger?.focus();
+    });
+
+    // Close the profile menu when clicking anywhere outside the menu/trigger.
+    document.addEventListener('click',(event)=>{
+        const menu=document.getElementById('profileMenu');
+        const trigger=document.getElementById('moreBtn');
+        if(!menu?.classList.contains('open')) return;
+        if(event.target.closest('#profileMenu') || event.target.closest('#moreBtn')) return;
+        menu.classList.remove('open');
+        trigger?.setAttribute('aria-expanded','false');
+        menu.setAttribute('aria-hidden','true');
+    });
+
     // Apply saved/system theme early on every page. The settings page persists the server preference.
     (function(){
         const saved=document.documentElement.dataset.theme || localStorage.getItem('blogify-theme');
