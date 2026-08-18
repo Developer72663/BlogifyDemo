@@ -1,4 +1,4 @@
-```html
+```ejs
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,777 +7,861 @@
   <title>Messages | Blogify</title>
 
   <style>
-    :root{
-      --bg:#f7f7f8;
-      --surface:#fff;
-      --surface2:#f2f2f4;
-      --text:#171717;
-      --muted:#737373;
-      --line:#e8e8eb;
-      --accent:#635bff;
-      --accent2:#7c3aed;
-      --danger:#ef4444;
-      --green:#22a06b;
-      --shadow:0 12px 45px rgba(0,0,0,.10);
+    :root {
+      --bg: #f5f6fa;
+      --surface: #fff;
+      --surface-soft: #f0f1f5;
+      --text: #171923;
+      --muted: #737887;
+      --line: #e4e6ec;
+      --primary: #635bff;
+      --primary-dark: #5148e8;
+      --received: #fff;
+      --sent: #635bff;
+      --danger: #ef4444;
+      --green: #20a56a;
+      --shadow: 0 12px 40px rgba(20, 25, 40, .10);
     }
 
-    *{box-sizing:border-box}
-
-    html,body{
-      margin:0;
-      width:100%;
-      height:100%;
-      background:var(--bg);
-      color:var(--text);
+    * {
+      box-sizing: border-box;
     }
 
-    body{
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
     }
 
-    button,input,textarea{font:inherit}
-    button{-webkit-tap-highlight-color:transparent}
-
-    .page{
-      height:calc(100dvh - 70px);
-      min-height:520px;
-      padding:0;
-      display:flex;
-      justify-content:center;
+    body {
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
     }
 
-    .chat{
-      width:min(1080px,100%);
-      height:100%;
-      background:var(--surface);
-      display:grid;
-      grid-template-rows:64px minmax(0,1fr) auto;
-      overflow:hidden;
-      position:relative;
+    button,
+    input,
+    textarea {
+      font: inherit;
     }
 
-    @media(min-width:900px){
-      .page{padding:14px}
-      .chat{
-        border:1px solid var(--line);
-        border-radius:22px;
-        box-shadow:var(--shadow);
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .page {
+      height: calc(100dvh - 70px);
+      min-height: 520px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .chat-shell {
+      width: min(1100px, 100%);
+      height: 100%;
+      background: var(--surface);
+      display: grid;
+      grid-template-rows: 68px minmax(0, 1fr) auto;
+      overflow: hidden;
+      position: relative;
+    }
+
+    @media (min-width: 900px) {
+      .page {
+        padding: 14px;
+      }
+
+      .chat-shell {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
       }
     }
 
-    /* ================= HEADER ================= */
+    /* HEADER */
 
-    .topbar{
-      height:64px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:8px 12px;
-      border-bottom:1px solid var(--line);
-      background:rgba(255,255,255,.96);
-      z-index:20;
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 13px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .97);
+      z-index: 20;
     }
 
-    .icon-btn{
-      width:42px;
-      height:42px;
-      border:0;
-      border-radius:50%;
-      background:transparent;
-      color:var(--text);
-      display:grid;
-      place-items:center;
-      cursor:pointer;
+    .icon-btn {
+      width: 43px;
+      height: 43px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
     }
 
-    .icon-btn:hover{background:var(--surface2)}
-
-    .back{font-size:1.2rem}
-
-    .person{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:0;
-      flex:1;
-      cursor:pointer;
+    .icon-btn:hover {
+      background: var(--surface-soft);
     }
 
-    .avatar{
-      width:42px;
-      height:42px;
-      border-radius:50%;
-      object-fit:cover;
-      background:#ddd;
-      border:1px solid var(--line);
-      flex:none;
+    .back-btn {
+      font-size: 1.1rem;
     }
 
-    .person-copy{min-width:0}
-
-    .person-name{
-      font-size:.96rem;
-      font-weight:800;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+    .chat-user {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      cursor: pointer;
     }
 
-    .person-status{
-      font-size:.7rem;
-      color:var(--muted);
-      margin-top:2px;
+    .header-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #ddd;
+      border: 1px solid var(--line);
+      flex: none;
     }
 
-    .person-status.online{color:var(--green)}
-
-    .top-actions{
-      display:flex;
-      align-items:center;
-      gap:2px;
-      position:relative;
+    .header-user-info {
+      min-width: 0;
     }
 
-    .top-menu{
-      display:none;
-      position:absolute;
-      right:0;
-      top:50px;
-      width:220px;
-      padding:6px;
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:14px;
-      box-shadow:0 18px 50px rgba(0,0,0,.16);
-      z-index:80;
+    .header-name {
+      font-size: .96rem;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .top-menu.open{display:block}
-
-    .top-menu button{
-      width:100%;
-      border:0;
-      background:transparent;
-      padding:11px 12px;
-      border-radius:9px;
-      text-align:left;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      cursor:pointer;
+    .header-status {
+      margin-top: 2px;
+      font-size: .69rem;
+      color: var(--muted);
     }
 
-    .top-menu button:hover{background:var(--surface2)}
-    .top-menu .danger{color:var(--danger)}
-
-    /* ================= MESSAGE SCROLL ================= */
-
-    .messages{
-      min-height:0;
-      overflow-y:auto;
-      overflow-x:hidden;
-      padding:18px 12px 24px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      background:#fafafa;
-      scroll-behavior:smooth;
-      overscroll-behavior:contain;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width:thin;
+    .header-status.online {
+      color: var(--green);
     }
 
-    .messages::-webkit-scrollbar{width:6px}
-
-    .messages::-webkit-scrollbar-thumb{
-      background:#d2d2d6;
-      border-radius:20px;
+    .header-actions {
+      display: flex;
+      gap: 2px;
+      position: relative;
     }
 
-    /* ================= WELCOME ================= */
-
-    .welcome{
-      margin:auto;
-      text-align:center;
-      max-width:320px;
-      color:var(--muted);
-      padding:30px 10px;
+    .header-menu {
+      display: none;
+      position: absolute;
+      top: 51px;
+      right: 0;
+      width: 225px;
+      padding: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      box-shadow: 0 20px 55px rgba(0, 0, 0, .17);
+      z-index: 80;
     }
 
-    .welcome img{
-      width:74px;
-      height:74px;
-      border-radius:50%;
-      object-fit:cover;
-      margin-bottom:10px;
+    .header-menu.open {
+      display: block;
     }
 
-    .welcome strong{
-      display:block;
-      color:var(--text);
-      font-size:1.05rem;
+    .header-menu button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+      padding: 11px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 700;
     }
 
-    .welcome p{
-      font-size:.82rem;
-      line-height:1.5;
+    .header-menu button:hover {
+      background: var(--surface-soft);
     }
 
-    .date-divider{
-      align-self:center;
-      margin:12px 0 4px;
-      padding:5px 10px;
-      border-radius:999px;
-      background:#ededf0;
-      color:#777;
-      font-size:.64rem;
-      font-weight:700;
+    .header-menu .danger {
+      color: var(--danger);
     }
 
-    /* ================= MESSAGE ROW ================= */
+    /* MESSAGE AREA */
 
-    .row{
-      display:flex;
-      align-items:flex-end;
-      gap:7px;
-      width:100%;
-      position:relative;
+    .messages {
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px 14px 28px;
+      background: #fafbfc;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .row.mine{
-      justify-content:flex-end;
+    .messages::-webkit-scrollbar {
+      width: 7px;
     }
 
-    .row.theirs{
-      justify-content:flex-start;
+    .messages::-webkit-scrollbar-thumb {
+      background: #d1d4dc;
+      border-radius: 20px;
     }
 
-    /*
-      Sender identity shown beside every incoming message.
-    */
-
-    .sender-avatar-wrap{
-      width:34px;
-      flex:0 0 34px;
-      display:flex;
-      align-items:flex-end;
-      justify-content:center;
+    @media (min-width: 900px) {
+      .messages {
+        padding-left: clamp(35px, 7vw, 90px);
+        padding-right: clamp(35px, 7vw, 90px);
+      }
     }
 
-    .sender-avatar{
-      width:32px;
-      height:32px;
-      border-radius:50%;
-      object-fit:cover;
-      border:1px solid var(--line);
-      background:#ddd;
-      box-shadow:0 2px 7px rgba(0,0,0,.08);
+    /* DATE */
+
+    .date-divider {
+      align-self: center;
+      margin: 14px 0 8px;
+      padding: 5px 12px;
+      background: #e9eaf0;
+      border-radius: 999px;
+      color: #737783;
+      font-size: .63rem;
+      font-weight: 750;
     }
 
-    .sender-message{
-      min-width:0;
-      max-width:min(76%,620px);
+    /* MESSAGE GROUP */
+
+    .message-group {
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      margin-top: 2px;
     }
 
-    .sender-name{
-      display:flex;
-      align-items:center;
-      gap:5px;
-      margin:0 0 4px 5px;
-      font-size:.72rem;
-      font-weight:800;
-      color:#4f46a5;
-      max-width:100%;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+    .message-group.received {
+      justify-content: flex-start;
     }
 
-    .sender-name i{
-      font-size:.6rem;
-      opacity:.75;
+    .message-group.sent {
+      justify-content: flex-end;
     }
 
-    .bubble-wrap{
-      max-width:min(76%,620px);
-      min-width:0;
-      position:relative;
+    .sender-avatar-wrap {
+      width: 34px;
+      height: 34px;
+      flex: none;
+      display: flex;
+      align-items: flex-end;
     }
 
-    .row.mine .bubble-wrap{
-      display:flex;
-      justify-content:flex-end;
+    .sender-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #ddd;
     }
 
-    .bubble{
-      position:relative;
-      max-width:100%;
-      padding:9px 11px;
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:18px 18px 18px 5px;
-      box-shadow:0 1px 4px rgba(0,0,0,.035);
-      word-break:break-word;
-      line-height:1.43;
-      user-select:none;
-      -webkit-user-select:none;
-      touch-action:manipulation;
+    .sender-avatar.hidden {
+      visibility: hidden;
     }
 
-    .row.mine .bubble{
-      background:linear-gradient(135deg,var(--accent),var(--accent2));
-      border-color:transparent;
-      color:#fff;
-      border-radius:18px 18px 5px 18px;
+    .message-content {
+      min-width: 0;
+      max-width: min(76%, 640px);
+      display: flex;
+      flex-direction: column;
     }
 
-    .bubble.deleted{
-      background:#f0f0f2!important;
-      color:#888!important;
-      border-color:#e1e1e4!important;
-      font-style:italic;
+    .message-group.sent .message-content {
+      align-items: flex-end;
     }
 
-    .text{
-      white-space:pre-wrap;
+    @media (max-width: 600px) {
+      .message-content {
+        max-width: 83%;
+      }
     }
 
-    .edited{
-      font-size:.58rem;
-      opacity:.62;
-      margin-left:4px;
+    .sender-name {
+      margin: 0 0 4px 3px;
+      color: #666b79;
+      font-size: .66rem;
+      font-weight: 800;
     }
 
-    .meta{
-      font-size:.58rem;
-      opacity:.62;
-      text-align:right;
-      margin-top:4px;
-      white-space:nowrap;
+    .message-bubble {
+      position: relative;
+      width: fit-content;
+      max-width: 100%;
+      min-width: 45px;
+      padding: 9px 12px 7px;
+      border: 1px solid var(--line);
+      border-radius: 17px 17px 17px 5px;
+      background: var(--received);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .035);
+      word-break: break-word;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
     }
 
-    .status{margin-left:3px}
-    .status.read{color:#c7f7ff}
-
-    /* ================= MEDIA ================= */
-
-    .media{
-      display:block;
-      width:min(330px,68vw);
-      max-height:390px;
-      object-fit:cover;
-      border-radius:13px;
-      background:#111;
-      margin-bottom:5px;
+    .message-group.sent .message-bubble {
+      background: var(--sent);
+      color: #fff;
+      border-color: transparent;
+      border-radius: 17px 17px 5px 17px;
     }
 
-    .media.video{background:#000}
-
-    /* ================= REACTIONS ================= */
-
-    .reaction-badges{
-      display:flex;
-      gap:3px;
-      position:absolute;
-      bottom:-10px;
-      left:7px;
-      z-index:3;
+    .message-bubble.first.received {
+      border-top-left-radius: 5px;
     }
 
-    .row.mine .reaction-badges{
-      left:auto;
-      right:7px;
+    .message-bubble.last.received {
+      border-bottom-left-radius: 5px;
     }
 
-    .reaction-badge{
-      height:23px;
-      min-width:27px;
-      padding:2px 6px;
-      border:1px solid #ddd;
-      border-radius:999px;
-      background:#fff;
-      box-shadow:0 3px 10px rgba(0,0,0,.12);
-      font-size:.75rem;
-      display:grid;
-      place-items:center;
-      color:#222;
+    .message-bubble.first.sent {
+      border-top-right-radius: 5px;
     }
 
-    .reaction-badge small{
-      margin-left:2px;
-      font-size:.6rem;
-      color:#666;
+    .message-bubble.last.sent {
+      border-bottom-right-radius: 5px;
     }
 
-    .like-pill{
-      font-size:.62rem;
-      margin-left:4px;
-      color:#ff3b67;
+    .message-bubble.deleted {
+      background: #eeeeF1 !important;
+      border-color: #dedee4 !important;
+      color: #858995 !important;
+      font-style: italic;
     }
 
-    /* ================= TYPING ================= */
-
-    .typing{
-      height:20px;
-      padding:1px 15px;
-      color:var(--muted);
-      font-size:.67rem;
-      background:#fff;
+    .message-text {
+      white-space: pre-wrap;
+      line-height: 1.45;
+      font-size: .91rem;
     }
 
-    .typing:empty{visibility:hidden}
+    .message-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      margin-top: 4px;
+      min-height: 12px;
+    }
 
-    /* ================= PREVIEW / EDIT ================= */
+    .message-time {
+      font-size: .56rem;
+      opacity: .58;
+      white-space: nowrap;
+    }
+
+    .message-status {
+      font-size: .62rem;
+      opacity: .65;
+    }
+
+    .message-status.read {
+      color: #bdf5ff;
+      opacity: 1;
+    }
+
+    .edited-label {
+      font-size: .55rem;
+      opacity: .6;
+      margin-left: 3px;
+    }
+
+    /* MEDIA */
+
+    .message-media {
+      display: block;
+      width: min(340px, 70vw);
+      max-height: 410px;
+      object-fit: cover;
+      border-radius: 13px;
+      background: #111;
+      margin-bottom: 5px;
+    }
+
+    .message-video {
+      background: #000;
+    }
+
+    /* SHARED PROFILE */
+
+    .shared-profile {
+      min-width: 230px;
+      max-width: 300px;
+      padding: 11px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .05);
+    }
+
+    .message-group.sent .shared-profile {
+      background: rgba(255, 255, 255, .13);
+    }
+
+    .shared-profile-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shared-profile-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex: none;
+    }
+
+    .shared-profile-name {
+      font-weight: 800;
+      font-size: .85rem;
+    }
+
+    .shared-profile-label {
+      margin-top: 2px;
+      font-size: .62rem;
+      opacity: .65;
+    }
+
+    /* REACTIONS */
+
+    .reaction-row {
+      display: flex;
+      gap: 3px;
+      position: absolute;
+      bottom: -10px;
+      left: 7px;
+      z-index: 4;
+    }
+
+    .message-group.sent .reaction-row {
+      left: auto;
+      right: 7px;
+    }
+
+    .reaction {
+      min-width: 26px;
+      height: 23px;
+      padding: 2px 6px;
+      border: 1px solid #dddfe5;
+      border-radius: 999px;
+      background: #fff;
+      color: #222;
+      box-shadow: 0 3px 11px rgba(0, 0, 0, .12);
+      display: grid;
+      place-items: center;
+      font-size: .72rem;
+    }
+
+    /* WELCOME */
+
+    .welcome {
+      margin: auto;
+      text-align: center;
+      max-width: 330px;
+      color: var(--muted);
+      padding: 35px 12px;
+    }
+
+    .welcome-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 12px;
+    }
+
+    .welcome strong {
+      display: block;
+      color: var(--text);
+      font-size: 1.05rem;
+    }
+
+    .welcome p {
+      font-size: .8rem;
+      line-height: 1.5;
+    }
+
+    /* TYPING */
+
+    .typing {
+      min-height: 20px;
+      padding: 1px 17px;
+      background: #fff;
+      color: var(--muted);
+      font-size: .67rem;
+    }
+
+    .typing:empty {
+      visibility: hidden;
+    }
+
+    /* PREVIEW / EDIT */
 
     .preview,
-    .edit-bar{
-      display:none;
-      border-top:1px solid var(--line);
-      padding:7px 11px;
-      background:#f8f8fa;
-      align-items:center;
-      gap:9px;
+    .edit-bar {
+      display: none;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 11px;
+      border-top: 1px solid var(--line);
+      background: #f8f8fa;
     }
 
     .preview.show,
-    .edit-bar.show{
-      display:flex;
+    .edit-bar.show {
+      display: flex;
     }
 
-    .preview-thumb{
-      width:50px;
-      height:50px;
-      border-radius:9px;
-      overflow:hidden;
-      background:#111;
-      flex:none;
+    .preview-thumb {
+      width: 50px;
+      height: 50px;
+      overflow: hidden;
+      border-radius: 9px;
+      background: #111;
+      flex: none;
     }
 
     .preview-thumb img,
-    .preview-thumb video{
-      width:100%;
-      height:100%;
-      object-fit:cover;
+    .preview-thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .preview-name,
-    .edit-copy{
-      flex:1;
-      min-width:0;
-      font-size:.72rem;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+    .edit-copy {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .72rem;
+    }
+
+    .edit-bar {
+      background: #f1efff;
+      color: #554ad8;
+    }
+
+    .edit-copy small {
+      display: block;
+      margin-top: 1px;
+      font-size: .59rem;
+      opacity: .7;
     }
 
     .remove,
-    .cancel{
-      border:0;
-      background:transparent;
-      color:var(--muted);
-      cursor:pointer;
-      font-weight:700;
+    .cancel {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 700;
     }
 
-    .edit-bar{
-      background:#f1efff;
-      color:#554ad8;
+    /* COMPOSER */
+
+    .composer {
+      display: flex;
+      align-items: flex-end;
+      gap: 7px;
+      padding: 8px 9px max(9px, env(safe-area-inset-bottom));
+      background: #fff;
+      border-top: 1px solid var(--line);
+      z-index: 20;
     }
 
-    .edit-copy small{
-      display:block;
-      font-size:.6rem;
-      opacity:.7;
-      margin-top:1px;
+    .attach-btn {
+      width: 43px;
+      height: 43px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--primary);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 1.05rem;
     }
 
-    /* ================= COMPOSER ================= */
-
-    .composer{
-      display:flex;
-      align-items:flex-end;
-      gap:7px;
-      padding:8px 9px max(9px,env(safe-area-inset-bottom));
-      background:#fff;
-      border-top:1px solid var(--line);
-      z-index:20;
+    .attach-btn:hover {
+      background: var(--surface-soft);
     }
 
-    .attach{
-      width:43px;
-      height:43px;
-      border:0;
-      border-radius:50%;
-      background:transparent;
-      color:var(--accent);
-      cursor:pointer;
-      font-size:1.1rem;
-      display:grid;
-      place-items:center;
+    .input-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: flex-end;
+      border: 1px solid #dedfe5;
+      border-radius: 22px;
+      padding: 0 11px;
+      background: #f5f5f7;
     }
 
-    .attach:hover{background:var(--surface2)}
-
-    .input-wrap{
-      flex:1;
-      min-width:0;
-      display:flex;
-      align-items:flex-end;
-      border:1px solid #dddde2;
-      background:#f5f5f7;
-      border-radius:22px;
-      padding:0 10px;
+    .input-wrap:focus-within {
+      border-color: #b7b1ff;
+      box-shadow: 0 0 0 3px rgba(99, 91, 255, .08);
     }
 
-    .input-wrap:focus-within{
-      border-color:#b5afff;
-      box-shadow:0 0 0 3px rgba(99,91,255,.08);
+    .message-input {
+      width: 100%;
+      min-height: 41px;
+      max-height: 120px;
+      resize: none;
+      outline: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 10px 2px;
+      line-height: 1.4;
     }
 
-    .input{
-      width:100%;
-      border:0;
-      outline:0;
-      resize:none;
-      background:transparent;
-      color:var(--text);
-      padding:10px 2px;
-      line-height:1.4;
-      max-height:120px;
-      min-height:41px;
+    .send-btn {
+      width: 43px;
+      height: 43px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
     }
 
-    .send{
-      width:43px;
-      height:43px;
-      border:0;
-      border-radius:50%;
-      background:var(--accent);
-      color:#fff;
-      display:grid;
-      place-items:center;
-      cursor:pointer;
+    .send-btn:hover {
+      background: var(--primary-dark);
     }
 
-    .send:disabled{
-      opacity:.45;
-      cursor:not-allowed;
+    .send-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
     }
 
-    #mediaInput{display:none}
-
-    /* ================= ACTION SHEET ================= */
-
-    .overlay{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.36);
-      opacity:0;
-      visibility:hidden;
-      pointer-events:none;
-      transition:.18s;
-      z-index:90;
+    #mediaInput {
+      display: none;
     }
 
-    .overlay.open{
-      opacity:1;
-      visibility:visible;
-      pointer-events:auto;
+    /* ACTION SHEET */
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .4);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: .2s;
+      z-index: 90;
     }
 
-    .action-sheet{
-      position:fixed;
-      left:50%;
-      bottom:10px;
-      transform:translate(-50%,18px);
-      width:min(520px,calc(100vw - 18px));
-      background:#fff;
-      border-radius:22px;
-      padding:9px;
-      box-shadow:0 24px 70px rgba(0,0,0,.24);
-      opacity:0;
-      visibility:hidden;
-      pointer-events:none;
-      transition:.2s;
-      z-index:91;
+    .overlay.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
     }
 
-    .action-sheet.open{
-      opacity:1;
-      visibility:visible;
-      pointer-events:auto;
-      transform:translate(-50%,0);
+    .message-sheet {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translate(-50%, 110%);
+      width: min(520px, 100vw);
+      background: #fff;
+      border-radius: 22px 22px 0 0;
+      padding: 10px;
+      box-shadow: 0 -15px 55px rgba(0, 0, 0, .2);
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: .22s;
+      z-index: 91;
     }
 
-    .react-row{
-      display:flex;
-      gap:4px;
-      padding:2px 2px 9px;
-      border-bottom:1px solid var(--line);
+    .message-sheet.open {
+      transform: translate(-50%, 0);
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .react{
-      flex:1;
-      height:46px;
-      border:0;
-      border-radius:14px;
-      background:#f3f3f5;
-      font-size:1.25rem;
-      cursor:pointer;
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: #d8d9df;
+      border-radius: 999px;
+      margin: 2px auto 10px;
     }
 
-    .react:hover{
-      background:#e8e8eb;
-      transform:translateY(-1px);
+    .reaction-picker {
+      display: flex;
+      gap: 4px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--line);
     }
 
-    .react.add{font-size:1rem}
-
-    .emoji-more{
-      display:none;
-      flex-wrap:wrap;
-      gap:5px;
-      padding:9px 2px 2px;
+    .reaction-picker button {
+      flex: 1;
+      height: 45px;
+      border: 0;
+      border-radius: 13px;
+      background: #f2f3f6;
+      cursor: pointer;
+      font-size: 1.2rem;
     }
 
-    .emoji-more.open{display:flex}
-
-    .emoji-more button{
-      width:42px;
-      height:38px;
-      border:0;
-      border-radius:10px;
-      background:#f3f3f5;
-      cursor:pointer;
-      font-size:1.1rem;
+    .emoji-more {
+      display: none;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 9px 0;
     }
 
-    .action{
-      width:100%;
-      height:44px;
-      border:0;
-      background:transparent;
-      border-radius:11px;
-      text-align:left;
-      padding:0 12px;
-      display:flex;
-      align-items:center;
-      gap:11px;
-      cursor:pointer;
-      font-weight:700;
+    .emoji-more.open {
+      display: flex;
     }
 
-    .action:hover{background:#f3f3f5}
-
-    .action.danger{color:var(--danger)}
-
-    .action.disabled{
-      opacity:.4;
-      pointer-events:none;
+    .emoji-more button {
+      width: 42px;
+      height: 38px;
+      border: 0;
+      border-radius: 10px;
+      background: #f1f2f5;
+      cursor: pointer;
+      font-size: 1.1rem;
     }
 
-    .sheet-close{
-      margin-top:4px;
-      background:#f1f1f3;
+    .sheet-action {
+      width: 100%;
+      height: 45px;
+      border: 0;
+      background: transparent;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 12px;
+      text-align: left;
+      cursor: pointer;
+      font-weight: 700;
     }
 
-    .edit-time{
-      font-size:.6rem;
-      color:var(--muted);
-      margin-left:auto;
+    .sheet-action:hover {
+      background: #f2f3f6;
     }
 
-    .toast{
-      position:fixed;
-      left:50%;
-      bottom:78px;
-      transform:translateX(-50%);
-      background:#191919;
-      color:#fff;
-      padding:9px 13px;
-      border-radius:999px;
-      font-size:.72rem;
-      opacity:0;
-      pointer-events:none;
-      transition:.2s;
-      z-index:120;
+    .sheet-action.danger {
+      color: var(--danger);
     }
 
-    .toast.show{opacity:1}
+    .sheet-action.disabled {
+      opacity: .4;
+      pointer-events: none;
+    }
 
-    /* ================= MOBILE ================= */
+    .sheet-action .remaining {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: .59rem;
+    }
 
-    @media(max-width:600px){
-      .page{
-        height:calc(100dvh - 56px);
-        min-height:0;
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 78px;
+      transform: translateX(-50%);
+      background: #191919;
+      color: #fff;
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-size: .72rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s;
+      z-index: 120;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 600px) {
+      .page {
+        height: calc(100dvh - 56px);
+        min-height: 0;
       }
 
-      .chat{border-radius:0}
-
-      .topbar{height:58px}
-
-      .avatar{
-        width:39px;
-        height:39px;
+      .chat-shell {
+        border-radius: 0;
       }
 
-      .icon-btn{
-        width:39px;
-        height:39px;
+      .chat-header {
+        height: 59px;
       }
 
-      .messages{
-        padding:13px 8px 20px;
-        gap:9px;
+      .header-avatar {
+        width: 40px;
+        height: 40px;
       }
 
-      .bubble-wrap{
-        max-width:82%;
+      .icon-btn {
+        width: 39px;
+        height: 39px;
       }
 
-      .sender-message{
-        max-width:82%;
+      .messages {
+        padding: 14px 8px 22px;
       }
 
-      .sender-avatar-wrap{
-        width:31px;
-        flex-basis:31px;
+      .sender-avatar-wrap {
+        width: 31px;
       }
 
-      .sender-avatar{
-        width:29px;
-        height:29px;
+      .sender-avatar {
+        width: 29px;
+        height: 29px;
       }
 
-      .sender-name{
-        font-size:.68rem;
+      .message-content {
+        max-width: 83%;
       }
 
-      .media{
-        width:min(300px,72vw);
+      .message-text {
+        font-size: .88rem;
       }
 
-      .action-sheet{
-        bottom:0;
-        border-radius:22px 22px 0 0;
-        padding-bottom:max(9px,env(safe-area-inset-bottom));
-      }
-
-      .react{height:44px}
-
-      .composer{padding-top:7px}
-    }
-
-    @media(min-width:900px){
-      .messages{
-        padding-left:clamp(28px,6vw,70px);
-        padding-right:clamp(28px,6vw,70px);
-      }
-
-      .bubble-wrap,
-      .sender-message{
-        max-width:68%;
+      .message-sheet {
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
       }
     }
   </style>
@@ -788,46 +872,67 @@
   <%- include('./partials/nave') %>
 
   <main class="page">
-
-    <section class="chat" aria-label="Conversation">
+    <section class="chat-shell" aria-label="Conversation">
 
       <!-- HEADER -->
-      <header class="topbar">
+      <header class="chat-header">
 
-        <button class="icon-btn back" id="backBtn" aria-label="Back">
+        <button
+          class="icon-btn back-btn"
+          id="backBtn"
+          aria-label="Back">
           <i class="fas fa-arrow-left"></i>
         </button>
 
-        <div class="person" id="profileBtn" role="button" tabindex="0">
+        <div
+          class="chat-user"
+          id="profileBtn"
+          role="button"
+          tabindex="0">
 
           <img
-            class="avatar"
-            id="avatar"
+            class="header-avatar"
+            id="headerAvatar"
             src="/imgs/default.png"
-            alt=""
-          >
+            alt="">
 
-          <div class="person-copy">
-            <div class="person-name" id="personName">Loading…</div>
-            <div class="person-status" id="personStatus">Message</div>
+          <div class="header-user-info">
+            <div
+              class="header-name"
+              id="headerName">
+              Loading…
+            </div>
+
+            <div
+              class="header-status"
+              id="headerStatus">
+              Message
+            </div>
           </div>
 
         </div>
 
-        <div class="top-actions">
+        <div class="header-actions">
 
-          <button class="icon-btn" id="menuBtn" aria-label="More">
+          <button
+            class="icon-btn"
+            id="menuBtn"
+            aria-label="More options">
             <i class="fas fa-ellipsis-v"></i>
           </button>
 
-          <div class="top-menu" id="topMenu">
+          <div
+            class="header-menu"
+            id="headerMenu">
 
             <button id="profileAction">
               <i class="fas fa-user"></i>
               View profile
             </button>
 
-            <button id="blockAction" class="danger">
+            <button
+              id="blockAction"
+              class="danger">
               <i class="fas fa-ban"></i>
               Block user
             </button>
@@ -840,15 +945,20 @@
 
 
       <!-- MESSAGES -->
-      <div class="messages" id="messages" aria-live="polite">
+      <div
+        class="messages"
+        id="messages"
+        aria-live="polite">
 
-        <div class="welcome" id="welcome">
+        <div
+          class="welcome"
+          id="welcome">
 
           <img
+            class="welcome-avatar"
             id="welcomeAvatar"
             src="/imgs/default.png"
-            alt=""
-          >
+            alt="">
 
           <strong id="welcomeName">
             Starting chat…
@@ -863,21 +973,31 @@
       </div>
 
 
-      <div class="typing" id="typing"></div>
+      <!-- TYPING -->
+      <div
+        class="typing"
+        id="typing">
+      </div>
 
 
       <!-- MEDIA PREVIEW -->
-      <div class="preview" id="preview">
+      <div
+        class="preview"
+        id="preview">
 
-        <div class="preview-thumb" id="previewThumb"></div>
+        <div
+          class="preview-thumb"
+          id="previewThumb">
+        </div>
 
-        <div class="preview-name" id="previewName"></div>
+        <div
+          class="preview-name"
+          id="previewName">
+        </div>
 
         <button
           class="remove"
-          id="removeMedia"
-          aria-label="Remove attachment"
-        >
+          id="removeMedia">
           ×
         </button>
 
@@ -885,21 +1005,25 @@
 
 
       <!-- EDIT BAR -->
-      <div class="edit-bar" id="editBar">
+      <div
+        class="edit-bar"
+        id="editBar">
 
         <i class="fas fa-pen"></i>
 
         <div class="edit-copy">
-
           <strong>Editing message</strong>
-
           <small id="editText"></small>
-
         </div>
 
-        <span class="edit-time" id="editTime"></span>
+        <span
+          class="remaining"
+          id="editTime">
+        </span>
 
-        <button class="cancel" id="cancelEdit">
+        <button
+          class="cancel"
+          id="cancelEdit">
           Cancel
         </button>
 
@@ -907,76 +1031,79 @@
 
 
       <!-- COMPOSER -->
-      <form class="composer" id="composer">
+      <form
+        class="composer"
+        id="composer">
 
         <button
           type="button"
-          class="attach"
+          class="attach-btn"
           id="mediaBtn"
-          aria-label="Photo or video"
-        >
+          aria-label="Photo or video">
           <i class="fas fa-plus"></i>
         </button>
 
         <input
           id="mediaInput"
           type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
-        >
+          accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime">
 
         <div class="input-wrap">
 
           <textarea
             id="input"
-            class="input"
+            class="message-input"
             rows="1"
             maxlength="5000"
             placeholder="Message…"
-            autocomplete="off"
-          ></textarea>
+            autocomplete="off"></textarea>
 
         </div>
 
         <button
-          class="send"
+          class="send-btn"
           id="sendBtn"
           type="submit"
-          aria-label="Send"
-        >
+          aria-label="Send">
           <i class="fas fa-paper-plane"></i>
         </button>
 
       </form>
 
     </section>
-
   </main>
 
 
-  <!-- ACTION SHEET -->
-  <div class="overlay" id="overlay"></div>
-
+  <!-- OVERLAY -->
   <div
-    class="action-sheet"
-    id="actionSheet"
-    aria-label="Message actions"
-  >
+    class="overlay"
+    id="overlay">
+  </div>
 
-    <div class="react-row">
 
-      <button class="react" data-emoji="❤️">❤️</button>
-      <button class="react" data-emoji="😂">😂</button>
-      <button class="react" data-emoji="😮">😮</button>
-      <button class="react" data-emoji="😢">😢</button>
+  <!-- MESSAGE ACTION SHEET -->
+  <div
+    class="message-sheet"
+    id="messageSheet">
 
-      <button class="react add" id="moreEmoji">
+    <div class="sheet-handle"></div>
+
+    <div class="reaction-picker">
+
+      <button data-emoji="❤️">❤️</button>
+      <button data-emoji="😂">😂</button>
+      <button data-emoji="😮">😮</button>
+      <button data-emoji="😢">😢</button>
+
+      <button id="moreEmoji">
         ＋
       </button>
 
     </div>
 
-
-    <div class="emoji-more" id="emojiMore">
+    <div
+      class="emoji-more"
+      id="emojiMore">
 
       <button data-emoji="👍">👍</button>
       <button data-emoji="😍">😍</button>
@@ -989,51 +1116,60 @@
 
     </div>
 
+    <button
+      class="sheet-action"
+      id="replyAction">
+      <i class="fas fa-reply"></i>
+      Reply
+    </button>
 
-    <button class="action" id="editAction">
+    <button
+      class="sheet-action"
+      id="forwardAction">
+      <i class="fas fa-share"></i>
+      Forward
+    </button>
 
+    <button
+      class="sheet-action"
+      id="editAction">
       <i class="fas fa-pen"></i>
-
       Edit
 
       <span
-        class="edit-time"
-        id="sheetEditTime"
-      ></span>
-
+        class="remaining"
+        id="sheetEditTime">
+      </span>
     </button>
 
-
-    <button class="action" id="copyAction">
-
+    <button
+      class="sheet-action"
+      id="copyAction">
       <i class="far fa-copy"></i>
-
       Copy
-
     </button>
 
-
-    <button class="action danger" id="unsendAction">
-
+    <button
+      class="sheet-action danger"
+      id="unsendAction">
       <i class="fas fa-trash-alt"></i>
-
       Unsend
-
     </button>
 
-
-    <button class="action sheet-close" id="closeSheet">
-
+    <button
+      class="sheet-action"
+      id="closeSheet">
       <i class="fas fa-times"></i>
-
       Cancel
-
     </button>
 
   </div>
 
 
-  <div class="toast" id="toast"></div>
+  <div
+    class="toast"
+    id="toast">
+  </div>
 
 
   <%- include('./partials/scripts') %>
@@ -1041,918 +1177,855 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <script>
+    const CURRENT = '<%= user._id %>';
+    const TARGET = '<%= targetUserId %>';
 
-    const CURRENT='<%= user._id %>';
-    const TARGET='<%= targetUserId %>';
+    const EDIT_WINDOW_MS = 60 * 1000;
 
-    const EDIT_WINDOW_MS=60*1000;
+    let conversationId = null;
+    let other = null;
+    let socket = null;
 
-    let conversationId=null;
-    let other=null;
-    let socket=null;
-    let selectedFile=null;
-    let activeMessageId=null;
-    let editingMessageId=null;
-    let typingTimer=null;
-    let longPressTimer=null;
-    let longPressTriggered=false;
+    let selectedFile = null;
+    let activeMessageId = null;
+    let editingMessageId = null;
+    let replyingMessageId = null;
 
+    let typingTimer = null;
+    let longPressTimer = null;
 
-    const $=id=>document.getElementById(id);
+    const $ = id => document.getElementById(id);
 
+    const escapeHtml = value =>
+      String(value ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[c]));
 
-    const escapeHtml=value=>
-      String(value??'').replace(
-        /[&<>"']/g,
-        c=>({
-          '&':'&amp;',
-          '<':'&lt;',
-          '>':'&gt;',
-          '"':'&quot;',
-          "'":'&#039;'
-        }[c])
-      );
+    function image(value) {
+      return value && String(value).trim()
+        ? String(value)
+        : '/imgs/default.png';
+    }
 
+    function toast(message) {
+      const el = $('toast');
 
-    const img=v=>
-      v&&String(v).trim()
-        ?String(v)
-        :'/imgs/default.png';
-
-
-    function toast(text){
-
-      const el=$('toast');
-
-      el.textContent=text;
-
+      el.textContent = message;
       el.classList.add('show');
 
-      clearTimeout(window.__toast);
+      clearTimeout(window.__toastTimer);
 
-      window.__toast=setTimeout(
-        ()=>el.classList.remove('show'),
-        2400
+      window.__toastTimer = setTimeout(() => {
+        el.classList.remove('show');
+      }, 2400);
+    }
+
+    function api(url, options = {}) {
+      return fetch(url, {
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          ...(options.body instanceof FormData
+            ? {}
+            : { 'Content-Type': 'application/json' }),
+          ...(options.headers || {})
+        },
+        ...options
+      });
+    }
+
+    function messageTime(value) {
+      if (!value) return '';
+
+      return new Date(value).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+
+    function messageDay(value) {
+      return new Date(value).toLocaleDateString([], {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function senderId(message) {
+      return String(
+        message?.senderId?._id ||
+        message?.senderId ||
+        ''
       );
-
     }
 
+    function isMine(message) {
+      return senderId(message) === String(CURRENT);
+    }
 
-    function api(url,opts={}){
-
-      return fetch(
-        url,
-        {
-          credentials:'same-origin',
-
-          headers:{
-            Accept:'application/json',
-
-            ...(opts.body instanceof FormData
-              ?{}
-              :{'Content-Type':'application/json'}),
-
-            ...(opts.headers||{})
-          },
-
-          ...opts
-        }
+    function canEdit(message) {
+      return (
+        !message.deleted &&
+        isMine(message) &&
+        Date.now() -
+          new Date(message.createdAt).getTime() <=
+          EDIT_WINDOW_MS
       );
-
     }
 
-
-    function time(v){
-
-      return v
-        ?new Date(v).toLocaleTimeString(
-            [],
-            {
-              hour:'numeric',
-              minute:'2-digit'
-            }
-          )
-        :'';
-
-    }
-
-
-    function day(v){
-
-      return new Date(v).toLocaleDateString(
-        [],
-        {
-          day:'numeric',
-          month:'short',
-          year:'numeric'
-        }
-      );
-
-    }
-
-
-    function canEdit(m){
-
-      return !m.deleted &&
-        String(m.senderId?._id||m.senderId)===String(CURRENT) &&
-        Date.now()-new Date(m.createdAt).getTime()<=EDIT_WINDOW_MS;
-
-    }
-
-
-    function remaining(m){
-
+    function editRemaining(message) {
       return Math.max(
         0,
-        EDIT_WINDOW_MS-
-        (Date.now()-new Date(m.createdAt).getTime())
+        EDIT_WINDOW_MS -
+        (Date.now() -
+        new Date(message.createdAt).getTime())
       );
+    }
 
+    function scrollToBottom(smooth = true) {
+      const box = $('messages');
+
+      box.scrollTo({
+        top: box.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+
+    function renderWelcome() {
+      if (!other) return;
+
+      $('welcomeAvatar').src =
+        image(other.profileImageURL);
+
+      $('welcomeName').textContent =
+        other.fullName || 'User';
     }
 
 
     /*
-      Always start the conversation from the newest message.
-    */
+     * ---------------------------------------------------------
+     * MESSAGE HTML
+     * ---------------------------------------------------------
+     */
 
-    function scrollBottom(smooth=true){
+    function buildReactionHtml(message) {
+      const reactions =
+        Array.isArray(message.reactions)
+          ? message.reactions
+          : [];
 
-      const box=$('messages');
+      if (!reactions.length) return '';
 
-      if(!box)return;
+      const counts = {};
 
-      requestAnimationFrame(()=>{
+      reactions.forEach(reaction => {
+        if (!reaction?.emoji) return;
 
-        box.scrollTo({
-          top:box.scrollHeight,
-          behavior:smooth?'smooth':'auto'
-        });
-
-      });
-
-    }
-
-
-    function renderWelcome(){
-
-      if(!other)return;
-
-      $('welcomeAvatar').src=
-        img(other.profileImageURL);
-
-      $('welcomeName').textContent=
-        other.fullName||'User';
-
-    }
-
-
-    function reactionBadges(m){
-
-      const rs=
-        Array.isArray(m.reactions)
-          ?m.reactions
-          :[];
-
-      if(!rs.length)return '';
-
-      const counts={};
-
-      rs.forEach(r=>{
-        counts[r.emoji]=
-          (counts[r.emoji]||0)+1;
+        counts[reaction.emoji] =
+          (counts[reaction.emoji] || 0) + 1;
       });
 
       return `
-        <div class="reaction-badges">
-          ${
-            Object.entries(counts)
-              .map(([e,n])=>`
-                <span class="reaction-badge">
-                  ${escapeHtml(e)}
-                  ${n>1?`<small>${n}</small>`:''}
-                </span>
-              `)
-              .join('')
-          }
+        <div class="reaction-row">
+          ${Object.entries(counts)
+            .map(([emoji, count]) => `
+              <span class="reaction">
+                ${escapeHtml(emoji)}
+                ${count > 1
+                  ? `<small>${count}</small>`
+                  : ''}
+              </span>
+            `)
+            .join('')}
         </div>
       `;
-
     }
 
 
-    /*
-      IMPORTANT:
-      Every incoming message now contains:
-      1. sender avatar
-      2. sender fullName
-      3. message content
-    */
-
-    function bubble(m){
-
-      const mine=
-        String(m.senderId?._id||m.senderId)===
-        String(CURRENT);
-
-      const deleted=Boolean(m.deleted);
-
-      const row=document.createElement('div');
-
-      row.className=
-        'row '+(mine?'mine':'theirs');
-
-      row.dataset.message=m._id;
-
-
-      let media='';
-
-
-      if(
-        !deleted &&
-        m.mediaUrl &&
-        m.mediaType==='image'
-      ){
-
-        media=`
-          <img
-            class="media"
-            src="${escapeHtml(m.mediaUrl)}"
-            alt="Photo"
-            loading="lazy"
-          >
-        `;
-
+    function buildSharedProfile(message) {
+      if (
+        message.mediaType !== 'profile' ||
+        !message.profileShareId
+      ) {
+        return '';
       }
 
+      const profile =
+        message.profileShareId;
 
-      if(
-        !deleted &&
-        m.mediaUrl &&
-        m.mediaType==='video'
-      ){
+      return `
+        <div class="shared-profile">
 
-        media=`
-          <video
-            class="media video"
-            src="${escapeHtml(m.mediaUrl)}"
-            controls
-            playsinline
-            preload="metadata"
-          ></video>
-        `;
-
-      }
-
-
-      let profile='';
-
-
-      if(
-        !deleted &&
-        m.mediaType==='profile' &&
-        m.profileShareId
-      ){
-
-        const p=m.profileShareId;
-
-        profile=`
           <a
-            href="/user/profile/${escapeHtml(p._id)}"
-            style="
-              display:block;
-              color:inherit;
-              text-decoration:none;
-            "
-          >
+            class="shared-profile-link"
+            href="/user/profile/${escapeHtml(profile._id)}">
 
-            <strong>
-              ${escapeHtml(p.fullName||'Profile')}
-            </strong>
+            <img
+              class="shared-profile-avatar"
+              src="${escapeHtml(
+                image(profile.profileImageURL)
+              )}"
+              alt="">
 
-            <div
-              style="
-                font-size:.7rem;
-                opacity:.7;
-                margin-top:3px;
-              "
-            >
-              Shared profile
+            <div>
+              <div class="shared-profile-name">
+                ${escapeHtml(
+                  profile.fullName || 'Profile'
+                )}
+              </div>
+
+              <div class="shared-profile-label">
+                Shared profile
+              </div>
             </div>
 
           </a>
-        `;
 
-      }
-
-
-      const text=
-        deleted
-          ?'Message unsent'
-          :(m.text||'');
+        </div>
+      `;
+    }
 
 
-      const edited=
-        m.edited&&!deleted
-          ?'<span class="edited">edited</span>'
-          :'';
+    function buildMessage(message, index, list) {
 
+      const mine = isMine(message);
+      const deleted = !!message.deleted;
 
-      const likes=
-        Array.isArray(m.likes)
-          ?m.likes.length
-          :0;
+      const previous =
+        list[index - 1];
 
+      const next =
+        list[index + 1];
 
-      /*
-        Get sender information.
+      const samePrevious =
+        previous &&
+        senderId(previous) === senderId(message) &&
+        !previous.deleted &&
+        !deleted;
 
-        The conversation API may return senderId
-        either as a populated object or as an ID.
-        For incoming messages we use `other`, which
-        is already loaded from the conversation endpoint.
-      */
+      const sameNext =
+        next &&
+        senderId(next) === senderId(message) &&
+        !next.deleted &&
+        !deleted;
 
-      const senderObject=
-        m.senderId &&
-        typeof m.senderId==='object'
-          ?m.senderId
-          :null;
+      const first = !samePrevious;
+      const last = !sameNext;
 
+      const row =
+        document.createElement('div');
 
-      const senderName=
-        senderObject?.fullName ||
-        (!mine?other?.fullName:'') ||
-        'User';
+      row.className =
+        `message-group ${
+          mine ? 'sent' : 'received'
+        }`;
 
-
-      const senderAvatar=
-        senderObject?.profileImageURL ||
-        (!mine?other?.profileImageURL:'') ||
-        '/imgs/default.png';
+      row.dataset.message =
+        message._id;
 
 
       /*
-        Incoming message identity.
-      */
+       * Avatar is shown beside the final
+       * received message in a group.
+       */
+      const showAvatar =
+        !mine && last;
 
-      let senderIdentity='';
-
-
-      if(!mine){
-
-        senderIdentity=`
-
+      const avatarHtml = !mine
+        ? `
           <div class="sender-avatar-wrap">
 
             <img
-              class="sender-avatar"
-              src="${escapeHtml(img(senderAvatar))}"
-              alt="${escapeHtml(senderName)}"
-              loading="lazy"
-              onerror="this.onerror=null;this.src='/imgs/default.png'"
-            >
+              class="sender-avatar ${
+                showAvatar ? '' : 'hidden'
+              }"
+              src="${escapeHtml(
+                image(
+                  message.senderId?.profileImageURL ||
+                  other?.profileImageURL
+                )
+              )}"
+              alt="">
 
           </div>
+        `
+        : `
+          <div
+            class="sender-avatar-wrap"
+            style="width:0">
+          </div>
+        `;
 
-          <div class="sender-message">
 
+      const senderName =
+        !mine && first
+          ? `
             <div class="sender-name">
-
-              <i class="fas fa-user"></i>
-
-              ${escapeHtml(senderName)}
-
+              ${escapeHtml(
+                message.senderId?.fullName ||
+                other?.fullName ||
+                'User'
+              )}
             </div>
+          `
+          : '';
 
-            <div class="bubble ${deleted?'deleted':''}" data-bubble="${escapeHtml(m._id)}">
 
-              ${media}
+      let mediaHtml = '';
 
-              ${profile}
-
-              ${
-                text
-                  ?`<div class="text">
-                      ${escapeHtml(text)}
-                      ${edited}
-                    </div>`
-                  :''
-              }
-
-              <div class="meta">
-
-                ${time(m.createdAt)}
-
-                ${
-                  likes
-                    ?`<span class="like-pill">
-                        ♥ ${likes}
-                      </span>`
-                    :''
-                }
-
-              </div>
-
-              ${reactionBadges(m)}
-
-            </div>
-
-          </div>
-
+      if (
+        !deleted &&
+        message.mediaUrl &&
+        message.mediaType === 'image'
+      ) {
+        mediaHtml = `
+          <img
+            class="message-media"
+            src="${escapeHtml(message.mediaUrl)}"
+            alt="Photo"
+            loading="lazy">
         `;
+      }
 
-      }else{
-
-        senderIdentity=`
-
-          <div class="bubble-wrap">
-
-            <div
-              class="bubble ${deleted?'deleted':''}"
-              data-bubble="${escapeHtml(m._id)}"
-            >
-
-              ${media}
-
-              ${profile}
-
-              ${
-                text
-                  ?`<div class="text">
-                      ${escapeHtml(text)}
-                      ${edited}
-                    </div>`
-                  :''
-              }
-
-              <div class="meta">
-
-                ${time(m.createdAt)}
-
-                ${
-                  !deleted
-                    ?`
-                      <span
-                        class="status ${
-                          m.status==='read'
-                            ?'read'
-                            :''
-                        }"
-                      >
-                        ${
-                          m.status==='read'
-                            ?'✓✓'
-                            :m.status==='delivered'
-                              ?'✓✓'
-                              :'✓'
-                        }
-                      </span>
-                    `
-                    :''
-                }
-
-                ${
-                  likes
-                    ?`<span class="like-pill">
-                        ♥ ${likes}
-                      </span>`
-                    :''
-                }
-
-              </div>
-
-              ${reactionBadges(m)}
-
-            </div>
-
-          </div>
-
+      if (
+        !deleted &&
+        message.mediaUrl &&
+        message.mediaType === 'video'
+      ) {
+        mediaHtml = `
+          <video
+            class="message-media message-video"
+            src="${escapeHtml(message.mediaUrl)}"
+            controls
+            playsinline
+            preload="metadata">
+          </video>
         `;
-
       }
 
 
-      row.innerHTML=senderIdentity;
+      const profileHtml =
+        buildSharedProfile(message);
+
+
+      const text =
+        deleted
+          ? 'Message unsent'
+          : (message.text || '');
+
+
+      const edited =
+        message.edited && !deleted
+          ? `<span class="edited-label">edited</span>`
+          : '';
+
+
+      let statusHtml = '';
+
+      if (mine && !deleted) {
+
+        const status =
+          message.status === 'read'
+            ? '✓✓'
+            : message.status === 'delivered'
+              ? '✓✓'
+              : '✓';
+
+        statusHtml = `
+          <span
+            class="message-status ${
+              message.status === 'read'
+                ? 'read'
+                : ''
+            }">
+            ${status}
+          </span>
+        `;
+      }
+
+
+      row.innerHTML = `
+
+        ${avatarHtml}
+
+        <div class="message-content">
+
+          ${senderName}
+
+          <div
+            class="
+              message-bubble
+              ${deleted ? 'deleted' : ''}
+              ${first ? 'first' : ''}
+              ${last ? 'last' : ''}
+              ${mine ? 'sent' : 'received'}
+            "
+            data-bubble="${escapeHtml(message._id)}">
+
+            ${mediaHtml}
+
+            ${profileHtml}
+
+            ${
+              text
+                ? `
+                  <div class="message-text">
+                    ${escapeHtml(text)}
+                    ${edited}
+                  </div>
+                `
+                : ''
+            }
+
+            <div class="message-footer">
+
+              <span class="message-time">
+                ${messageTime(message.createdAt)}
+              </span>
+
+              ${statusHtml}
+
+            </div>
+
+            ${buildReactionHtml(message)}
+
+          </div>
+
+        </div>
+      `;
 
       return row;
-
     }
 
 
-    function appendDateIfNeeded(m){
+    function appendDateDividerIfNeeded(
+      message,
+      index,
+      list
+    ) {
+      if (index === 0) {
+        const divider =
+          document.createElement('div');
 
-      const box=$('messages');
+        divider.className =
+          'date-divider';
 
-      const last=
-        box.querySelector(
-          '.date-divider:last-of-type'
+        divider.dataset.day =
+          messageDay(message.createdAt);
+
+        divider.textContent =
+          messageDay(message.createdAt);
+
+        $('messages').appendChild(divider);
+
+        return;
+      }
+
+      const previous =
+        list[index - 1];
+
+      if (
+        messageDay(previous.createdAt) !==
+        messageDay(message.createdAt)
+      ) {
+        const divider =
+          document.createElement('div');
+
+        divider.className =
+          'date-divider';
+
+        divider.dataset.day =
+          messageDay(message.createdAt);
+
+        divider.textContent =
+          messageDay(message.createdAt);
+
+        $('messages').appendChild(divider);
+      }
+    }
+
+
+    function bindMessageGesture(row) {
+
+      const bubble =
+        row.querySelector('.message-bubble');
+
+      if (!bubble) return;
+
+      bubble.addEventListener(
+        'dblclick',
+        () => {
+          react(
+            row.dataset.message,
+            '❤️'
+          );
+        }
+      );
+
+
+      const startLongPress = event => {
+
+        if (
+          event.target.closest('video')
+        ) {
+          return;
+        }
+
+        clearTimeout(longPressTimer);
+
+        longPressTimer =
+          setTimeout(() => {
+
+            openMessageSheet(
+              row.dataset.message
+            );
+
+          }, 520);
+      };
+
+
+      const cancelLongPress = () => {
+        clearTimeout(longPressTimer);
+      };
+
+
+      bubble.addEventListener(
+        'pointerdown',
+        startLongPress
+      );
+
+      bubble.addEventListener(
+        'pointerup',
+        cancelLongPress
+      );
+
+      bubble.addEventListener(
+        'pointercancel',
+        cancelLongPress
+      );
+
+      bubble.addEventListener(
+        'pointerleave',
+        cancelLongPress
+      );
+
+      bubble.addEventListener(
+        'contextmenu',
+        event => {
+
+          event.preventDefault();
+
+          openMessageSheet(
+            row.dataset.message
+          );
+        }
+      );
+    }
+
+
+    function renderMessages(list) {
+
+      const box =
+        $('messages');
+
+      box.innerHTML = '';
+
+      if (!list || !list.length) {
+
+        box.appendChild(
+          $('welcome')
         );
-
-      const d=day(m.createdAt);
-
-
-      if(last&&last.dataset.day===d)return;
-
-
-      const x=document.createElement('div');
-
-      x.className='date-divider';
-
-      x.dataset.day=d;
-
-      x.textContent=d;
-
-      box.appendChild(x);
-
-    }
-
-
-    function renderMessages(list){
-
-      const box=$('messages');
-
-      box.innerHTML='';
-
-
-      if(!list||!list.length){
-
-        box.appendChild($('welcome'));
 
         renderWelcome();
 
         return;
-
       }
 
 
-      list.forEach(m=>{
+      list.forEach(
+        (message, index) => {
 
-        appendDateIfNeeded(m);
+          appendDateDividerIfNeeded(
+            message,
+            index,
+            list
+          );
 
-        const el=bubble(m);
+          const row =
+            buildMessage(
+              message,
+              index,
+              list
+            );
 
-        box.appendChild(el);
+          box.appendChild(row);
 
-        bindGesture(el);
+          bindMessageGesture(row);
+        }
+      );
 
-      });
 
-
-      /*
-        Start at bottom so latest message is visible.
-      */
-
-      scrollBottom(false);
-
+      scrollToBottom(false);
     }
 
 
-    function replaceMessage(m){
+    function replaceMessage(message) {
 
-      const old=
+      const old =
         document.querySelector(
-          '[data-message="'+
-          CSS.escape(String(m._id))+
-          '"]'
+          `[data-message="${CSS.escape(
+            String(message._id)
+          )}"]`
         );
 
-
-      if(!old)return;
-
-
-      const fresh=bubble(m);
-
-      old.replaceWith(fresh);
-
-      bindGesture(fresh);
-
-    }
-
-
-    function patchDeleted(id){
-
-      const el=
-        document.querySelector(
-          '[data-message="'+
-          CSS.escape(String(id))+
-          '"]'
+      if (!old) {
+        renderMessages(
+          window.__messages || []
         );
 
+        return;
+      }
 
-      if(!el)return;
-
-
-      const bubbleEl=
-        el.querySelector('.bubble');
-
-
-      bubbleEl.className='bubble deleted';
-
-
-      bubbleEl.innerHTML=`
-
-        <div class="text">
-          Message unsent
-        </div>
-
-        <div class="meta">
-          ${time(new Date())}
-        </div>
-
-      `;
-
+      renderMessages(
+        window.__messages || []
+      );
     }
 
 
-    function closeSheet(){
+    /*
+     * ---------------------------------------------------------
+     * MESSAGE ACTION SHEET
+     * ---------------------------------------------------------
+     */
 
-      activeMessageId=null;
+    function closeMessageSheet() {
 
-      $('overlay').classList.remove('open');
+      activeMessageId = null;
 
-      $('actionSheet').classList.remove('open');
+      $('overlay')
+        .classList
+        .remove('open');
 
-      $('emojiMore').classList.remove('open');
+      $('messageSheet')
+        .classList
+        .remove('open');
 
-      document.body.style.overflow='';
+      $('emojiMore')
+        .classList
+        .remove('open');
 
+      document.body.style.overflow = '';
     }
 
 
-    function openSheet(id){
+    function openMessageSheet(id) {
 
-      const el=
-        document.querySelector(
-          '[data-message="'+
-          CSS.escape(String(id))+
-          '"]'
-        );
-
-
-      if(!el)return;
-
-
-      activeMessageId=id;
-
-
-      const m=
+      const message =
         window.__messages?.find(
-          m=>String(m._id)===String(id)
+          m => String(m._id) === String(id)
         );
 
+      if (!message) return;
 
-      const editable=
-        m&&canEdit(m);
+      activeMessageId = id;
+
+      const editable =
+        canEdit(message);
 
 
       $('editAction')
         .classList
-        .toggle('disabled',!editable);
+        .toggle(
+          'disabled',
+          !editable
+        );
 
 
-      $('sheetEditTime').textContent=
-        editable
-          ?Math.ceil(
-              remaining(m)/1000
-            )+'s left'
-          :'';
+      $('sheetEditTime')
+        .textContent =
+          editable
+            ? `${Math.ceil(
+                editRemaining(message) / 1000
+              )}s`
+            : '';
 
 
-      $('overlay').classList.add('open');
+      $('overlay')
+        .classList
+        .add('open');
 
-      $('actionSheet').classList.add('open');
+      $('messageSheet')
+        .classList
+        .add('open');
 
-      document.body.style.overflow='hidden';
-
+      document.body.style.overflow =
+        'hidden';
     }
 
 
-    function bindGesture(row){
+    async function react(
+      messageId,
+      emoji
+    ) {
 
-      const b=
-        row.querySelector('.bubble');
-
-
-      if(!b)return;
-
-
-      /* Double tap to like */
-
-      b.addEventListener(
-        'dblclick',
-        ()=>{
-          if(activeMessageId)return;
-
-          const id=row.dataset.message;
-
-          react(id,'❤️');
-        }
-      );
-
-
-      /* Long press */
-
-      const start=e=>{
-
-        if(e.target.closest('video'))return;
-
-        longPressTriggered=false;
-
-        clearTimeout(longPressTimer);
-
-
-        longPressTimer=
-          setTimeout(
-            ()=>{
-              longPressTriggered=true;
-
-              openSheet(row.dataset.message);
-            },
-            520
-          );
-
-      };
-
-
-      const end=()=>{
-        clearTimeout(longPressTimer);
-      };
-
-
-      b.addEventListener(
-        'pointerdown',
-        start
-      );
-
-      b.addEventListener(
-        'pointerup',
-        end
-      );
-
-      b.addEventListener(
-        'pointercancel',
-        end
-      );
-
-      b.addEventListener(
-        'pointerleave',
-        end
-      );
-
-
-      b.addEventListener(
-        'contextmenu',
-        e=>{
-          e.preventDefault();
-
-          openSheet(row.dataset.message);
-        }
-      );
-
-    }
-
-
-    async function react(id,emoji){
-
-      if(!socket||!conversationId)return;
-
+      if (
+        !socket ||
+        !conversationId
+      ) {
+        return;
+      }
 
       socket.emit(
         'message:react',
         {
           conversationId,
-          messageId:id,
+          messageId,
           emoji
         }
       );
 
-
-      closeSheet();
-
+      closeMessageSheet();
     }
 
 
-    function startEdit(){
+    function startEdit() {
 
-      const m=
+      const message =
         window.__messages?.find(
-          x=>String(x._id)===
-             String(activeMessageId)
+          m =>
+            String(m._id) ===
+            String(activeMessageId)
         );
 
-
-      if(!m||!canEdit(m)){
-
+      if (
+        !message ||
+        !canEdit(message)
+      ) {
         toast(
           'Edit is available for only 1 minute.'
         );
 
-        closeSheet();
+        closeMessageSheet();
 
         return;
-
       }
 
 
-      editingMessageId=m._id;
+      editingMessageId =
+        message._id;
 
-      $('input').value=m.text||'';
+      $('input').value =
+        message.text || '';
 
       $('input')
         .dispatchEvent(
           new Event('input')
         );
 
+      $('editText').textContent =
+        message.text ||
+        'Empty message';
 
-      $('editText').textContent=
-        m.text||'Empty message';
-
-
-      $('editBar').classList.add('show');
+      $('editBar')
+        .classList
+        .add('show');
 
       $('input').focus();
 
-      closeSheet();
+      closeMessageSheet();
 
       updateEditTimer();
-
     }
 
 
-    function cancelEdit(){
+    function updateEditTimer() {
 
-      editingMessageId=null;
+      if (!editingMessageId) {
+        return;
+      }
 
-      $('editBar').classList.remove('show');
-
-      $('editText').textContent='';
-
-    }
-
-
-    function updateEditTimer(){
-
-      if(!editingMessageId)return;
-
-
-      const m=
+      const message =
         window.__messages?.find(
-          x=>String(x._id)===
-             String(editingMessageId)
+          m =>
+            String(m._id) ===
+            String(editingMessageId)
         );
 
-
-      if(!m){
-
+      if (!message) {
         cancelEdit();
-
         return;
-
       }
 
 
-      const left=remaining(m);
+      const remaining =
+        editRemaining(message);
 
 
-      if(left<=0){
+      if (remaining <= 0) {
 
         cancelEdit();
 
-        toast('Edit window expired');
+        toast(
+          'Edit window expired'
+        );
 
         return;
-
       }
 
 
-      $('editTime').textContent=
-        Math.ceil(left/1000)+'s';
+      $('editTime').textContent =
+        `${Math.ceil(
+          remaining / 1000
+        )}s`;
 
 
       setTimeout(
         updateEditTimer,
         1000
       );
-
     }
 
 
-    function submitEdit(){
+    function cancelEdit() {
 
-      const text=
-        $('input').value.trim();
+      editingMessageId = null;
+
+      $('editBar')
+        .classList
+        .remove('show');
+
+      $('editText').textContent = '';
+
+      $('editTime').textContent = '';
+    }
 
 
-      if(!text||!editingMessageId)return;
+    function submitEdit() {
 
-      if(!socket)return;
+      const text =
+        $('input')
+          .value
+          .trim();
+
+      if (
+        !text ||
+        !editingMessageId ||
+        !socket
+      ) {
+        return;
+      }
 
 
       socket.emit(
         'message:edit',
         {
           conversationId,
-          messageId:editingMessageId,
+          messageId:
+            editingMessageId,
           text
         }
       );
@@ -1960,57 +2033,150 @@
 
       cancelEdit();
 
-      $('input').value='';
+      $('input').value = '';
 
       resizeInput();
-
     }
 
 
-    async function unsend(){
+    async function copyActiveMessage() {
 
-      const m=
+      const message =
         window.__messages?.find(
-          x=>String(x._id)===
-             String(activeMessageId)
+          m =>
+            String(m._id) ===
+            String(activeMessageId)
         );
 
-
-      if(!m){
-
-        closeSheet();
-
+      if (
+        !message ||
+        message.deleted
+      ) {
+        closeMessageSheet();
         return;
-
       }
 
 
-      if(
-        String(m.senderId?._id||m.senderId)!==
-        String(CURRENT)
-      ){
+      try {
+
+        await navigator.clipboard.writeText(
+          message.text || ''
+        );
+
+        toast(
+          'Message copied'
+        );
+
+      } catch {
+
+        toast(
+          'Unable to copy message'
+        );
+      }
+
+
+      closeMessageSheet();
+    }
+
+
+    function replyToMessage() {
+
+      const message =
+        window.__messages?.find(
+          m =>
+            String(m._id) ===
+            String(activeMessageId)
+        );
+
+      if (!message) {
+        closeMessageSheet();
+        return;
+      }
+
+
+      replyingMessageId =
+        message._id;
+
+
+      $('input').placeholder =
+        `Reply to ${
+          message.senderId?.fullName ||
+          other?.fullName ||
+          'message'
+        }`;
+
+
+      $('input').focus();
+
+      toast(
+        'Reply mode enabled'
+      );
+
+      closeMessageSheet();
+    }
+
+
+    function forwardMessage() {
+
+      const message =
+        window.__messages?.find(
+          m =>
+            String(m._id) ===
+            String(activeMessageId)
+        );
+
+      if (!message) {
+        closeMessageSheet();
+        return;
+      }
+
+
+      /*
+       * This keeps the existing forward UI
+       * compatible with projects that implement
+       * a forward endpoint/page.
+       */
+      window.location.href =
+        `/messages/chatlog?forward=${encodeURIComponent(
+          message._id
+        )}`;
+    }
+
+
+    function unsendMessage() {
+
+      const message =
+        window.__messages?.find(
+          m =>
+            String(m._id) ===
+            String(activeMessageId)
+        );
+
+      if (!message) {
+        closeMessageSheet();
+        return;
+      }
+
+
+      if (!isMine(message)) {
 
         toast(
           'You can only unsend your own message.'
         );
 
-        closeSheet();
+        closeMessageSheet();
 
         return;
-
       }
 
 
-      if(
+      if (
         !confirm(
           'Unsend this message for everyone?'
         )
-      ){
-
-        closeSheet();
-
+      ) {
+        closeMessageSheet();
         return;
-
       }
 
 
@@ -2018,114 +2184,426 @@
         'message:unsend',
         {
           conversationId,
-          messageId:m._id
+          messageId: message._id
         }
       );
 
 
-      closeSheet();
-
+      closeMessageSheet();
     }
 
 
-    async function copyActive(){
+    /*
+     * ---------------------------------------------------------
+     * PROFILE
+     * ---------------------------------------------------------
+     */
 
-      const m=
-        window.__messages?.find(
-          x=>String(x._id)===
-             String(activeMessageId)
+    function setProfileHeader() {
+
+      const name =
+        other?.fullName ||
+        'User';
+
+      $('headerName').textContent =
+        name;
+
+      $('headerAvatar').src =
+        image(
+          other?.profileImageURL
+        );
+
+      $('welcomeName').textContent =
+        name;
+
+      $('welcomeAvatar').src =
+        image(
+          other?.profileImageURL
         );
 
 
-      if(!m||m.deleted){
-
-        closeSheet();
-
-        return;
-
-      }
+      $('headerAvatar').onerror =
+        () => {
+          $('headerAvatar').src =
+            '/imgs/default.png';
+        };
 
 
-      try{
-
-        await navigator.clipboard.writeText(
-          m.text||''
-        );
-
-        toast('Message copied');
-
-      }catch(e){
-
-        toast(
-          'Unable to copy message'
-        );
-
-      }
+      $('headerStatus').textContent =
+        other?.isPrivate
+          ? 'Private account'
+          : 'Message';
 
 
-      closeSheet();
+      $('profileAction').onclick =
+        viewProfile;
 
+      $('profileBtn').onclick =
+        viewProfile;
+
+
+      $('profileBtn').onkeydown =
+        event => {
+
+          if (
+            event.key === 'Enter' ||
+            event.key === ' '
+          ) {
+            event.preventDefault();
+            viewProfile();
+          }
+        };
     }
 
 
-    async function init(){
+    function viewProfile() {
 
-      try{
+      location.href =
+        '/user/profile/' +
+        encodeURIComponent(TARGET);
+    }
 
-        const r=
+
+    /*
+     * ---------------------------------------------------------
+     * SOCKET
+     * ---------------------------------------------------------
+     */
+
+    function bindSocket() {
+
+      socket.on(
+        'user:online',
+        data => {
+
+          if (
+            String(data.userId) !==
+            String(TARGET)
+          ) {
+            return;
+          }
+
+          $('headerStatus')
+            .textContent =
+            'Active now';
+
+          $('headerStatus')
+            .classList
+            .add('online');
+        }
+      );
+
+
+      socket.on(
+        'user:offline',
+        data => {
+
+          if (
+            String(data.userId) !==
+            String(TARGET)
+          ) {
+            return;
+          }
+
+          $('headerStatus')
+            .textContent =
+            other?.isPrivate
+              ? 'Private account'
+              : 'Message';
+
+          $('headerStatus')
+            .classList
+            .remove('online');
+        }
+      );
+
+
+      socket.on(
+        'typing:start',
+        data => {
+
+          if (
+            String(data.userId) !==
+            String(TARGET)
+          ) {
+            return;
+          }
+
+          $('typing').textContent =
+            `${
+              other?.fullName ||
+              'User'
+            } is typing…`;
+        }
+      );
+
+
+      socket.on(
+        'typing:stop',
+        data => {
+
+          if (
+            String(data.userId) !==
+            String(TARGET)
+          ) {
+            return;
+          }
+
+          $('typing').textContent =
+            '';
+        }
+      );
+
+
+      socket.on(
+        'message:new',
+        message => {
+
+          if (
+            String(
+              message.conversationId
+            ) !==
+            String(conversationId)
+          ) {
+            return;
+          }
+
+
+          window.__messages =
+            window.__messages || [];
+
+
+          window.__messages.push(
+            message
+          );
+
+
+          renderMessages(
+            window.__messages
+          );
+
+
+          socket.emit(
+            'message:read',
+            {
+              conversationId
+            }
+          );
+        }
+      );
+
+
+      socket.on(
+        'message:edited',
+        message => {
+
+          const index =
+            window.__messages.findIndex(
+              m =>
+                String(m._id) ===
+                String(message._id)
+            );
+
+
+          if (index >= 0) {
+
+            window.__messages[index] =
+              message;
+          }
+
+
+          renderMessages(
+            window.__messages
+          );
+        }
+      );
+
+
+      socket.on(
+        'message:unsent',
+        data => {
+
+          const index =
+            window.__messages.findIndex(
+              m =>
+                String(m._id) ===
+                String(data.messageId)
+            );
+
+
+          if (index >= 0) {
+
+            window.__messages[index].deleted =
+              true;
+
+            window.__messages[index].text =
+              '';
+
+            window.__messages[index].mediaUrl =
+              '';
+          }
+
+
+          renderMessages(
+            window.__messages
+          );
+        }
+      );
+
+
+      socket.on(
+        'message:reactions',
+        data => {
+
+          const message =
+            window.__messages.find(
+              m =>
+                String(m._id) ===
+                String(data.messageId)
+            );
+
+
+          if (message) {
+            message.reactions =
+              data.reactions;
+          }
+
+
+          renderMessages(
+            window.__messages
+          );
+        }
+      );
+
+
+      socket.on(
+        'message:read',
+        data => {
+
+          if (
+            String(data.conversationId) !==
+            String(conversationId)
+          ) {
+            return;
+          }
+
+
+          window.__messages
+            .filter(
+              message =>
+                isMine(message)
+            )
+            .forEach(
+              message =>
+                message.status = 'read'
+            );
+
+
+          renderMessages(
+            window.__messages
+          );
+        }
+      );
+
+
+      socket.on(
+        'message:error',
+        data => {
+
+          toast(
+            data.message ||
+            'Unable to send message'
+          );
+        }
+      );
+
+
+      socket.on(
+        'message:action:error',
+        data => {
+
+          toast(
+            data.message ||
+            'Unable to update message'
+          );
+        }
+      );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * INIT
+     * ---------------------------------------------------------
+     */
+
+    async function init() {
+
+      try {
+
+        const response =
           await api(
             '/messages/conversation',
             {
-              method:'POST',
-              body:JSON.stringify({
-                userId:TARGET
+              method: 'POST',
+              body: JSON.stringify({
+                userId: TARGET
               })
             }
           );
 
 
-        const d=await r.json();
+        const data =
+          await response.json();
 
 
-        if(!r.ok||!d.success){
-
+        if (
+          !response.ok ||
+          !data.success
+        ) {
           throw new Error(
-            d.message||
+            data.message ||
             'Unable to open conversation'
           );
-
         }
 
 
-        conversationId=d.conversationId;
+        conversationId =
+          data.conversationId;
 
-        other=d.target;
+        other =
+          data.target;
 
-        setPerson();
+
+        setProfileHeader();
 
 
-        const h=
+        const historyResponse =
           await api(
-            '/messages/'+
-            encodeURIComponent(conversationId)
+            '/messages/' +
+            encodeURIComponent(
+              conversationId
+            )
           );
 
 
-        const data=await h.json();
+        const history =
+          await historyResponse.json();
 
 
-        if(!h.ok||!data.success){
-
+        if (
+          !historyResponse.ok ||
+          !history.success
+        ) {
           throw new Error(
-            data.message||
+            history.message ||
             'Unable to load messages'
           );
-
         }
 
 
-        window.__messages=
-          data.messages||[];
+        window.__messages =
+          history.messages || [];
 
 
         renderMessages(
@@ -2133,14 +2611,18 @@
         );
 
 
-        socket=io();
+        socket =
+          io();
+
 
         bindSocket();
+
 
         socket.emit(
           'conversation:join',
           conversationId
         );
+
 
         socket.emit(
           'message:read',
@@ -2150,495 +2632,140 @@
         );
 
 
-        /*
-          Ensure latest message is visible
-          after socket and layout are ready.
-        */
+      } catch (error) {
 
-        setTimeout(
-          ()=>scrollBottom(false),
-          80
-        );
-
-
-      }catch(e){
-
-        $('messages').innerHTML=`
+        $('messages').innerHTML = `
 
           <div class="welcome">
 
             <i
               class="fas fa-exclamation-circle"
-              style="font-size:2rem"
-            ></i>
+              style="font-size:2rem">
+            </i>
 
             <strong>
               Unable to load chat
             </strong>
 
             <p>
-              ${escapeHtml(e.message)}
+              ${escapeHtml(
+                error.message
+              )}
             </p>
 
             <button
-              class="action"
+              class="sheet-action"
               style="
-                background:#f1f1f3;
+                background:#f0f1f4;
                 justify-content:center;
                 margin-top:10px;
               "
-              onclick="location.reload()"
-            >
+              onclick="location.reload()">
+
               Try again
+
             </button>
 
           </div>
-
         `;
-
       }
-
     }
 
 
-    function setPerson(){
-
-      const name=
-        other?.fullName||
-        'User';
-
-
-      $('personName').textContent=name;
-
-      $('avatar').src=
-        img(other?.profileImageURL);
-
-      $('welcomeName').textContent=name;
-
-      $('welcomeAvatar').src=
-        img(other?.profileImageURL);
-
-
-      $('avatar').onerror=()=>{
-        $('avatar').src=
-          '/imgs/default.png';
-      };
-
-
-      $('welcomeAvatar').onerror=()=>{
-        $('welcomeAvatar').src=
-          '/imgs/default.png';
-      };
-
-
-      $('personStatus').textContent=
-        other?.isPrivate
-          ?'Private account'
-          :'Message';
-
-
-      $('profileAction').onclick=
-        viewProfile;
-
-
-      $('profileBtn').onclick=
-        viewProfile;
-
-
-      $('profileBtn').onkeydown=e=>{
-
-        if(e.key==='Enter')
-          viewProfile();
-
-      };
-
-    }
-
-
-    function viewProfile(){
-
-      location.href=
-        '/user/profile/'+
-        encodeURIComponent(TARGET);
-
-    }
-
-
-    function bindSocket(){
-
-      socket.on(
-        'user:online',
-        d=>{
-
-          if(
-            String(d.userId)===
-            String(TARGET)
-          ){
-
-            $('personStatus').textContent=
-              'Active now';
-
-            $('personStatus')
-              .classList
-              .add('online');
-
-          }
-
-        }
-      );
-
-
-      socket.on(
-        'user:offline',
-        d=>{
-
-          if(
-            String(d.userId)===
-            String(TARGET)
-          ){
-
-            $('personStatus').textContent=
-              other?.isPrivate
-                ?'Private account'
-                :'Message';
-
-            $('personStatus')
-              .classList
-              .remove('online');
-
-          }
-
-        }
-      );
-
-
-      socket.on(
-        'typing:start',
-        d=>{
-
-          if(
-            String(d.userId)===
-            String(TARGET)
-          ){
-
-            $('typing').textContent=
-              (other?.fullName||'User')+
-              ' is typing…';
-
-          }
-
-        }
-      );
-
-
-      socket.on(
-        'typing:stop',
-        d=>{
-
-          if(
-            String(d.userId)===
-            String(TARGET)
-          ){
-
-            $('typing').textContent='';
-
-          }
-
-        }
-      );
-
-
-      socket.on(
-        'message:new',
-        m=>{
-
-          if(
-            String(m.conversationId)!==
-            String(conversationId)
-          )return;
-
-
-          const box=$('messages');
-
-
-          /*
-            Only auto-scroll if the user is already
-            near the bottom.
-          */
-
-          const nearBottom=
-            box.scrollHeight-
-            box.scrollTop-
-            box.clientHeight<
-            140;
-
-
-          window.__messages=
-            window.__messages||[];
-
-
-          window.__messages.push(m);
-
-
-          const w=$('welcome');
-
-
-          if(w?.parentNode)
-            w.remove();
-
-
-          appendDateIfNeeded(m);
-
-
-          const el=bubble(m);
-
-
-          box.appendChild(el);
-
-
-          bindGesture(el);
-
-
-          if(nearBottom)
-            scrollBottom();
-
-
-          socket.emit(
-            'message:read',
-            {
-              conversationId
-            }
-          );
-
-        }
-      );
-
-
-      socket.on(
-        'message:edited',
-        m=>{
-
-          const i=
-            window.__messages.findIndex(
-              x=>String(x._id)===
-                 String(m._id)
-            );
-
-
-          if(i>=0)
-            window.__messages[i]=m;
-
-
-          replaceMessage(m);
-
-        }
-      );
-
-
-      socket.on(
-        'message:unsent',
-        d=>{
-
-          const i=
-            window.__messages.findIndex(
-              x=>String(x._id)===
-                 String(d.messageId)
-            );
-
-
-          if(i>=0){
-
-            window.__messages[i].deleted=true;
-
-            window.__messages[i].text='';
-
-            window.__messages[i].mediaUrl='';
-
-          }
-
-
-          patchDeleted(
-            d.messageId
-          );
-
-        }
-      );
-
-
-      socket.on(
-        'message:reactions',
-        d=>{
-
-          const m=
-            window.__messages.find(
-              x=>String(x._id)===
-                 String(d.messageId)
-            );
-
-
-          if(m)
-            m.reactions=d.reactions;
-
-
-          const el=
-            document.querySelector(
-              '[data-message="'+
-              CSS.escape(
-                String(d.messageId)
-              )+
-              '"]'
-            );
-
-
-          if(el){
-
-            const fresh=bubble(m);
-
-            el.replaceWith(fresh);
-
-            bindGesture(fresh);
-
-          }
-
-        }
-      );
-
-
-      socket.on(
-        'message:read',
-        d=>{
-
-          if(
-            String(d.conversationId)!==
-            String(conversationId)
-          )return;
-
-
-          window.__messages
-            .filter(
-              m=>
-                String(
-                  m.senderId?._id||
-                  m.senderId
-                )===
-                String(CURRENT)
-            )
-            .forEach(
-              m=>m.status='read'
-            );
-
-
-          document
-            .querySelectorAll(
-              '.row.mine .status'
-            )
-            .forEach(x=>{
-
-              x.textContent='✓✓';
-
-              x.classList.add('read');
-
-            });
-
-        }
-      );
-
-
-      socket.on(
-        'message:error',
-        d=>
-          toast(
-            d.message||
-            'Unable to send message'
-          )
-      );
-
-
-      socket.on(
-        'message:action:error',
-        d=>
-          toast(
-            d.message||
-            'Unable to update message'
-          )
-      );
-
-    }
-
-
-    async function send(){
-
-      const text=
-        $('input').value.trim();
-
-
-      if(editingMessageId){
+    /*
+     * ---------------------------------------------------------
+     * SEND
+     * ---------------------------------------------------------
+     */
+
+    async function sendMessage() {
+
+      if (editingMessageId) {
 
         submitEdit();
 
         return;
-
       }
 
 
-      if(!text&&!selectedFile)return;
+      const text =
+        $('input')
+          .value
+          .trim();
 
 
-      if(!socket||!conversationId){
+      if (
+        !text &&
+        !selectedFile
+      ) {
+        return;
+      }
 
-        return toast(
+
+      if (
+        !socket ||
+        !conversationId
+      ) {
+
+        toast(
           'Chat is still loading'
         );
 
+        return;
       }
 
 
-      $('sendBtn').disabled=true;
+      $('sendBtn').disabled =
+        true;
 
 
-      try{
+      try {
 
-        let mediaUrl='';
-        let mediaType='';
+        let mediaUrl = '';
+        let mediaType = '';
 
 
-        if(selectedFile){
+        if (selectedFile) {
 
-          const fd=new FormData();
+          const formData =
+            new FormData();
 
-          fd.append(
+          formData.append(
             'media',
             selectedFile
           );
 
 
-          const r=
+          const response =
             await api(
               '/messages/upload',
               {
-                method:'POST',
-                body:fd
+                method: 'POST',
+                body: formData
               }
             );
 
 
-          const d=await r.json();
+          const data =
+            await response.json();
 
 
-          if(!r.ok||!d.success){
-
+          if (
+            !response.ok ||
+            !data.success
+          ) {
             throw new Error(
-              d.message||
+              data.message ||
               'Unable to upload media'
             );
-
           }
 
 
-          mediaUrl=d.mediaUrl;
+          mediaUrl =
+            data.mediaUrl;
 
-          mediaType=d.mediaType;
-
+          mediaType =
+            data.mediaType;
         }
 
 
@@ -2648,380 +2775,427 @@
             conversationId,
             text,
             mediaUrl,
-            mediaType
+            mediaType,
+            replyTo:
+              replyingMessageId ||
+              null
           }
         );
 
 
-        $('input').value='';
+        $('input').value =
+          '';
+
+        replyingMessageId =
+          null;
+
+        $('input').placeholder =
+          'Message…';
 
         clearMedia();
 
         resizeInput();
 
 
-      }catch(e){
+      } catch (error) {
 
-        toast(e.message);
+        toast(
+          error.message
+        );
 
-      }finally{
+      } finally {
 
-        $('sendBtn').disabled=false;
-
+        $('sendBtn').disabled =
+          false;
       }
-
     }
 
 
-    function resizeInput(){
+    function resizeInput() {
 
-      const x=$('input');
+      const input =
+        $('input');
 
-      x.style.height='auto';
+      input.style.height =
+        'auto';
 
-      x.style.height=
+      input.style.height =
         Math.min(
-          x.scrollHeight,
+          input.scrollHeight,
           120
-        )+'px';
-
+        ) + 'px';
     }
 
 
-    function clearMedia(){
+    function clearMedia() {
 
-      $('mediaInput').value='';
+      $('mediaInput').value =
+        '';
 
-      selectedFile=null;
+      selectedFile =
+        null;
 
       $('preview')
         .classList
         .remove('show');
 
-      $('previewThumb').innerHTML='';
+      $('previewThumb')
+        .innerHTML =
+        '';
 
-      $('previewName').textContent='';
-
+      $('previewName')
+        .textContent =
+        '';
     }
 
 
-    function previewFile(file){
+    function previewFile(file) {
 
-      selectedFile=file;
+      selectedFile =
+        file;
 
-      if(!file)return;
+      if (!file) {
+        return;
+      }
 
 
-      const url=
+      const url =
         URL.createObjectURL(file);
 
 
-      $('previewName').textContent=
+      $('previewName')
+        .textContent =
         file.name;
 
 
-      $('previewThumb').innerHTML=
-        file.type.startsWith('video/')
-          ?`
+      $('previewThumb')
+        .innerHTML =
+        file.type.startsWith(
+          'video/'
+        )
+          ? `
             <video
               src="${url}"
-              muted
-            ></video>
+              muted>
+            </video>
           `
-          :`
+          : `
             <img
               src="${url}"
-              alt=""
-            >
+              alt="">
           `;
 
 
-      $('preview').classList.add('show');
-
+      $('preview')
+        .classList
+        .add('show');
     }
 
 
-    /* ================= EVENTS ================= */
+    /*
+     * ---------------------------------------------------------
+     * UI EVENTS
+     * ---------------------------------------------------------
+     */
 
+    $('composer')
+      .addEventListener(
+        'submit',
+        event => {
 
-    $('composer').addEventListener(
-      'submit',
-      e=>{
-        e.preventDefault();
-        send();
-      }
-    );
+          event.preventDefault();
 
-
-    $('input').addEventListener(
-      'input',
-      ()=>{
-
-        resizeInput();
-
-
-        if(socket&&conversationId){
-
-          socket.emit(
-            'typing:start',
-            {
-              conversationId
-            }
-          );
-
-
-          clearTimeout(
-            typingTimer
-          );
-
-
-          typingTimer=
-            setTimeout(
-              ()=>{
-                socket.emit(
-                  'typing:stop',
-                  {
-                    conversationId
-                  }
-                );
-              },
-              900
-            );
-
+          sendMessage();
         }
-
-      }
-    );
+      );
 
 
-    $('input').addEventListener(
-      'keydown',
-      e=>{
+    $('input')
+      .addEventListener(
+        'input',
+        () => {
 
-        if(
-          e.key==='Enter' &&
-          !e.shiftKey &&
-          window.innerWidth>650
-        ){
-
-          e.preventDefault();
-
-          send();
-
-        }
-
-      }
-    );
+          resizeInput();
 
 
-    $('mediaBtn').onclick=
-      ()=>$('mediaInput').click();
+          if (
+            socket &&
+            conversationId
+          ) {
 
-
-    $('mediaInput').onchange=
-      e=>
-        previewFile(
-          e.target.files?.[0]
-        );
-
-
-    $('removeMedia').onclick=
-      clearMedia;
-
-
-    $('cancelEdit').onclick=
-      cancelEdit;
-
-
-    $('backBtn').onclick=
-      ()=>{
-        history.length>1
-          ?history.back()
-          :location.href='/messages/chatlog';
-      };
-
-
-    $('menuBtn').onclick=
-      e=>{
-
-        e.stopPropagation();
-
-        $('topMenu')
-          .classList
-          .toggle('open');
-
-      };
-
-
-    $('blockAction').onclick=
-      async()=>{
-
-        if(
-          !confirm(
-            'Block this user?'
-          )
-        )return;
-
-
-        try{
-
-          const r=
-            await api(
-              '/messages/block/'+TARGET,
+            socket.emit(
+              'typing:start',
               {
-                method:'POST'
+                conversationId
               }
             );
 
 
-          const d=await r.json();
-
-
-          if(
-            !r.ok||
-            !d.success
-          ){
-
-            throw new Error(
-              d.message||
-              'Unable to block'
+            clearTimeout(
+              typingTimer
             );
 
+
+            typingTimer =
+              setTimeout(
+                () => {
+
+                  socket.emit(
+                    'typing:stop',
+                    {
+                      conversationId
+                    }
+                  );
+
+                },
+                900
+              );
+          }
+        }
+      );
+
+
+    $('input')
+      .addEventListener(
+        'keydown',
+        event => {
+
+          if (
+            event.key === 'Enter' &&
+            !event.shiftKey &&
+            window.innerWidth > 650
+          ) {
+
+            event.preventDefault();
+
+            sendMessage();
+          }
+        }
+      );
+
+
+    $('mediaBtn').onclick =
+      () => {
+        $('mediaInput').click();
+      };
+
+
+    $('mediaInput').onchange =
+      event => {
+
+        previewFile(
+          event.target.files?.[0]
+        );
+      };
+
+
+    $('removeMedia').onclick =
+      clearMedia;
+
+
+    $('cancelEdit').onclick =
+      cancelEdit;
+
+
+    $('backBtn').onclick =
+      () => {
+
+        if (history.length > 1) {
+          history.back();
+        } else {
+          location.href =
+            '/messages/chatlog';
+        }
+      };
+
+
+    $('menuBtn').onclick =
+      event => {
+
+        event.stopPropagation();
+
+        $('headerMenu')
+          .classList
+          .toggle('open');
+      };
+
+
+    $('blockAction').onclick =
+      async () => {
+
+        if (
+          !confirm(
+            'Block this user?'
+          )
+        ) {
+          return;
+        }
+
+
+        try {
+
+          const response =
+            await api(
+              '/messages/block/' +
+              TARGET,
+              {
+                method: 'POST'
+              }
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (
+            !response.ok ||
+            !data.success
+          ) {
+            throw new Error(
+              data.message ||
+              'Unable to block'
+            );
           }
 
 
           toast(
-            d.message||
+            data.message ||
             'User blocked'
           );
 
 
           setTimeout(
-            ()=>{
-              location.href=
+            () => {
+              location.href =
                 '/messages/chatlog';
             },
             700
           );
 
 
-        }catch(e){
+        } catch (error) {
 
-          toast(e.message);
-
+          toast(
+            error.message
+          );
         }
-
       };
 
 
     document.addEventListener(
       'click',
-      e=>{
+      event => {
 
-        if(
-          !e.target.closest('.top-actions')
-        ){
-
-          $('topMenu')
+        if (
+          !event.target.closest(
+            '.header-actions'
+          )
+        ) {
+          $('headerMenu')
             .classList
             .remove('open');
-
         }
 
 
-        if(
-          !e.target.closest('.action-sheet') &&
-          !e.target.closest('.bubble')
-        ){
-
-          closeSheet();
-
+        if (
+          !event.target.closest(
+            '.message-sheet'
+          ) &&
+          !event.target.closest(
+            '.message-bubble'
+          )
+        ) {
+          closeMessageSheet();
         }
-
       }
     );
 
 
-    $('overlay').onclick=
-      closeSheet;
+    $('overlay').onclick =
+      closeMessageSheet;
 
 
-    $('closeSheet').onclick=
-      closeSheet;
+    $('closeSheet').onclick =
+      closeMessageSheet;
 
 
-    $('editAction').onclick=
+    $('editAction').onclick =
       startEdit;
 
 
-    $('copyAction').onclick=
-      copyActive;
+    $('copyAction').onclick =
+      copyActiveMessage;
 
 
-    $('unsendAction').onclick=
-      unsend;
+    $('replyAction').onclick =
+      replyToMessage;
 
 
-    $('moreEmoji').onclick=
-      ()=>
+    $('forwardAction').onclick =
+      forwardMessage;
+
+
+    $('unsendAction').onclick =
+      unsendMessage;
+
+
+    $('moreEmoji').onclick =
+      () => {
+
         $('emojiMore')
           .classList
           .toggle('open');
+      };
 
 
     document
-      .querySelectorAll('[data-emoji]')
+      .querySelectorAll(
+        '[data-emoji]'
+      )
       .forEach(
-        b=>
-          b.addEventListener(
+        button => {
+
+          button.addEventListener(
             'click',
-            ()=>{
-              if(activeMessageId)
+            () => {
+
+              if (
+                activeMessageId
+              ) {
+
                 react(
                   activeMessageId,
-                  b.dataset.emoji
+                  button.dataset.emoji
                 );
+              }
             }
-          )
+          );
+        }
       );
 
 
     /*
-      Keep chat at the newest message on
-      initial page load and after browser
-      layout changes.
-    */
+     * Keep conversation anchored
+     * at the bottom when keyboard opens
+     * or viewport changes on Android.
+     */
+    if (window.visualViewport) {
 
-    window.addEventListener(
-      'load',
-      ()=>{
-        setTimeout(
-          ()=>scrollBottom(false),
-          100
-        );
-      }
-    );
+      window.visualViewport.addEventListener(
+        'resize',
+        () => {
 
-
-    window.addEventListener(
-      'resize',
-      ()=>{
-        if(
-          $('messages').scrollHeight-
-          $('messages').scrollTop-
-          $('messages').clientHeight<
-          160
-        ){
-
-          scrollBottom(false);
-
+          setTimeout(
+            () => scrollToBottom(false),
+            80
+          );
         }
-      }
-    );
+      );
+    }
 
 
     init();
-
   </script>
 
 </body>
