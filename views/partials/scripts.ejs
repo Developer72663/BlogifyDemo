@@ -12,6 +12,42 @@
     function timeAgo(dateString) { const seconds=Math.floor((new Date()-new Date(dateString))/1000); let interval=seconds/31536000; if(interval>1)return Math.floor(interval)+' years ago'; interval=seconds/2592000; if(interval>1)return Math.floor(interval)+' months ago'; interval=seconds/86400; if(interval>1)return Math.floor(interval)+' days ago'; interval=seconds/3600; if(interval>1)return Math.floor(interval)+' hours ago'; interval=seconds/60; if(interval>1)return Math.floor(interval)+' minutes ago'; return Math.floor(seconds)+' seconds ago'; }
     function truncate(str,length=60){ if(!str)return ''; str=String(str); return str.length<=length?str:str.substring(0,length).trim()+'...'; }
     const scrollToTopBtn=document.createElement('button'); scrollToTopBtn.className='btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-4 shadow'; scrollToTopBtn.style.cssText='width:50px;height:50px;display:none;z-index:999;'; scrollToTopBtn.innerHTML='<i class="fas fa-arrow-up"></i>'; document.body.appendChild(scrollToTopBtn); document.addEventListener('scroll',()=>scrollToTopBtn.style.display=window.pageYOffset>300?'block':'none'); scrollToTopBtn.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
+    /* Message page: floating up/down scroll controls for the conversation. */
+    (function(){
+        function setupChatScroll(){
+            const box=document.querySelector('.messages');
+            if(!box || document.getElementById('blogify-chat-scroll-controls')) return;
+            const style=document.createElement('style');
+            style.id='blogify-chat-scroll-style';
+            style.textContent=`
+              #blogify-chat-scroll-controls{position:absolute;right:14px;bottom:78px;display:flex;flex-direction:column;gap:7px;z-index:25;pointer-events:none}
+              #blogify-chat-scroll-controls button{width:38px;height:38px;border:1px solid rgba(0,0,0,.10);border-radius:50%;background:rgba(255,255,255,.94);color:#303039;box-shadow:0 5px 18px rgba(0,0,0,.14);display:grid;place-items:center;cursor:pointer;pointer-events:auto;opacity:0;visibility:hidden;transform:scale(.9);transition:opacity .16s ease,visibility .16s ease,transform .16s ease}
+              #blogify-chat-scroll-controls button.show{opacity:1;visibility:visible;transform:scale(1)}
+              #blogify-chat-scroll-controls button:hover{background:#f1f1f4}
+              @media(max-width:600px){#blogify-chat-scroll-controls{right:8px;bottom:74px}#blogify-chat-scroll-controls button{width:36px;height:36px}}
+            `;
+            document.head.appendChild(style);
+            const controls=document.createElement('div');
+            controls.id='blogify-chat-scroll-controls';
+            controls.innerHTML='<button type="button" id="chatScrollUp" aria-label="Scroll messages up"><i class="fas fa-chevron-up"></i></button><button type="button" id="chatScrollDown" aria-label="Scroll messages down"><i class="fas fa-chevron-down"></i></button>';
+            box.parentElement.appendChild(controls);
+            const up=document.getElementById('chatScrollUp'),down=document.getElementById('chatScrollDown');
+            function refresh(){
+                const max=Math.max(0,box.scrollHeight-box.clientHeight),top=box.scrollTop;
+                up.classList.toggle('show',top>100);
+                down.classList.toggle('show',max-top>100);
+            }
+            up.addEventListener('click',()=>box.scrollBy({top:-Math.max(280,box.clientHeight*.75),behavior:'smooth'}));
+            down.addEventListener('click',()=>box.scrollBy({top:Math.max(280,box.clientHeight*.75),behavior:'smooth'}));
+            box.addEventListener('scroll',refresh,{passive:true});
+            new ResizeObserver(refresh).observe(box);
+            refresh();
+        }
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setupChatScroll); else setupChatScroll();
+        new MutationObserver(setupChatScroll).observe(document.body,{childList:true,subtree:true});
+    })();
+
     window.toggleFollow=async function(userId,buttonElement){ if(!userId){notify.error('Invalid user');return;} buttonElement.disabled=true; try{const {data}=await axios.post(`/follow/${userId}/follow`); if(data.success){buttonElement.innerHTML=data.following?'<i class="fas fa-user-check"></i> Following':'<i class="fas fa-user-plus"></i> Follow'; buttonElement.classList.toggle('btn-success',data.following); buttonElement.classList.toggle('btn-outline-primary',!data.following); notify.success(data.message);}else notify.error(data.message||'Action failed');}catch(err){console.error('Follow Error:',err);notify.error(err.response?.data?.message||'Failed to follow user');}finally{buttonElement.disabled=false;} };
     function showLoader(){const loader=document.createElement('div');loader.className='spinner-border text-primary position-fixed';loader.style.cssText='top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;';loader.id='globalLoader';document.body.appendChild(loader);}
     function hideLoader(){document.getElementById('globalLoader')?.remove();}
