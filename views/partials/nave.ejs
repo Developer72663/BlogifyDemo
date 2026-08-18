@@ -4,3 +4,27 @@
 async function refreshBadges(){try{const [m,n]=await Promise.all([fetch('/messages/unread/count'),fetch('/notifications/unread/count')]);const md=await m.json(),nd=await n.json();setBadge('messageBadge','messageCount','dropdownMessageCount',md.unreadCount||0);setBadge('notificationBadge','notificationCount','dropdownNotificationCount',nd.unreadCount||0)}catch(e){}}
 function setBadge(id,countId,dropId,count){const b=document.getElementById(id),c=document.getElementById(countId),d=document.getElementById(dropId);[c,d].forEach(x=>{if(x)x.textContent=count});if(b)b.style.display=count>0?'grid':'none';if(d)d.style.display=count>0?'inline-grid':'none'}
 refreshBadges();window.addEventListener('focus',refreshBadges);if(window.io){const s=io();s.on('notification:message',refreshBadges);s.on('message:read',refreshBadges)}else{const sc=document.createElement('script');sc.src='/socket.io/socket.io.js';sc.onload=()=>{try{const s=io();s.on('notification:message',refreshBadges)}catch(e){}};document.head.appendChild(sc)}})();</script>
+
+<!-- Blogify theme selector -->
+<style id="blogify-theme-nav-style">
+.blogify-theme-item .menu-icon{background:#fef3c7;color:#b45309}.blogify-theme-item .theme-mode-label{margin-left:auto;font-size:.72rem;color:#6b7280;font-weight:700}.blogify-theme-item:hover .theme-mode-label{color:currentColor}
+html[data-theme="dark"] .blogify-theme-item .menu-icon{background:#27272a;color:#fbbf24}.blogify-theme-item button{border:0!important;background:transparent!important;width:100%;font:inherit;text-align:left;cursor:pointer}
+</style>
+<script>
+(function(){
+  function setupThemeMenu(){
+    const dropdown=document.getElementById('profileDropdown');
+    if(!dropdown||document.getElementById('blogifyThemeItem'))return;
+    const item=document.createElement('div');
+    item.className='profile-item blogify-theme-item';item.id='blogifyThemeItem';
+    item.innerHTML='<span class="menu-icon"><i class="fas fa-moon"></i></span><span>Appearance</span><span class="theme-mode-label" id="blogifyThemeLabel">Light</span>';
+    const settings=dropdown.querySelector('a[href="/user/profile/settings"]');
+    if(settings)settings.parentNode.insertBefore(item,settings);else dropdown.appendChild(item);
+    item.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(window.BlogifyTheme)window.BlogifyTheme.toggle();updateLabel();});
+    updateLabel();
+  }
+  function updateLabel(){const label=document.getElementById('blogifyThemeLabel'),icon=document.querySelector('#blogifyThemeItem i');if(!label)return;const dark=document.documentElement.dataset.theme==='dark';label.textContent=dark?'Dark':'Light';if(icon)icon.className=dark?'fas fa-sun':'fas fa-moon'}
+  document.addEventListener('blogify:themechange',updateLabel);window.addEventListener('blogify:themechange',updateLabel);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupThemeMenu);else setupThemeMenu();
+})();
+</script>
