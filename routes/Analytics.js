@@ -4,6 +4,19 @@ const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const AnalyticsService = require("../services/analyticsService");
 const Blog = require("../models/Blog");
 
+router.get("/", restrictToLoggedInUserOnly, async (req, res) => {
+    try {
+        const stats = await AnalyticsService.getAuthorAnalytics(req.user._id);
+        res.render("analytics", { title: "Analytics | Blogify", user: req.user, stats: stats || {
+            totalViews: 0, totalLikes: 0, totalComments: 0, totalBlogs: 0, engagementRate: 0,
+            topBlog: null, mostEngaging: null, growingBlog: null, blogs: [], trafficSources: {}
+        }});
+    } catch (error) {
+        console.error("Analytics dashboard error:", error);
+        res.status(500).render("error", { title: "Analytics Error", user: req.user, message: "Unable to load analytics" });
+    }
+});
+
 router.get("/trending", async (req, res) => {
     try {
         const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 5, 1), 20);
@@ -28,11 +41,9 @@ router.get("/most-liked", async (req, res) => {
 
 router.get("/blog/:blogId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
-        const blog = await Blog.findById(req.params.blogId).select("createdBy").lean();
+        const blog = await Blog.findById(req.params.blogId).select("createdBy");
         if (!blog) return res.status(404).json({ success: false, message: "Blog not found" });
-        if (blog.createdBy.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ success: false, message: "Not authorized to view these analytics" });
-        }
+        if (blog.createdBy.toString() !== req.user._id.toString()) return res.status(403).json({ success: false, message: "Not authorized to view these analytics" });
         const analytics = await AnalyticsService.getBlogAnalytics(req.params.blogId);
         if (!analytics) return res.status(404).json({ success: false, message: "No analytics found" });
         res.json({ success: true, analytics });
