@@ -28,3 +28,71 @@ html[data-theme="dark"] .blogify-theme-item .menu-icon{background:#27272a;color:
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupThemeMenu);else setupThemeMenu();
 })();
 </script>
+
+<!-- Ensure hard-coded chat UIs follow Blogify's global theme. This is intentionally loaded after page styles because message.ejs and chatlog.ejs define their own dark defaults. -->
+<style id="blogify-chat-theme-bridge">
+html[data-theme="light"] .messages-page,
+html[data-theme="light"] .chat-container,
+html[data-theme="light"] .chat-header,
+html[data-theme="light"] .messages-area,
+html[data-theme="light"] .typing-indicator,
+html[data-theme="light"] .composer{background:#fff!important;color:#171717!important}
+html[data-theme="light"] .chat-header,.chat-page .head{border-color:#e5e7eb!important}
+html[data-theme="light"] .back-button,
+html[data-theme="light"] .header-action,
+html[data-theme="light"] .composer-button{color:#171717!important;background:transparent!important}
+html[data-theme="light"] .back-button:hover,
+html[data-theme="light"] .header-action:hover,
+html[data-theme="light"] .composer-button:hover{background:#f3f4f6!important}
+html[data-theme="light"] .header-name,
+html[data-theme="light"] .welcome-name{color:#171717!important}
+html[data-theme="light"] .header-status,
+html[data-theme="light"] .sender-name,
+html[data-theme="light"] .message-meta,
+html[data-theme="light"] .edited,
+html[data-theme="light"] .typing-indicator,
+html[data-theme="light"] .welcome,
+html[data-theme="light"] .welcome-text{color:#6b7280!important}
+html[data-theme="light"] .message-bubble{background:#f1f2f4!important;color:#171717!important;border-color:#e1e4e8!important}
+html[data-theme="light"] .message-bubble.deleted{background:#f3f4f6!important;color:#6b7280!important;border-color:#e5e7eb!important}
+html[data-theme="light"] .message-row.sent .message-bubble{background:linear-gradient(135deg,#3797f0,#5851db 45%,#833ab4)!important;color:#fff!important;border-color:transparent!important}
+html[data-theme="light"] .reaction{background:#fff!important;color:#171717!important;border-color:#dfe3e8!important}
+html[data-theme="light"] .date-divider{background:#f0f1f3!important;color:#6b7280!important}
+html[data-theme="light"] .input-container{background:#f7f7f8!important;border-color:#dfe3e8!important}
+html[data-theme="light"] .message-input{background:transparent!important;color:#171717!important}
+html[data-theme="light"] .message-input::placeholder{color:#8a9099!important}
+html[data-theme="light"] .attachment-preview{background:#fafafa!important;border-color:#e5e7eb!important}
+html[data-theme="light"] .remove-attachment{color:#6b7280!important}
+html[data-theme="light"] .overlay{background:rgba(0,0,0,.35)!important}
+
+html[data-theme="light"] .dm-page{background:#f7f7f8!important;color:#171717!important}
+html[data-theme="light"] .dm-shell{background:#fff!important;color:#171717!important;border-color:#e5e7eb!important}
+html[data-theme="light"] .dm-header{background:rgba(255,255,255,.96)!important;border-color:#e5e7eb!important}
+html[data-theme="light"] .dm-title{color:#171717!important}
+html[data-theme="light"] .dm-search{background:#f0f1f3!important;color:#171717!important}
+html[data-theme="light"] .dm-search:focus{background:#e9eaed!important;box-shadow:0 0 0 1px #d7d9dd!important}
+html[data-theme="light"] .dm-row{background:#fff!important;color:#171717!important;border-color:#f0f1f3!important}
+html[data-theme="light"] .dm-row:hover{background:#f7f7f8!important}
+html[data-theme="light"] .dm-row:active{background:#f0f1f3!important}
+html[data-theme="light"] .dm-avatar{background:#e5e7eb!important}
+html[data-theme="light"] .dm-online{border-color:#fff!important}
+html[data-theme="light"] .dm-name{color:#171717!important}
+html[data-theme="light"] .dm-time,.dm-preview{color:#737373!important}
+html[data-theme="light"] .dm-preview.unread{color:#171717!important}
+html[data-theme="light"] .dm-empty{color:#737373!important}
+html[data-theme="light"] .dm-empty i{color:#171717!important}
+html[data-theme="light"] .share-overlay{background:rgba(0,0,0,.35)!important}
+html[data-theme="light"] .share-sheet{background:#fff!important;color:#171717!important;border-color:#e5e7eb!important}
+html[data-theme="light"] .sheet-close{color:#171717!important}
+html[data-theme="light"] .share-row{border-color:#e5e7eb!important}
+
+html[data-theme="dark"] .messages-page,
+html[data-theme="dark"] .chat-container,
+html[data-theme="dark"] .chat-header,
+html[data-theme="dark"] .messages-area,
+html[data-theme="dark"] .typing-indicator,
+html[data-theme="dark"] .composer{background:#000!important;color:#f5f5f5!important}
+html[data-theme="dark"] .dm-page{background:#080808!important;color:#f5f5f5!important}
+html[data-theme="dark"] .dm-shell,.dm-header,.dm-row{background:#000!important;color:#f5f5f5!important}
+html[data-theme="dark"] .dm-title,.dm-name{color:#f5f5f5!important}
+</style>
