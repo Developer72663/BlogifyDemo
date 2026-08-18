@@ -1,1 +1,160 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>Notifications | Blogify</title><link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet"><style>:root{--bg:#f6f7fb;--card:#fff;--text:#172033;--muted:#738096;--line:#e6eaf1;--primary:#635bff;--soft:#efedff;--danger:#dc3545;--ok:#149b72}[data-theme=dark]{--bg:#0c0f17;--card:#151a24;--text:#f4f7fb;--muted:#98a3b5;--line:#293142;--primary:#8b84ff;--soft:#211f43}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}.topin{max-width:760px;margin:auto;padding:16px;display:flex;justify-content:space-between;align-items:center}.title{font-weight:850;font-size:1.25rem;display:flex;gap:9px;align-items:center}.count{font-size:.7rem;background:var(--primary);color:#fff;border-radius:99px;padding:3px 8px}.mark{border:0;background:var(--soft);color:var(--primary);border-radius:99px;padding:9px 13px;font-weight:750}.wrap{max-width:760px;margin:auto;padding:16px}.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:14px}.tab{white-space:nowrap;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:99px;padding:8px 13px;font-weight:700}.tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}.swipe-wrap{position:relative;overflow:hidden;border-radius:18px;margin-bottom:10px;background:#dc3545}.delete-bg{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:center;padding-right:24px;color:#fff;font-weight:800;gap:7px}.delete-bg i{font-size:1.35rem}.item{position:relative;display:flex;gap:12px;padding:14px;border:1px solid var(--line);background:var(--card);border-radius:18px;transition:transform .22s ease,opacity .22s ease;touch-action:pan-y;will-change:transform}.item.unread{background:var(--soft);border-color:var(--primary)}.avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:0 0 48px}.body{min-width:0;flex:1}.text{line-height:1.45}.text strong{color:var(--primary)}.meta{font-size:.75rem;color:var(--muted);margin-top:5px}.message-box{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}.message-content{white-space:pre-wrap;word-break:break-word}.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.action{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:7px 11px;font-weight:750;text-decoration:none;cursor:pointer}.action.primary{background:var(--primary);border-color:var(--primary);color:#fff}.action.liked{color:#e33;background:#fff0f2;border-color:#ffc6cf}.request-actions{display:flex;gap:8px;margin-top:10px}.accept,.reject{border:0;border-radius:10px;padding:8px 13px;font-weight:800;cursor:pointer}.accept{background:var(--ok);color:#fff}.reject{background:#fee2e2;color:#b42318}.empty{text-align:center;padding:70px 20px;color:var(--muted)}.empty i{font-size:3rem;display:block;margin-bottom:10px}.swipe-hint{font-size:.7rem;color:var(--muted);text-align:center;margin:0 0 12px}@media(max-width:600px){.wrap{padding:10px}.item{padding:12px}.topin{padding:13px}.title{font-size:1.05rem}}@media(min-width:601px){.swipe-hint{display:none}}</style></head><body data-theme="<%= user && user.theme === 'dark' ? 'dark' : 'light' %>"><header class="top"><div class="topin"><div class="title"><i class="ri-notification-3-line"></i> Notifications <% if(notifications.some(n=>!n.isRead)){%><span class="count" id="count"><%=notifications.filter(n=>!n.isRead).length%></span><%}%></div><button class="mark" onclick="markAll()"><i class="ri-check-double-line"></i> Mark all read</button></div></header><main class="wrap"><div class="tabs"><button class="tab active" onclick="filterType('all',this)">All</button><button class="tab" onclick="filterType('message',this)">Messages</button><button class="tab" onclick="filterType('follow',this)">Follows</button><button class="tab" onclick="filterType('like',this)">Likes</button><button class="tab" onclick="filterType('comment',this)">Comments</button><button class="tab" onclick="filterType('blog_post',this)">Posts</button></div><p class="swipe-hint">Swipe a notification left to delete it</p><section id="list"><% if(notifications&&notifications.length){notifications.forEach(n=>{const actor=n.actor;const isMessage=n.type==='message';const targetUser=actor?actor._id:'';const convo=n.conversationId||'';%><div class="swipe-wrap" data-notification-id="<%=n._id%>"><div class="delete-bg"><i class="ri-delete-bin-6-line"></i> Delete</div><article class="item <%=n.isRead?'':'unread'%>" data-type="<%=n.type%>" data-id="<%=n._id%>"><img class="avatar" src="<%=actor&&actor.profileImageURL?actor.profileImageURL:'/imgs/default.png'%>" onerror="this.src='/imgs/default.png'" alt=""><div class="body"><div class="text"><%if(isMessage){%><strong><%=actor?actor.fullName:'Someone'%></strong> sent you a message<%}else if(n.type==='blog_post'){%><strong><%=actor?actor.fullName:'Someone'%></strong> published a new blog<%}else if(n.type==='like'){%><strong><%=actor?actor.fullName:'Someone'%></strong> liked your blog<%}else if(n.type==='comment'){%><strong><%=actor?actor.fullName:'Someone'%></strong> commented on your blog<%}else if(n.type==='reply'){%><strong><%=actor?actor.fullName:'Someone'%></strong> replied to your comment<%}else if(n.type==='follow'){%><strong><%=actor?actor.fullName:'Someone'%></strong> started following you<%}else if(n.type==='follow_request'){%><strong><%=actor?actor.fullName:'Someone'%></strong> wants to follow you<%}else{%><strong><%=actor?actor.fullName:'Someone'%></strong> mentioned you<%}%></div><div class="meta"><i class="ri-time-line"></i> <%=new Date(n.createdAt).toLocaleString()%></div><%if(isMessage){%><div class="message-box"><div class="message-content"><%=n.message||n.messageRef?.text||'New message'%></div><div class="actions"><a class="action primary" href="/messages?user=<%=targetUser%>&conversation=<%=convo%>" onclick="readNotif('<%=n._id%>')"><i class="ri-reply-line"></i> Reply</a><button class="action <%=n.messageRef&&n.messageRef.likes&&n.messageRef.likes.map(String).includes(String(user._id))?'liked':''%>" onclick="likeMessage('<%=n.messageRef?._id||''%>',this)"><i class="ri-heart-<%=n.messageRef&&n.messageRef.likes&&n.messageRef.likes.map(String).includes(String(user._id))?'fill':'line'%>"></i> Like <span><%=n.messageRef?.likes?.length||0%></span></button></div></div><%}else if(n.blog){%><div class="actions"><a class="action primary" href="/blogs/<%=n.blog._id%>" onclick="readNotif('<%=n._id%>')">View blog</a></div><%}else if(n.type==='follow_request'){%><div class="request-actions"><button class="accept" onclick="respondRequest('<%=n.request%>','accept',this)">Accept</button><button class="reject" onclick="respondRequest('<%=n.request%>','reject',this)">Reject</button></div><%}else if(actor){%><div class="actions"><a class="action" href="/user/profile/<%=actor._id%>" onclick="readNotif('<%=n._id%>')">View profile</a></div><%}%></div></article></div><%})}else{%><div class="empty"><i class="ri-notification-off-line"></i><h3>No notifications</h3><p>New activity will appear here.</p></div><%}%></section></main><script>async function readNotif(id){try{await fetch('/notifications/'+id+'/read',{method:'PUT'})}catch(e){}}async function markAll(){try{const r=await fetch('/notifications/all/read',{method:'PUT'});if(r.ok)location.reload()}catch(e){}}function filterType(type,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.item').forEach(x=>{x.style.display=type==='all'||x.dataset.type===type?'flex':'none'})}async function likeMessage(id,btn){if(!id)return alert('This message is not available to like.');btn.disabled=true;try{const r=await fetch('/messages/'+id+'/like',{method:'POST',headers:{'Content-Type':'application/json'}});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.message||'Unable to like');btn.classList.toggle('liked',d.liked);btn.innerHTML='<i class="ri-heart-'+(d.liked?'fill':'line')+'"></i> Like <span>'+d.likes+'</span>'}catch(e){alert(e.message)}finally{btn.disabled=false}}async function respondRequest(id,action,btn){btn.disabled=true;try{const urls=action==='accept'?['/follow/requests/'+id+'/accept','/follow/request/'+id+'/accept']:['/follow/requests/'+id+'/reject','/follow/request/'+id+'/reject'];let r;for(const u of urls){r=await fetch(u,{method:'POST'});if(r.status!==404)break}if(!r.ok)throw new Error('Unable to '+action+' request');btn.parentElement.innerHTML='<span style="color:var(--muted);font-weight:700">Request '+(action==='accept'?'accepted':'rejected')+'</span>'}catch(e){btn.disabled=false;alert(e.message)}}function initSwipe(){document.querySelectorAll('.swipe-wrap').forEach(wrap=>{const item=wrap.querySelector('.item');let startX=0,startY=0,currentX=0,dragging=false,open=false;const close=()=>{item.style.transform='translateX(0)';open=false};const remove=async()=>{const id=wrap.dataset.notificationId;if(!id)return;item.style.transition='transform .2s ease,opacity .2s ease';item.style.transform='translateX(-110%)';item.style.opacity='0';try{const r=await fetch('/notifications/'+encodeURIComponent(id),{method:'DELETE',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('Delete failed');setTimeout(()=>{wrap.remove();const remaining=document.querySelectorAll('.swipe-wrap').length;if(!remaining&&!document.querySelector('.empty'))document.getElementById('list').innerHTML='<div class="empty"><i class="ri-notification-off-line"></i><h3>No notifications</h3><p>New activity will appear here.</p></div>'},210)}catch(e){item.style.transform='translateX(0)';item.style.opacity='1';alert('Unable to delete notification. Please try again.')}};item.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;startX=e.touches[0].clientX;startY=e.touches[0].clientY;currentX=0;dragging=true;item.style.transition='none'},{passive:true});item.addEventListener('touchmove',e=>{if(!dragging)return;const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dx)<12){dragging=false;return}if(dx<0){currentX=Math.max(dx,-Math.min(120,window.innerWidth*.3));item.style.transform='translateX('+currentX+'px)'}},{passive:true});item.addEventListener('touchend',()=>{if(!dragging)return;dragging=false;item.style.transition='transform .22s ease';if(currentX<-70){open=true;item.style.transform='translateX(-96px)'}else{close()}});item.addEventListener('click',e=>{if(open&&!e.target.closest('a,button')){close()}}) ;wrap.querySelector('.delete-bg').addEventListener('click',remove)})}document.addEventListener('DOMContentLoaded',initSwipe);</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('./partials/head') %>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Notifications | Blogify</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <style>
+    /* Notification page uses the same global Blogify theme as every other page. */
+    .notification-page{
+      --n-bg:#f6f7fb;
+      --n-card:#fff;
+      --n-text:#172033;
+      --n-muted:#738096;
+      --n-line:#e6eaf1;
+      --n-primary:#635bff;
+      --n-soft:#efedff;
+      --n-danger:#dc3545;
+      --n-ok:#149b72;
+      min-height:calc(100vh - 30px);
+      background:var(--n-bg);
+      color:var(--n-text);
+      padding:0 0 30px;
+      transition:background-color .2s ease,color .2s ease;
+    }
+    html[data-theme="dark"] .notification-page{
+      --n-bg:#000;
+      --n-card:#111;
+      --n-text:#f5f5f5;
+      --n-muted:#a3a3a3;
+      --n-line:#2b2b2b;
+      --n-primary:#8b84ff;
+      --n-soft:#211f43;
+      --n-danger:#ff6b75;
+      --n-ok:#25b88a;
+    }
+    .notification-page *{box-sizing:border-box}
+    .notification-top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--n-card) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--n-line)}
+    .notification-topin{max-width:760px;margin:auto;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .notification-title{font-weight:850;font-size:1.25rem;display:flex;gap:9px;align-items:center;color:var(--n-text)}
+    .notification-count{font-size:.7rem;background:var(--n-primary);color:#fff;border-radius:99px;padding:3px 8px}
+    .notification-mark{border:0;background:var(--n-soft);color:var(--n-primary);border-radius:99px;padding:9px 13px;font-weight:750;cursor:pointer}
+    .notification-wrap{max-width:760px;margin:auto;padding:16px}
+    .notification-tabs{display:flex;gap:7px;overflow:auto;margin-bottom:14px;padding-bottom:2px}
+    .notification-tab{white-space:nowrap;border:1px solid var(--n-line);background:var(--n-card);color:var(--n-muted);border-radius:99px;padding:8px 13px;font-weight:700;cursor:pointer}
+    .notification-tab.active{background:var(--n-primary);color:#fff;border-color:var(--n-primary)}
+    .notification-swipe-wrap{position:relative;overflow:hidden;border-radius:18px;margin-bottom:10px;background:#dc3545}
+    .notification-delete-bg{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:center;padding-right:24px;color:#fff;font-weight:800;gap:7px}
+    .notification-delete-bg i{font-size:1.35rem}
+    .notification-item{position:relative;display:flex;gap:12px;padding:14px;border:1px solid var(--n-line);background:var(--n-card);border-radius:18px;transition:transform .22s ease,opacity .22s ease;touch-action:pan-y;will-change:transform;color:var(--n-text)}
+    .notification-item.unread{background:var(--n-soft);border-color:var(--n-primary)}
+    .notification-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:0 0 48px;background:var(--n-bg)}
+    .notification-body{min-width:0;flex:1}
+    .notification-text{line-height:1.45;color:var(--n-text)}
+    .notification-text strong{color:var(--n-primary)}
+    .notification-meta{font-size:.75rem;color:var(--n-muted);margin-top:5px}
+    .notification-message-box{margin-top:10px;padding:12px;border:1px solid var(--n-line);border-radius:14px;background:var(--n-bg)}
+    .notification-message-content{white-space:pre-wrap;word-break:break-word;color:var(--n-text)}
+    .notification-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .notification-action{border:1px solid var(--n-line);background:var(--n-card);color:var(--n-text);border-radius:10px;padding:7px 11px;font-weight:750;text-decoration:none;cursor:pointer}
+    .notification-action.primary{background:var(--n-primary);border-color:var(--n-primary);color:#fff}
+    .notification-action.liked{color:#e33;background:#fff0f2;border-color:#ffc6cf}
+    html[data-theme="dark"] .notification-action.liked{background:#35171c;border-color:#633039;color:#ff8790}
+    .notification-request-actions{display:flex;gap:8px;margin-top:10px}
+    .notification-accept,.notification-reject{border:0;border-radius:10px;padding:8px 13px;font-weight:800;cursor:pointer}
+    .notification-accept{background:var(--n-ok);color:#fff}.notification-reject{background:#fee2e2;color:#b42318}
+    html[data-theme="dark"] .notification-reject{background:#32171a;color:#ff9ca3}
+    .notification-empty{text-align:center;padding:70px 20px;color:var(--n-muted)}
+    .notification-empty i{font-size:3rem;display:block;margin-bottom:10px}
+    .notification-swipe-hint{font-size:.7rem;color:var(--n-muted);text-align:center;margin:0 0 12px}
+    @media(max-width:600px){.notification-wrap{padding:10px}.notification-item{padding:12px}.notification-topin{padding:13px}.notification-title{font-size:1.05rem}.notification-mark{padding:8px 10px}}
+    @media(min-width:601px){.notification-swipe-hint{display:none}}
+  </style>
+</head>
+<body>
+  <%- include('./partials/nave') %>
+
+  <main class="notification-page">
+    <header class="notification-top">
+      <div class="notification-topin">
+        <div class="notification-title">
+          <i class="ri-notification-3-line"></i>
+          Notifications
+          <% if(notifications.some(n=>!n.isRead)){ %>
+            <span class="notification-count" id="count"><%=notifications.filter(n=>!n.isRead).length%></span>
+          <% } %>
+        </div>
+        <button class="notification-mark" onclick="markAll()"><i class="ri-check-double-line"></i> Mark all read</button>
+      </div>
+    </header>
+
+    <div class="notification-wrap">
+      <div class="notification-tabs">
+        <button class="notification-tab active" onclick="filterType('all',this)">All</button>
+        <button class="notification-tab" onclick="filterType('message',this)">Messages</button>
+        <button class="notification-tab" onclick="filterType('follow',this)">Follows</button>
+        <button class="notification-tab" onclick="filterType('like',this)">Likes</button>
+        <button class="notification-tab" onclick="filterType('comment',this)">Comments</button>
+        <button class="notification-tab" onclick="filterType('blog_post',this)">Posts</button>
+      </div>
+      <p class="notification-swipe-hint">Swipe a notification left to delete it</p>
+
+      <section id="list">
+        <% if(notifications&&notifications.length){ %>
+          <% notifications.forEach(n=>{ const actor=n.actor; const isMessage=n.type==='message'; const targetUser=actor?actor._id:''; const convo=n.conversationId||''; %>
+            <div class="notification-swipe-wrap" data-notification-id="<%=n._id%>">
+              <div class="notification-delete-bg"><i class="ri-delete-bin-6-line"></i> Delete</div>
+              <article class="notification-item <%=n.isRead?'':'unread'%>" data-type="<%=n.type%>" data-id="<%=n._id%>">
+                <img class="notification-avatar" src="<%=actor&&actor.profileImageURL?actor.profileImageURL:'/imgs/default.png'%>" onerror="this.src='/imgs/default.png'" alt="">
+                <div class="notification-body">
+                  <div class="notification-text">
+                    <% if(isMessage){ %><strong><%=actor?actor.fullName:'Someone'%></strong> sent you a message
+                    <% }else if(n.type==='blog_post'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> published a new blog
+                    <% }else if(n.type==='like'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> liked your blog
+                    <% }else if(n.type==='comment'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> commented on your blog
+                    <% }else if(n.type==='reply'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> replied to your comment
+                    <% }else if(n.type==='follow'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> started following you
+                    <% }else if(n.type==='follow_request'){ %><strong><%=actor?actor.fullName:'Someone'%></strong> wants to follow you
+                    <% }else{ %><strong><%=actor?actor.fullName:'Someone'%></strong> mentioned you
+                    <% } %>
+                  </div>
+                  <div class="notification-meta"><i class="ri-time-line"></i> <%=new Date(n.createdAt).toLocaleString()%></div>
+
+                  <% if(isMessage){ %>
+                    <div class="notification-message-box">
+                      <div class="notification-message-content"><%=n.message||n.messageRef?.text||'New message'%></div>
+                      <div class="notification-actions">
+                        <a class="notification-action primary" href="/messages?user=<%=targetUser%>&conversation=<%=convo%>" onclick="readNotif('<%=n._id%>')"><i class="ri-reply-line"></i> Reply</a>
+                        <button class="notification-action <%=n.messageRef&&n.messageRef.likes&&n.messageRef.likes.map(String).includes(String(user._id))?'liked':''%>" onclick="likeMessage('<%=n.messageRef?._id||''%>',this)"><i class="ri-heart-<%=n.messageRef&&n.messageRef.likes&&n.messageRef.likes.map(String).includes(String(user._id))?'fill':'line'%>"></i> Like <span><%=n.messageRef?.likes?.length||0%></span></button>
+                      </div>
+                    </div>
+                  <% }else if(n.blog){ %>
+                    <div class="notification-actions"><a class="notification-action primary" href="/blogs/<%=n.blog._id%>" onclick="readNotif('<%=n._id%>')">View blog</a></div>
+                  <% }else if(n.type==='follow_request'){ %>
+                    <div class="notification-request-actions"><button class="notification-accept" onclick="respondRequest('<%=n.request%>','accept',this)">Accept</button><button class="notification-reject" onclick="respondRequest('<%=n.request%>','reject',this)">Reject</button></div>
+                  <% }else if(actor){ %>
+                    <div class="notification-actions"><a class="notification-action" href="/user/profile/<%=actor._id%>" onclick="readNotif('<%=n._id%>')">View profile</a></div>
+                  <% } %>
+                </div>
+              </article>
+            </div>
+          <% }) %>
+        <% }else{ %>
+          <div class="notification-empty"><i class="ri-notification-off-line"></i><h3>No notifications</h3><p>New activity will appear here.</p></div>
+        <% } %>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    async function readNotif(id){try{await fetch('/notifications/'+id+'/read',{method:'PUT'})}catch(e){}}
+    async function markAll(){try{const r=await fetch('/notifications/all/read',{method:'PUT'});if(r.ok)location.reload()}catch(e){}}
+    function filterType(type,btn){document.querySelectorAll('.notification-tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.notification-item').forEach(x=>{x.style.display=type==='all'||x.dataset.type===type?'flex':'none'})}
+    async function likeMessage(id,btn){if(!id)return alert('This message is not available to like.');btn.disabled=true;try{const r=await fetch('/messages/'+id+'/like',{method:'POST',headers:{'Content-Type':'application/json'}});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.message||'Unable to like');btn.classList.toggle('liked',d.liked);btn.innerHTML='<i class="ri-heart-'+(d.liked?'fill':'line')+'"></i> Like <span>'+d.likes+'</span>'}catch(e){alert(e.message)}finally{btn.disabled=false}}
+    async function respondRequest(id,action,btn){btn.disabled=true;try{const urls=action==='accept'?['/follow/requests/'+id+'/accept','/follow/request/'+id+'/accept']:['/follow/requests/'+id+'/reject','/follow/request/'+id+'/reject'];let r;for(const u of urls){r=await fetch(u,{method:'POST'});if(r.status!==404)break}if(!r.ok)throw new Error('Unable to '+action+' request');btn.parentElement.innerHTML='<span style="color:var(--n-muted);font-weight:700">Request '+(action==='accept'?'accepted':'rejected')+'</span>'}catch(e){btn.disabled=false;alert(e.message)}}
+    function initSwipe(){document.querySelectorAll('.notification-swipe-wrap').forEach(wrap=>{const item=wrap.querySelector('.notification-item');let startX=0,startY=0,currentX=0,dragging=false,open=false;const close=()=>{item.style.transform='translateX(0)';open=false};const remove=async()=>{const id=wrap.dataset.notificationId;if(!id)return;item.style.transition='transform .2s ease,opacity .2s ease';item.style.transform='translateX(-110%)';item.style.opacity='0';try{const r=await fetch('/notifications/'+encodeURIComponent(id),{method:'DELETE',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('Delete failed');setTimeout(()=>{wrap.remove();const remaining=document.querySelectorAll('.notification-swipe-wrap').length;if(!remaining&&!document.querySelector('.notification-empty'))document.getElementById('list').innerHTML='<div class="notification-empty"><i class="ri-notification-off-line"></i><h3>No notifications</h3><p>New activity will appear here.</p></div>'},210)}catch(e){item.style.transform='translateX(0)';item.style.opacity='1';alert('Unable to delete notification. Please try again.')}};item.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;startX=e.touches[0].clientX;startY=e.touches[0].clientY;currentX=0;dragging=true;item.style.transition='none'},{passive:true});item.addEventListener('touchmove',e=>{if(!dragging)return;const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dx)<12){dragging=false;return}if(dx<0){currentX=Math.max(dx,-Math.min(120,window.innerWidth*.3));item.style.transform='translateX('+currentX+'px')}},{passive:true});item.addEventListener('touchend',()=>{if(!dragging)return;dragging=false;item.style.transition='transform .22s ease';if(currentX<-70){open=true;item.style.transform='translateX(-96px)'}else{close()}});item.addEventListener('click',e=>{if(open&&!e.target.closest('a,button'))close()});wrap.querySelector('.notification-delete-bg').addEventListener('click',remove)})}
+    document.addEventListener('DOMContentLoaded',initSwipe);
+  </script>
+</body>
+</html>
