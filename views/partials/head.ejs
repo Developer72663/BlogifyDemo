@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= typeof title !== 'undefined' ? title : 'Blogify' %></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link href="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css" rel="stylesheet">
 <style>
@@ -60,34 +60,29 @@ html[data-theme="dark"] .table{--bs-table-bg:#111;--bs-table-color:#e5e5e5;--bs-
 html[data-theme="dark"] .alert-light{background:#1a1a1a!important;color:#e5e5e5!important;border-color:#303030!important}
 html[data-theme="dark"] input,html[data-theme="dark"] textarea,html[data-theme="dark"] select{color-scheme:dark}
 html[data-theme="dark"] ::-webkit-scrollbar{width:9px;height:9px}html[data-theme="dark"] ::-webkit-scrollbar-track{background:#0b0b0b}html[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:99px}
+
+/* Pages that define their own light variables must still follow the global theme. */
+html[data-theme="dark"] .profile-page{background:#000!important;color:#f5f5f5!important}
+html[data-theme="dark"] .profile-card,html[data-theme="dark"] .content-card,html[data-theme="dark"] .blog,html[data-theme="dark"] .person,html[data-theme="dark"] .tabs,html[data-theme="dark"] .secondary,html[data-theme="dark"] .more-btn,html[data-theme="dark"] .profile-action-sheet,html[data-theme="dark"] .modal-card{background:#111!important;color:#f5f5f5!important;border-color:#2b2b2b!important}
+html[data-theme="dark"] .profile-page .identity h1,html[data-theme="dark"] .profile-page .stat,html[data-theme="dark"] .profile-page .blog h3,html[data-theme="dark"] .profile-page .modal-close{color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .email,html[data-theme="dark"] .profile-page .meta,html[data-theme="dark"] .profile-page .blog p,html[data-theme="dark"] .profile-page .blog-meta,html[data-theme="dark"] .profile-page .stat span,html[data-theme="dark"] .profile-page .person small,html[data-theme="dark"] .profile-page .empty{color:#a3a3a3!important}
+html[data-theme="dark"] .profile-page .tabs .tab{color:#a3a3a3!important}
+html[data-theme="dark"] .profile-page .tabs .tab.active{background:#211f43!important;color:#a9a3ff!important}
+html[data-theme="dark"] .profile-page .badge,html[data-theme="dark"] .profile-page .lock{background:#211f43!important;color:#b8b2ff!important}
+html[data-theme="dark"] .profile-page .profile-action-sheet button{color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .share-url{background:#0b0b0b!important;color:#f5f5f5!important;border-color:#303030!important}
+html[data-theme="dark"] .profile-page .cover{background:#0b0b0b!important}
 </style>
 <script id="blogify-theme-manager">
 (function(){
   const KEY='blogify-theme';
-  function normalize(value){
-    value=String(value||'').toLowerCase();
-    if(value==='dark'||value==='black')return'dark';
-    if(value==='light'||value==='white')return'light';
-    return'system';
-  }
-  function apply(value,save){
-    const mode=normalize(value);
-    const dark=mode==='dark'||(mode==='system'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);
-    document.documentElement.dataset.theme=dark?'dark':'light';
-    document.documentElement.dataset.themeMode=mode;
-    document.body&&document.body.classList.toggle('dark-mode',dark);
-    if(save){try{localStorage.setItem(KEY,mode);localStorage.setItem('theme',mode)}catch(e){}}
-    window.dispatchEvent(new CustomEvent('blogify:themechange',{detail:{mode,theme:dark?'dark':'light'}}));
-  }
-  let saved='system';
-  try{saved=localStorage.getItem(KEY)||localStorage.getItem('theme')||localStorage.getItem('appearance')||'system'}catch(e){}
-  apply(saved,false);
+  function normalize(value){value=String(value||'').toLowerCase();if(value==='dark'||value==='black')return'dark';if(value==='light'||value==='white')return'light';return'system'}
+  function apply(value,save){const mode=normalize(value);const dark=mode==='dark'||(mode==='system'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';document.documentElement.dataset.themeMode=mode;document.body&&document.body.classList.toggle('dark-mode',dark);if(save){try{localStorage.setItem(KEY,mode);localStorage.setItem('theme',mode)}catch(e){}}window.dispatchEvent(new CustomEvent('blogify:themechange',{detail:{mode,theme:dark?'dark':'light'}}))}
+  let saved='system';try{saved=localStorage.getItem(KEY)||localStorage.getItem('theme')||localStorage.getItem('appearance')||'system'}catch(e){}apply(saved,false);
   window.BlogifyTheme={get:function(){return document.documentElement.dataset.themeMode||'system'},set:function(mode){apply(mode,true)},toggle:function(){apply(document.documentElement.dataset.theme==='dark'?'light':'dark',true)}};
-  const media=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
-  if(media){const fn=function(){let mode='system';try{mode=localStorage.getItem(KEY)||'system'}catch(e){}if(normalize(mode)==='system')apply('system',false)};media.addEventListener?media.addEventListener('change',fn):media.addListener(fn)}
+  const media=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;if(media){const fn=function(){let mode='system';try{mode=localStorage.getItem(KEY)||'system'}catch(e){}if(normalize(mode)==='system')apply('system',false)};media.addEventListener?media.addEventListener('change',fn):media.addListener(fn)}
   window.addEventListener('storage',function(e){if(e.key===KEY||e.key==='theme'||e.key==='appearance')apply(e.newValue||'system',false)});
-  const observer=new MutationObserver(function(){const hasDark=document.body&&document.body.classList.contains('dark-mode');const current=document.documentElement.dataset.theme==='dark';if(hasDark!==current&&document.documentElement.dataset.themeMode!=='system')document.documentElement.dataset.theme=hasDark?'dark':'light'});
-  if(document.body)observer.observe(document.body,{attributes:true,attributeFilter:['class']});
+  const observer=new MutationObserver(function(){const hasDark=document.body&&document.body.classList.contains('dark-mode');const current=document.documentElement.dataset.theme==='dark';if(hasDark!==current&&document.documentElement.dataset.themeMode!=='system')document.documentElement.dataset.theme=hasDark?'dark':'light'});if(document.body)observer.observe(document.body,{attributes:true,attributeFilter:['class']});
   document.addEventListener('DOMContentLoaded',function(){apply(saved,false)});
 })();
 </script>
