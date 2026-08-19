@@ -1,4 +1,4 @@
-l<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <%- include('./partials/head') %>
@@ -7,50 +7,52 @@ l<!doctype html>
   <title>Messages | Blogify</title>
 
   <style>
-    :root {
-      --bg: #fff;
-      --surface: #fff;
-      --input: #f2f2f4;
-      --received: #efeff1;
-      --sent: #3797f0;
-      --text: #111;
-      --muted: #737373;
-      --line: #e3e3e6;
-      --danger: #ed4956;
-      --online: #22b15a;
-      --shadow: 0 16px 50px rgba(0,0,0,.12);
+    :root{
+      --bg:#fff;
+      --surface:#fff;
+      --input:#f2f2f4;
+      --received:#efeff1;
+      --sent:#3797f0;
+      --text:#111;
+      --muted:#737373;
+      --line:#e3e3e6;
+      --danger:#ed4956;
+      --online:#22b15a;
+      --shadow:0 16px 50px rgba(0,0,0,.12);
+      --composer-height:68px;
+      --safe-bottom:env(safe-area-inset-bottom,0px);
     }
 
-    html[data-theme="dark"],
     html[data-theme="dark"] body,
     body.dark,
     body.dark-mode,
-    body[data-theme="dark"] {
-      --bg: #000;
-      --surface: #000;
-      --input: #171717;
-      --received: #262626;
-      --text: #fff;
-      --muted: #a8a8a8;
-      --line: #292929;
-      --shadow: 0 16px 50px rgba(0,0,0,.45);
+    body[data-theme="dark"]{
+      --bg:#000;
+      --surface:#000;
+      --input:#171717;
+      --received:#262626;
+      --text:#fff;
+      --muted:#a8a8a8;
+      --line:#292929;
+      --shadow:0 16px 50px rgba(0,0,0,.45);
     }
 
-    * {
-      box-sizing: border-box;
+    *{
+      box-sizing:border-box;
     }
 
     html,
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
+    body{
+      margin:0;
+      width:100%;
+      min-width:100%;
+      height:100%;
+      min-height:100%;
+      background:var(--bg);
+      color:var(--text);
     }
 
-    body {
+    body{
       font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -58,969 +60,1057 @@ l<!doctype html>
         Roboto,
         Arial,
         sans-serif;
-      overflow: hidden;
+      overflow:hidden;
+      overscroll-behavior:none;
+      -webkit-text-size-adjust:100%;
     }
 
     button,
     input,
-    textarea {
-      font: inherit;
+    textarea{
+      font:inherit;
     }
 
-    button {
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /*
-     * IMPORTANT:
-     * Navbar is intentionally NOT included on this page.
-     * Therefore there is NO margin-top or navbar-height offset.
-     *
-     * The chat fills the complete viewport.
-     */
-    .messages-page {
-      width: 100%;
-      height: 100dvh;
-      min-height: 100vh;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      overflow: hidden;
-      background: var(--bg);
-    }
-
-    .chat-shell {
-      width: min(1080px, 100%);
-      height: 100%;
-      min-height: 0;
-      display: grid;
-      grid-template-rows: 64px minmax(0, 1fr) auto;
-      background: var(--bg);
-      overflow: hidden;
+    button{
+      -webkit-tap-highlight-color:transparent;
+      touch-action:manipulation;
     }
 
     /*
-     * Header
-     */
-    .chat-header {
-      height: 64px;
-      min-height: 64px;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding:
-        max(7px, env(safe-area-inset-top))
-        10px
-        7px;
-      border-bottom: 1px solid var(--line);
-      background: var(--surface);
-      position: relative;
-      z-index: 60;
+      IMPORTANT MOBILE FIX
+      --------------------
+      No navbar exists on this page, therefore the chat starts
+      from the very top and the composer is pinned to the bottom.
+    */
+    .messages-page{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100dvh;
+      min-height:100dvh;
+      margin:0;
+      padding:0;
+      overflow:hidden;
+      background:var(--bg);
+      display:flex;
+      justify-content:center;
     }
 
-    .icon-btn {
-      width: 42px;
-      height: 42px;
-      border: 0;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: transparent;
-      color: var(--text);
-      cursor: pointer;
-      flex: none;
-      font-size: 17px;
+    .chat-shell{
+      position:relative;
+      width:min(1080px,100%);
+      height:100%;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      background:var(--bg);
+      overflow:hidden;
     }
 
-    .icon-btn:hover {
-      background: var(--input);
+    /* HEADER */
+
+    .chat-header{
+      height:64px;
+      min-height:64px;
+      flex:0 0 64px;
+      display:flex;
+      align-items:center;
+      gap:7px;
+      padding:7px 10px;
+      border-bottom:1px solid var(--line);
+      background:var(--surface);
+      position:relative;
+      z-index:60;
     }
 
-    .icon-btn:active {
-      transform: scale(.95);
+    .icon-btn{
+      width:42px;
+      height:42px;
+      border:0;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:transparent;
+      color:var(--text);
+      cursor:pointer;
+      flex:none;
+      font-size:17px;
     }
 
-    .chat-user {
-      min-width: 0;
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 2px 5px;
-      border-radius: 12px;
-      cursor: pointer;
+    .icon-btn:hover{
+      background:var(--input);
     }
 
-    .chat-user:hover {
-      background: var(--input);
+    .chat-user{
+      min-width:0;
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:9px;
+      padding:2px 5px;
+      border-radius:12px;
+      cursor:pointer;
     }
 
-    .avatar-wrap {
-      position: relative;
-      flex: none;
+    .chat-user:hover{
+      background:var(--input);
     }
 
-    .header-avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 1px solid var(--line);
-      background: var(--input);
+    .avatar-wrap{
+      position:relative;
+      flex:none;
     }
 
-    .online-dot {
-      display: none;
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      width: 11px;
-      height: 11px;
-      border: 2px solid var(--surface);
-      border-radius: 50%;
-      background: var(--online);
+    .header-avatar{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      object-fit:cover;
+      border:1px solid var(--line);
+      background:var(--input);
+      display:block;
     }
 
-    .online-dot.show {
-      display: block;
+    .online-dot{
+      display:none;
+      position:absolute;
+      right:0;
+      bottom:0;
+      width:11px;
+      height:11px;
+      border:2px solid var(--surface);
+      border-radius:50%;
+      background:var(--online);
     }
 
-    .user-copy {
-      min-width: 0;
+    .online-dot.show{
+      display:block;
     }
 
-    .header-name {
-      font-size: 15px;
-      font-weight: 750;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .user-copy{
+      min-width:0;
     }
 
-    .header-status {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 2px;
+    .header-name{
+      font-size:15px;
+      font-weight:750;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .header-status.online {
-      color: var(--online);
+    .header-status{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:2px;
     }
 
-    /*
-     * Header menu
-     */
-    .header-actions {
-      position: relative;
-      flex: none;
+    .header-status.online{
+      color:var(--online);
     }
 
-    .user-menu {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 48px;
-      width: 185px;
-      padding: 6px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      z-index: 100;
+    /* USER MENU */
+
+    .header-actions{
+      position:relative;
+      flex:none;
     }
 
-    .user-menu.open {
-      display: block;
+    .user-menu{
+      display:none;
+      position:absolute;
+      right:0;
+      top:48px;
+      width:185px;
+      padding:6px;
+      background:var(--surface);
+      border:1px solid var(--line);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      z-index:100;
     }
 
-    .user-menu button {
-      width: 100%;
-      height: 42px;
-      border: 0;
-      border-radius: 9px;
-      background: transparent;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 11px;
-      text-align: left;
-      font-size: 13px;
-      cursor: pointer;
+    .user-menu.open{
+      display:block;
     }
 
-    .user-menu button:hover {
-      background: var(--input);
+    .user-menu button{
+      width:100%;
+      height:42px;
+      border:0;
+      border-radius:9px;
+      background:transparent;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:0 11px;
+      text-align:left;
+      font-size:13px;
+      cursor:pointer;
     }
 
-    .user-menu .danger {
-      color: var(--danger);
+    .user-menu button:hover{
+      background:var(--input);
     }
 
-    /*
-     * Messages
-     */
-    .messages-area {
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-
-      padding:
-        12px
-        18px
-        24px;
-
-      display: flex;
-      flex-direction: column;
-
-      background: var(--bg);
-      scroll-behavior: smooth;
-      overscroll-behavior: contain;
-      scrollbar-width: thin;
+    .user-menu .danger{
+      color:var(--danger);
     }
 
-    .messages-area::-webkit-scrollbar {
-      width: 5px;
+    /* MESSAGES */
+
+    .messages-area{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding:12px 18px calc(var(--composer-height) + 30px);
+      display:flex;
+      flex-direction:column;
+      background:var(--bg);
+      scroll-behavior:smooth;
+      overscroll-behavior:contain;
+      scrollbar-width:thin;
+      -webkit-overflow-scrolling:touch;
     }
 
-    .messages-area::-webkit-scrollbar-thumb {
-      background: var(--line);
-      border-radius: 20px;
+    .messages-area::-webkit-scrollbar{
+      width:5px;
     }
 
-    .date-divider {
-      align-self: center;
-      margin: 12px 0 10px;
-      padding: 4px 9px;
-      border-radius: 999px;
-      background: var(--input);
-      color: var(--muted);
-      font-size: 9px;
-      font-weight: 650;
+    .messages-area::-webkit-scrollbar-thumb{
+      background:var(--line);
+      border-radius:20px;
     }
 
-    .message-row {
-      width: 100%;
-      display: flex;
-      align-items: flex-end;
-      margin: 0 0 7px;
+    .date-divider{
+      align-self:center;
+      margin:12px 0 10px;
+      padding:4px 9px;
+      border-radius:999px;
+      background:var(--input);
+      color:var(--muted);
+      font-size:9px;
+      font-weight:650;
     }
 
-    .message-row.received {
-      justify-content: flex-start;
-      padding-right: 18px;
+    .message-row{
+      width:100%;
+      display:flex;
+      align-items:flex-end;
+      margin:0 0 7px;
     }
 
-    .message-row.sent {
-      justify-content: flex-end;
-      padding-left: 18px;
+    .message-row.received{
+      justify-content:flex-start;
+      padding-right:18px;
     }
 
-    .message-content {
-      min-width: 0;
-      max-width: min(72%, 560px);
-      display: flex;
-      flex-direction: column;
+    .message-row.sent{
+      justify-content:flex-end;
+      padding-left:18px;
     }
 
-    .message-row.sent .message-content {
-      align-items: flex-end;
+    .message-content{
+      min-width:0;
+      max-width:min(72%,560px);
+      display:flex;
+      flex-direction:column;
     }
 
-    .message-row.received .message-content {
-      align-items: flex-start;
+    .message-row.sent .message-content{
+      align-items:flex-end;
     }
 
-    .message-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-right: 7px;
-      background: var(--input);
-      border: 1px solid var(--line);
-      flex: none;
+    .message-row.received .message-content{
+      align-items:flex-start;
     }
 
-    .avatar-spacer {
-      width: 35px;
-      flex: none;
+    .message-avatar{
+      width:28px;
+      height:28px;
+      border-radius:50%;
+      object-fit:cover;
+      margin-right:7px;
+      background:var(--input);
+      border:1px solid var(--line);
+      flex:none;
     }
 
-    .sender-name {
-      font-size: 10px;
-      font-weight: 650;
-      color: var(--muted);
-      margin: 0 0 3px 3px;
-      max-width: 220px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .avatar-spacer{
+      width:35px;
+      flex:none;
     }
 
-    .message-bubble {
-      padding: 9px 12px;
-      border-radius: 18px;
-      font-size: 14px;
-      line-height: 1.45;
-      min-height: 35px;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      white-space: pre-wrap;
-      max-width: 100%;
-      cursor: pointer;
+    .sender-name{
+      font-size:10px;
+      font-weight:650;
+      color:var(--muted);
+      margin:0 0 3px 3px;
+      max-width:220px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .received .message-bubble {
-      background: var(--received);
-      color: var(--text);
-      border-bottom-left-radius: 5px;
+    .message-bubble{
+      padding:9px 12px;
+      border-radius:18px;
+      font-size:14px;
+      line-height:1.45;
+      min-height:35px;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      white-space:pre-wrap;
+      max-width:100%;
+      cursor:pointer;
     }
 
-    .sent .message-bubble {
-      background: var(--sent);
-      color: #fff;
-      border-bottom-right-radius: 5px;
+    .received .message-bubble{
+      background:var(--received);
+      color:var(--text);
+      border-bottom-left-radius:5px;
     }
 
-    .message-bubble.deleted {
-      background: var(--input) !important;
-      color: var(--muted) !important;
-      border: 1px solid var(--line);
-      font-style: italic;
-      cursor: default;
+    .sent .message-bubble{
+      background:var(--sent);
+      color:#fff;
+      border-bottom-right-radius:5px;
     }
 
-    .message-media {
-      display: block;
-      max-width: min(330px, 70vw);
-      max-height: 390px;
-      border-radius: 14px;
-      object-fit: cover;
-      margin: 1px;
+    .message-bubble.deleted{
+      background:var(--input)!important;
+      color:var(--muted)!important;
+      border:1px solid var(--line);
+      font-style:italic;
+      cursor:default;
     }
 
-    .message-media.video {
-      background: #000;
+    .message-media{
+      display:block;
+      max-width:min(330px,70vw);
+      max-height:390px;
+      border-radius:14px;
+      object-fit:cover;
+      margin:1px;
     }
 
-    .voice-player {
-      display: block;
-      width: min(285px, 70vw);
-      height: 42px;
+    .message-media.video{
+      background:#000;
     }
 
-    .message-meta {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 0 3px;
-      margin-top: 3px;
-      color: var(--muted);
-      font-size: 9px;
-      line-height: 1.2;
+    .voice-player{
+      display:block;
+      width:min(285px,70vw);
+      height:42px;
     }
 
-    .sent .message-meta {
-      justify-content: flex-end;
+    .message-meta{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      padding:0 3px;
+      margin-top:3px;
+      color:var(--muted);
+      font-size:9px;
+      line-height:1.2;
     }
 
-    .read-status {
-      color: #3797f0;
-      font-weight: 700;
+    .sent .message-meta{
+      justify-content:flex-end;
     }
 
-    .edited {
-      opacity: .75;
+    .read-status{
+      color:#3797f0;
+      font-weight:700;
     }
 
-    .reaction-list {
-      display: flex;
-      gap: 3px;
-      margin-top: -1px;
+    .edited{
+      opacity:.75;
     }
 
-    .sent .reaction-list {
-      justify-content: flex-end;
+    .reaction-list{
+      display:flex;
+      gap:3px;
+      margin-top:-1px;
     }
 
-    .reaction-badge {
-      min-width: 24px;
-      height: 21px;
-      padding: 1px 6px;
-      border-radius: 999px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      box-shadow: 0 2px 6px rgba(0,0,0,.1);
-      display: grid;
-      place-items: center;
-      font-size: 12px;
+    .sent .reaction-list{
+      justify-content:flex-end;
     }
 
-    /*
-     * Shared profile message
-     */
-    .profile-card {
-      width: min(270px, 70vw);
-      border: 1px solid var(--line);
-      background: var(--surface);
-      border-radius: 16px;
-      overflow: hidden;
+    .reaction-badge{
+      min-width:24px;
+      height:21px;
+      padding:1px 6px;
+      border-radius:999px;
+      background:var(--surface);
+      border:1px solid var(--line);
+      box-shadow:0 2px 6px rgba(0,0,0,.1);
+      display:grid;
+      place-items:center;
+      font-size:12px;
     }
 
-    .profile-card img {
-      width: 100%;
-      height: 135px;
-      object-fit: cover;
+    /* PROFILE CARD */
+
+    .profile-card{
+      width:min(270px,70vw);
+      border:1px solid var(--line);
+      background:var(--surface);
+      border-radius:16px;
+      overflow:hidden;
     }
 
-    .profile-card-body {
-      padding: 10px;
+    .profile-card img{
+      width:100%;
+      height:135px;
+      object-fit:cover;
     }
 
-    .profile-card-name {
-      font-weight: 750;
-      font-size: 13px;
+    .profile-card-body{
+      padding:10px;
     }
 
-    .profile-card-bio {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 3px;
+    .profile-card-name{
+      font-weight:750;
+      font-size:13px;
     }
 
-    /*
-     * Empty state
-     */
-    .empty-state {
-      flex: 1;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 30px;
+    .profile-card-bio{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:3px;
     }
 
-    .empty-avatar {
-      width: 76px;
-      height: 76px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 1px solid var(--line);
-      margin-bottom: 10px;
+    /* EMPTY */
+
+    .empty-state{
+      flex:1;
+      min-height:100%;
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding:30px 15px;
     }
 
-    .empty-inner {
-      max-width: 300px;
-      color: var(--muted);
+    .empty-avatar{
+      width:76px;
+      height:76px;
+      border-radius:50%;
+      object-fit:cover;
+      border:1px solid var(--line);
+      margin-bottom:10px;
     }
 
-    .empty-inner strong {
-      display: block;
-      color: var(--text);
-      font-size: 15px;
-      margin-bottom: 5px;
+    .empty-inner{
+      max-width:300px;
+      color:var(--muted);
     }
 
-    .empty-inner p {
-      font-size: 12px;
-      line-height: 1.5;
-      margin: 0;
+    .empty-inner strong{
+      display:block;
+      color:var(--text);
+      font-size:15px;
+      margin-bottom:5px;
     }
 
-    /*
-     * Typing
-     */
-    .typing {
-      height: 18px;
-      padding: 0 18px;
-      color: var(--muted);
-      font-size: 10px;
-      display: flex;
-      align-items: center;
+    .empty-inner p{
+      font-size:12px;
+      line-height:1.5;
+      margin:0;
     }
 
-    .typing:empty {
-      visibility: hidden;
+    /* TYPING */
+
+    .typing{
+      flex:0 0 18px;
+      height:18px;
+      min-height:18px;
+      padding:0 18px;
+      color:var(--muted);
+      font-size:10px;
+      display:flex;
+      align-items:center;
+      background:var(--bg);
     }
 
-    .typing-dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--muted);
-      margin: 0 2px;
-      animation: typingBounce .9s infinite alternate;
+    .typing:empty{
+      visibility:hidden;
     }
 
-    @keyframes typingBounce {
-      to {
-        opacity: .2;
-        transform: translateY(-2px);
+    .typing-dot{
+      width:4px;
+      height:4px;
+      border-radius:50%;
+      background:var(--muted);
+      margin:0 2px;
+      animation:b .9s infinite alternate;
+    }
+
+    @keyframes b{
+      to{
+        opacity:.2;
+        transform:translateY(-2px);
       }
     }
 
-    /*
-     * Attachment / reply / recording
-     */
+    /* ATTACHMENT / REPLY / RECORD */
+
     .attachment-preview,
     .reply-bar,
-    .record-bar {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 12px;
-      background: var(--input);
-      border-top: 1px solid var(--line);
+    .record-bar{
+      flex:none;
+      display:none;
+      align-items:center;
+      gap:8px;
+      padding:7px 12px;
+      background:var(--input);
+      border-top:1px solid var(--line);
     }
 
     .attachment-preview.show,
     .reply-bar.show,
-    .record-bar.show {
-      display: flex;
+    .record-bar.show{
+      display:flex;
     }
 
-    .attachment-thumb {
-      width: 44px;
-      height: 44px;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #111;
-      flex: none;
+    .attachment-thumb{
+      width:44px;
+      height:44px;
+      border-radius:8px;
+      overflow:hidden;
+      background:#111;
+      flex:none;
     }
 
     .attachment-thumb img,
-    .attachment-thumb video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .attachment-thumb video{
+      width:100%;
+      height:100%;
+      object-fit:cover;
     }
 
     .attachment-name,
-    .reply-copy {
-      flex: 1;
-      min-width: 0;
+    .reply-copy{
+      flex:1;
+      min-width:0;
     }
 
-    .attachment-name {
-      font-size: 10px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .attachment-name{
+      font-size:10px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .reply-line {
-      width: 3px;
-      height: 30px;
-      background: #3797f0;
-      border-radius: 4px;
+    .reply-line{
+      width:3px;
+      height:30px;
+      background:#3797f0;
+      border-radius:4px;
     }
 
-    .reply-title {
-      font-size: 11px;
-      font-weight: 700;
+    .reply-title{
+      font-size:11px;
+      font-weight:700;
     }
 
-    .reply-text {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .reply-text{
+      font-size:10px;
+      color:var(--muted);
+      margin-top:2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .record-info {
-      flex: 1;
-      min-width: 0;
+    .record-info{
+      flex:1;
+      min-width:0;
     }
 
-    .record-title {
-      font-size: 11px;
-      font-weight: 750;
-      color: var(--danger);
+    .record-title{
+      font-size:11px;
+      font-weight:750;
+      color:var(--danger);
     }
 
-    .record-time {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
+    .record-time{
+      font-size:10px;
+      color:var(--muted);
+      margin-top:2px;
     }
 
-    .record-actions {
-      display: flex;
-      gap: 6px;
+    .record-actions{
+      display:flex;
+      gap:6px;
     }
 
-    .record-action {
-      border: 0;
-      border-radius: 10px;
-      padding: 8px 11px;
-      background: var(--surface);
-      color: var(--text);
-      font-size: 11px;
-      font-weight: 750;
-      cursor: pointer;
+    .record-action{
+      border:0;
+      border-radius:10px;
+      padding:8px 11px;
+      background:var(--surface);
+      color:var(--text);
+      font-size:11px;
+      font-weight:750;
+      cursor:pointer;
     }
 
-    .record-action.stop {
-      color: var(--danger);
-      background: rgba(237,73,86,.12);
+    .record-action.stop{
+      color:var(--danger);
+      background:rgba(237,73,86,.12);
     }
 
-    .record-action.send {
-      color: #fff;
-      background: #3797f0;
+    .record-action.send{
+      color:#fff;
+      background:#3797f0;
     }
 
-    .record-action:disabled {
-      opacity: .5;
-      cursor: not-allowed;
+    .record-action:disabled{
+      opacity:.5;
+      cursor:not-allowed;
     }
 
-    .cancel {
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      font-size: 11px;
-      padding: 7px;
-      cursor: pointer;
+    .cancel{
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      font-size:11px;
+      padding:7px;
+      cursor:pointer;
     }
 
-    /*
-     * Composer
-     */
-    .composer {
-      min-height: 62px;
+    /* =====================================================
+       COMPOSER
+       The most important Samsung/Android fix.
+       ===================================================== */
+
+    .composer{
+      flex:0 0 auto;
+      width:100%;
+      min-height:68px;
       padding:
         7px
         10px
-        max(9px, env(safe-area-inset-bottom));
-
-      border-top: 1px solid var(--line);
-      background: var(--surface);
-
-      display: flex;
-      align-items: flex-end;
-      gap: 6px;
-
-      position: relative;
-      z-index: 50;
+        max(9px, env(safe-area-inset-bottom,0px));
+      border-top:1px solid var(--line);
+      background:var(--surface);
+      display:flex;
+      align-items:flex-end;
+      gap:6px;
+      position:relative;
+      z-index:80;
+      box-shadow:0 -3px 12px rgba(0,0,0,.035);
     }
 
-    .composer-btn {
-      width: 41px;
-      height: 41px;
-      border: 0;
-      border-radius: 50%;
-      background: transparent;
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      flex: none;
+    .composer-btn{
+      width:41px;
+      height:41px;
+      min-width:41px;
+      min-height:41px;
+      border:0;
+      border-radius:50%;
+      background:transparent;
+      color:var(--text);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      flex:none;
     }
 
-    .composer-btn:hover {
-      background: var(--input);
+    .composer-btn:hover{
+      background:var(--input);
     }
 
-    .composer-btn:active {
-      transform: scale(.95);
+    .composer-btn.recording{
+      color:var(--danger);
+      background:rgba(237,73,86,.13);
     }
 
-    .composer-btn.recording {
-      color: var(--danger);
-      background: rgba(237,73,86,.13);
+    .input-box{
+      flex:1;
+      min-width:0;
+      min-height:41px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:var(--input);
+      display:flex;
+      align-items:flex-end;
+      padding:0 10px;
     }
 
-    .input-box {
-      flex: 1;
-      min-width: 0;
-      min-height: 41px;
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      background: var(--input);
-      display: flex;
-      align-items: flex-end;
-      padding: 0 10px;
+    .message-input{
+      display:block;
+      width:100%;
+      min-width:0;
+      min-height:39px;
+      max-height:110px;
+      resize:none;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:var(--text);
+      padding:9px 2px;
+      line-height:1.4;
+      overflow-y:auto;
+      -webkit-appearance:none;
+      appearance:none;
     }
 
-    .message-input {
-      width: 100%;
-      min-height: 39px;
-      max-height: 110px;
-      resize: none;
-      border: 0;
-      outline: 0;
-      background: transparent;
-      color: var(--text);
-      padding: 9px 2px;
-      line-height: 1.4;
-      overflow-y: auto;
+    .message-input::placeholder{
+      color:var(--muted);
     }
 
-    .message-input::placeholder {
-      color: var(--muted);
+    .send-btn{
+      width:41px;
+      height:41px;
+      min-width:41px;
+      min-height:41px;
+      border:0;
+      border-radius:50%;
+      background:#3797f0;
+      color:#fff;
+      display:none;
+      place-items:center;
+      cursor:pointer;
+      flex:none;
     }
 
-    .send-btn {
-      width: 41px;
-      height: 41px;
-      border: 0;
-      border-radius: 50%;
-      background: #3797f0;
-      color: #fff;
-      display: none;
-      place-items: center;
-      cursor: pointer;
-      flex: none;
+    .send-btn:disabled{
+      opacity:.45;
     }
 
-    .send-btn:disabled {
-      opacity: .45;
+    #mediaInput{
+      display:none;
     }
 
-    #mediaInput {
-      display: none;
+    /* ACTION SHEET */
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.42);
+      z-index:90;
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transition:.18s;
     }
 
-    /*
-     * Action sheet
-     */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.42);
-      z-index: 90;
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      transition: .18s;
+    .overlay.open{
+      opacity:1;
+      visibility:visible;
+      pointer-events:auto;
     }
 
-    .overlay.open {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
+    .action-sheet{
+      position:fixed;
+      left:50%;
+      bottom:10px;
+      transform:translate(-50%,20px);
+      width:min(450px,calc(100vw - 18px));
+      padding:8px;
+      background:var(--surface);
+      border-radius:19px;
+      box-shadow:var(--shadow);
+      z-index:91;
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transition:.2s;
     }
 
-    .action-sheet {
-      position: fixed;
-      left: 50%;
-      bottom: 10px;
-      transform: translate(-50%,20px);
-      width: min(450px,calc(100vw - 18px));
-      padding: 8px;
-      background: var(--surface);
-      border-radius: 19px;
-      box-shadow: var(--shadow);
-      z-index: 91;
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      transition: .2s;
+    .action-sheet.open{
+      opacity:1;
+      visibility:visible;
+      pointer-events:auto;
+      transform:translate(-50%,0);
     }
 
-    .action-sheet.open {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-      transform: translate(-50%,0);
+    .reaction-row{
+      display:flex;
+      gap:4px;
+      padding-bottom:8px;
+      border-bottom:1px solid var(--line);
     }
 
-    .reaction-row {
-      display: flex;
-      gap: 4px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--line);
+    .reaction-btn{
+      flex:1;
+      height:42px;
+      border:0;
+      border-radius:12px;
+      background:var(--input);
+      font-size:18px;
+      cursor:pointer;
     }
 
-    .reaction-btn {
-      flex: 1;
-      height: 42px;
-      border: 0;
-      border-radius: 12px;
-      background: var(--input);
-      font-size: 18px;
-      cursor: pointer;
+    .sheet-btn{
+      width:100%;
+      height:42px;
+      border:0;
+      border-radius:10px;
+      background:transparent;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:0 11px;
+      text-align:left;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:650;
     }
 
-    .sheet-btn {
-      width: 100%;
-      height: 42px;
-      border: 0;
-      border-radius: 10px;
-      background: transparent;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 11px;
-      text-align: left;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 650;
+    .sheet-btn:hover{
+      background:var(--input);
     }
 
-    .sheet-btn:hover {
-      background: var(--input);
+    .sheet-btn.danger{
+      color:var(--danger);
     }
 
-    .sheet-btn.danger {
-      color: var(--danger);
+    .sheet-cancel{
+      justify-content:center;
+      background:var(--input);
+      margin-top:3px;
     }
 
-    .sheet-cancel {
-      justify-content: center;
-      background: var(--input);
-      margin-top: 3px;
+    /* TOAST */
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:78px;
+      transform:translate(-50%,10px);
+      background:#222;
+      color:#fff;
+      padding:8px 13px;
+      border-radius:999px;
+      font-size:10px;
+      opacity:0;
+      visibility:hidden;
+      transition:.2s;
+      z-index:200;
+      max-width:90vw;
+      text-align:center;
     }
 
-    /*
-     * Toast
-     */
-    .toast {
-      position: fixed;
-      left: 50%;
-      bottom: 78px;
-      transform: translate(-50%,10px);
-      background: #222;
-      color: #fff;
-      padding: 8px 13px;
-      border-radius: 999px;
-      font-size: 10px;
-      opacity: 0;
-      visibility: hidden;
-      transition: .2s;
-      z-index: 200;
-      max-width: calc(100vw - 30px);
-      text-align: center;
+    .toast.show{
+      opacity:1;
+      visibility:visible;
+      transform:translate(-50%,0);
     }
 
-    .toast.show {
-      opacity: 1;
-      visibility: visible;
-      transform: translate(-50%,0);
-    }
+    /* =====================================================
+       MOBILE
+       ===================================================== */
 
-    /*
-     * Mobile
-     */
-    @media (max-width: 699px) {
-      .messages-page {
-        width: 100%;
-        height: 100dvh;
-        min-height: 100vh;
-        margin: 0;
-        padding: 0;
+    @media(max-width:699px){
+
+      html,
+      body{
+        width:100%;
+        height:100%;
+        overflow:hidden;
       }
 
-      .chat-shell {
-        width: 100%;
-        height: 100dvh;
-        min-height: 100vh;
-        border-radius: 0;
+      .messages-page{
+        position:fixed;
+        inset:0;
+        width:100%;
+        height:100dvh;
+        min-height:100dvh;
+        margin:0;
+        padding:0;
       }
 
-      .chat-header {
-        height: 62px;
-        min-height: 62px;
+      .chat-shell{
+        width:100%;
+        height:100%;
+        min-height:0;
+        border-radius:0;
+      }
+
+      .chat-header{
+        height:60px;
+        min-height:60px;
+        flex-basis:60px;
+        padding:5px 6px;
+      }
+
+      .icon-btn{
+        width:40px;
+        height:40px;
+      }
+
+      .header-avatar{
+        width:40px;
+        height:40px;
+      }
+
+      .messages-area{
         padding:
-          max(6px, env(safe-area-inset-top))
+          10px
+          8px
+          calc(78px + env(safe-area-inset-bottom,0px));
+      }
+
+      .message-row.received{
+        padding-right:8px;
+      }
+
+      .message-row.sent{
+        padding-left:8px;
+      }
+
+      .message-content{
+        max-width:84%;
+      }
+
+      .message-bubble{
+        font-size:14px;
+        padding:8px 11px;
+      }
+
+      .message-media{
+        max-width:75vw;
+      }
+
+      .voice-player{
+        width:min(280px,70vw);
+      }
+
+      /*
+        Keep composer visible and prevent Android keyboard
+        from pushing it outside the viewport.
+      */
+      .composer{
+        min-height:64px;
+        padding:
+          6px
           7px
-          6px;
+          max(7px,env(safe-area-inset-bottom,0px));
       }
 
-      .icon-btn {
-        width: 40px;
-        height: 40px;
+      .composer-btn{
+        width:40px;
+        height:40px;
+        min-width:40px;
+        min-height:40px;
       }
 
-      .header-avatar {
-        width: 40px;
-        height: 40px;
+      .send-btn{
+        width:40px;
+        height:40px;
+        min-width:40px;
+        min-height:40px;
       }
 
-      .messages-area {
-        padding: 12px 8px 20px;
+      .input-box{
+        min-height:40px;
+        border-radius:21px;
       }
 
-      .message-row.received {
-        padding-right: 10px;
+      .message-input{
+        min-height:38px;
+        max-height:100px;
+        padding-top:9px;
+        padding-bottom:8px;
+        font-size:16px;
       }
 
-      .message-row.sent {
-        padding-left: 10px;
+      /*
+        16px prevents Android Chrome/Samsung browser
+        from zooming the page when the textarea receives focus.
+      */
+      .action-sheet{
+        left:0;
+        bottom:0;
+        width:100%;
+        border-radius:19px 19px 0 0;
+        padding-bottom:max(8px,env(safe-area-inset-bottom,0px));
+        transform:translateY(20px);
       }
 
-      .message-content {
-        max-width: 84%;
+      .action-sheet.open{
+        transform:translateY(0);
       }
 
-      .message-bubble {
-        font-size: 14px;
-        padding: 8px 11px;
+      .record-bar{
+        padding:8px 10px;
       }
 
-      .action-sheet {
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        border-radius: 19px 19px 0 0;
-        padding-bottom: max(8px, env(safe-area-inset-bottom));
-        transform: translateY(20px);
+      .record-actions{
+        gap:4px;
       }
 
-      .action-sheet.open {
-        transform: translateY(0);
+      .record-action{
+        padding:8px 9px;
       }
 
-      .record-bar {
-        padding: 8px 10px;
-      }
-
-      .record-actions {
-        gap: 4px;
-      }
-
-      .record-action {
-        padding: 8px 9px;
-      }
-
-      .composer {
-        padding-bottom:
-          max(9px, env(safe-area-inset-bottom));
-      }
-    }
-
-    /*
-     * Tablets / desktop
-     */
-    @media (min-width: 700px) {
-      .messages-page {
-        height: 100dvh;
-        min-height: 100vh;
-        padding: 12px;
-      }
-
-      .chat-shell {
-        height: calc(100dvh - 24px);
-        min-height: 0;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        box-shadow: var(--shadow);
+      .toast{
+        bottom:84px;
       }
     }
 
-    @media (min-width: 900px) {
-      .messages-area {
-        padding-left: 48px;
-        padding-right: 48px;
+    /* TABLET / DESKTOP */
+
+    @media(min-width:700px){
+
+      .messages-page{
+        padding:0 12px 12px;
       }
 
-      .message-content {
-        max-width: 62%;
+      .chat-shell{
+        border:1px solid var(--line);
+        border-radius:18px;
+        box-shadow:var(--shadow);
+      }
+
+      .messages-area{
+        padding-left:48px;
+        padding-right:48px;
+      }
+
+      .message-content{
+        max-width:62%;
+      }
+    }
+
+    /* SMALL ANDROID PHONES */
+
+    @media(max-width:380px){
+
+      .chat-header{
+        padding-left:3px;
+        padding-right:3px;
+      }
+
+      .header-name{
+        font-size:14px;
+      }
+
+      .header-status{
+        font-size:10px;
+      }
+
+      .message-content{
+        max-width:88%;
+      }
+
+      .composer{
+        gap:3px;
+      }
+
+      .composer-btn,
+      .send-btn{
+        width:38px;
+        height:38px;
+        min-width:38px;
+        min-height:38px;
       }
     }
   </style>
@@ -1028,16 +1118,9 @@ l<!doctype html>
 
 <body>
 
-  <!--
-    Navbar intentionally removed from messages page.
-    Do NOT add:
-    <%- include('./partials/nave') %>
-  -->
-
   <main class="messages-page">
     <section class="chat-shell" aria-label="Conversation">
 
-      <!-- CHAT HEADER -->
       <header class="chat-header">
 
         <button
@@ -1080,6 +1163,7 @@ l<!doctype html>
               Message
             </div>
           </div>
+
         </div>
 
         <div class="header-actions">
@@ -1096,16 +1180,12 @@ l<!doctype html>
             class="user-menu"
             id="userMenu">
 
-            <button
-              id="profileMenu"
-              type="button">
+            <button id="profileMenu" type="button">
               <i class="fas fa-user"></i>
               <span>Profile</span>
             </button>
 
-            <button
-              id="muteMenu"
-              type="button">
+            <button id="muteMenu" type="button">
               <i class="fas fa-bell-slash"></i>
               <span id="muteText">Mute</span>
             </button>
@@ -1119,12 +1199,12 @@ l<!doctype html>
             </button>
 
           </div>
+
         </div>
 
       </header>
 
 
-      <!-- MESSAGES -->
       <div
         class="messages-area"
         id="messagesArea"
@@ -1151,18 +1231,18 @@ l<!doctype html>
             </p>
 
           </div>
+
         </div>
+
       </div>
 
 
-      <!-- TYPING -->
       <div
         class="typing"
         id="typingIndicator">
       </div>
 
 
-      <!-- ATTACHMENT -->
       <div
         class="attachment-preview"
         id="attachmentPreview">
@@ -1183,10 +1263,10 @@ l<!doctype html>
           type="button">
           ×
         </button>
+
       </div>
 
 
-      <!-- REPLY -->
       <div
         class="reply-bar"
         id="replyBar">
@@ -1216,7 +1296,6 @@ l<!doctype html>
       </div>
 
 
-      <!-- RECORDING -->
       <div
         class="record-bar"
         id="recordBar">
@@ -1263,10 +1342,12 @@ l<!doctype html>
           </button>
 
         </div>
+
       </div>
 
 
-      <!-- COMPOSER -->
+      <!-- MESSAGE COMPOSER -->
+
       <form
         class="composer"
         id="composer">
@@ -1276,13 +1357,16 @@ l<!doctype html>
           id="attachmentButton"
           type="button"
           aria-label="Add photo or video">
+
           <i class="fas fa-plus"></i>
+
         </button>
 
         <input
           id="mediaInput"
           type="file"
           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime">
+
 
         <div class="input-box">
 
@@ -1292,24 +1376,31 @@ l<!doctype html>
             rows="1"
             maxlength="5000"
             placeholder="Message…"
-            autocomplete="off"></textarea>
+            autocomplete="off"
+            enterkeyhint="send"></textarea>
 
         </div>
+
 
         <button
           class="composer-btn"
           id="voiceButton"
           type="button"
           aria-label="Record voice message">
+
           <i class="fas fa-microphone"></i>
+
         </button>
+
 
         <button
           class="send-btn"
           id="sendButton"
           type="submit"
           aria-label="Send message">
+
           <i class="fas fa-paper-plane"></i>
+
         </button>
 
       </form>
@@ -1318,55 +1409,91 @@ l<!doctype html>
   </main>
 
 
-  <!-- ACTION OVERLAY -->
+  <!-- ACTION SHEET -->
+
   <div
     class="overlay"
     id="overlay">
   </div>
 
-
-  <!-- MESSAGE ACTION SHEET -->
   <div
     class="action-sheet"
     id="actionSheet">
 
     <div class="reaction-row">
 
-      <button class="reaction-btn" data-reaction="❤️">❤️</button>
-      <button class="reaction-btn" data-reaction="😂">😂</button>
-      <button class="reaction-btn" data-reaction="😮">😮</button>
-      <button class="reaction-btn" data-reaction="😢">😢</button>
-      <button class="reaction-btn" data-reaction="👍">👍</button>
-      <button class="reaction-btn" data-reaction="🔥">🔥</button>
+      <button
+        class="reaction-btn"
+        data-reaction="❤️">
+        ❤️
+      </button>
+
+      <button
+        class="reaction-btn"
+        data-reaction="😂">
+        😂
+      </button>
+
+      <button
+        class="reaction-btn"
+        data-reaction="😮">
+        😮
+      </button>
+
+      <button
+        class="reaction-btn"
+        data-reaction="😢">
+        😢
+      </button>
+
+      <button
+        class="reaction-btn"
+        data-reaction="👍">
+        👍
+      </button>
+
+      <button
+        class="reaction-btn"
+        data-reaction="🔥">
+        🔥
+      </button>
 
     </div>
 
     <button
       class="sheet-btn"
       id="replyAction">
+
       <i class="fas fa-reply"></i>
       Reply
+
     </button>
 
     <button
       class="sheet-btn"
       id="copyAction">
+
       <i class="fas fa-copy"></i>
       Copy
+
     </button>
 
     <button
       class="sheet-btn"
       id="editAction">
+
       <i class="fas fa-pen"></i>
       Edit
+
     </button>
 
     <button
       class="sheet-btn danger"
       id="unsendAction">
+
       <i class="fas fa-trash"></i>
       Unsend
+
     </button>
 
     <button
@@ -1378,7 +1505,6 @@ l<!doctype html>
   </div>
 
 
-  <!-- TOAST -->
   <div
     class="toast"
     id="toast">
@@ -1417,85 +1543,177 @@ l<!doctype html>
       let replyTo = null;
       let selectedMessage = null;
       let mediaFile = null;
-
       let recording = null;
       let recordChunks = [];
       let recordTimer = null;
       let recordStarted = 0;
       let recordedVoice = null;
-
       let typingTimer = null;
 
       const defaultAvatar = "/imgs/default.png";
 
       const esc = s =>
-        String(s ?? "").replace(
-          /[&<>"']/g,
-          c => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-          }[c])
-        );
+        String(s ?? "")
+          .replace(/[&<>"']/g, c => ({
+            "&":"&amp;",
+            "<":"&lt;",
+            ">":"&gt;",
+            '"':"&quot;",
+            "'":"&#39;"
+          }[c]));
 
       const toast = msg => {
+
         const t = $("toast");
 
         t.textContent = msg;
+
         t.classList.add("show");
 
         clearTimeout(t._t);
 
-        t._t = setTimeout(() => {
-          t.classList.remove("show");
-        }, 2200);
+        t._t =
+          setTimeout(
+            () => t.classList.remove("show"),
+            2200
+          );
+
       };
 
       const avatar = u =>
         u?.profileImageURL || defaultAvatar;
 
-      const sameId = (a, b) =>
+      const sameId = (a,b) =>
         String(a || "") === String(b || "");
 
-      function dateLabel(d) {
+      function dateLabel(d){
 
         const x = new Date(d);
         const n = new Date();
 
         const y = new Date(n);
-        y.setDate(n.getDate() - 1);
 
-        if (x.toDateString() === n.toDateString())
+        y.setDate(
+          n.getDate() - 1
+        );
+
+        if(
+          x.toDateString() ===
+          n.toDateString()
+        )
           return "Today";
 
-        if (x.toDateString() === y.toDateString())
+        if(
+          x.toDateString() ===
+          y.toDateString()
+        )
           return "Yesterday";
 
-        return x.toLocaleDateString([], {
-          day: "numeric",
-          month: "short",
-          year: "numeric"
-        });
+        return x.toLocaleDateString(
+          [],
+          {
+            day:"numeric",
+            month:"short",
+            year:"numeric"
+          }
+        );
       }
 
-      function timeLabel(d) {
+      function timeLabel(d){
 
-        return new Date(d).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        });
+        return new Date(d)
+          .toLocaleTimeString(
+            [],
+            {
+              hour:"2-digit",
+              minute:"2-digit"
+            }
+          );
+
       }
 
-      function scrollBottom() {
+      function scrollBottom(){
 
         requestAnimationFrame(() => {
-          area.scrollTop = area.scrollHeight;
+
+          area.scrollTop =
+            area.scrollHeight;
+
         });
+
       }
 
-      function setTarget(u) {
+      /*
+        Android keyboard / viewport helper.
+        Samsung M35 + Chrome/Samsung Internet can change
+        visualViewport height when keyboard opens.
+      */
+
+      function updateViewport(){
+
+        if(!window.visualViewport)
+          return;
+
+        const height =
+          window.visualViewport.height;
+
+        document.documentElement.style
+          .setProperty(
+            "--app-height",
+            height + "px"
+          );
+
+      }
+
+      if(window.visualViewport){
+
+        window.visualViewport.addEventListener(
+          "resize",
+          updateViewport
+        );
+
+        window.visualViewport.addEventListener(
+          "scroll",
+          updateViewport
+        );
+
+      }
+
+      window.addEventListener(
+        "resize",
+        updateViewport
+      );
+
+      updateViewport();
+
+
+      /*
+        Keep input visible when Android keyboard opens.
+      */
+
+      function keepComposerVisible(){
+
+        setTimeout(() => {
+
+          updateViewport();
+
+          if(document.activeElement === input){
+
+            input.scrollIntoView({
+              block:"nearest",
+              behavior:"smooth"
+            });
+
+          }
+
+          scrollBottom();
+
+        },80);
+
+      }
+
+
+      function setTarget(u){
 
         target = u || {};
 
@@ -1511,24 +1729,22 @@ l<!doctype html>
         $("emptyAvatar").src =
           avatar(target);
 
-        $("profileMenu").onclick = () => {
-          if (target._id) {
+        $("profileMenu").onclick =
+          () =>
             location.href =
               "/profile/" + target._id;
-          }
-        };
 
-        $("profileButton").onclick = () => {
-          if (target._id) {
+        $("profileButton").onclick =
+          () =>
             location.href =
               "/profile/" + target._id;
-          }
-        };
 
         updateOnline();
+
       }
 
-      function updateOnline() {
+
+      function updateOnline(){
 
         const online =
           target &&
@@ -1536,42 +1752,46 @@ l<!doctype html>
 
         $("onlineDot")
           .classList
-          .toggle("show", online);
+          .toggle(
+            "show",
+            online
+          );
 
         $("headerStatus").textContent =
-          online ? "Active now" : "Message";
+          online
+            ? "Active now"
+            : "Message";
 
         $("headerStatus")
           .classList
-          .toggle("online", online);
+          .toggle(
+            "online",
+            online
+          );
+
       }
 
-      function renderMessages(messages) {
+
+      function renderMessages(messages){
 
         area.innerHTML = "";
 
         let lastDate = "";
 
-        if (!messages?.length) {
+        if(!messages?.length){
 
           area.innerHTML = `
             <div class="empty-state">
               <div class="empty-inner">
-
                 <img
                   class="empty-avatar"
                   src="${esc(avatar(target))}"
                   alt="">
-
-                <strong>
-                  Start a conversation
-                </strong>
-
+                <strong>Start a conversation</strong>
                 <p>
-                  Send a message or hold the
-                  microphone to record a voice message.
+                  Send a message or hold the microphone
+                  to record a voice message.
                 </p>
-
               </div>
             </div>
           `;
@@ -1580,23 +1800,31 @@ l<!doctype html>
         }
 
         messages.forEach(m => {
+
           lastDate =
-            renderMessage(m, true, lastDate);
+            renderMessage(
+              m,
+              true,
+              lastDate
+            );
+
         });
 
         scrollBottom();
+
       }
+
 
       function renderMessage(
         m,
         append = false,
         lastDate = ""
-      ) {
+      ){
 
         const date =
           dateLabel(m.createdAt);
 
-        if (date !== lastDate) {
+        if(date !== lastDate){
 
           const divider =
             document.createElement("div");
@@ -1607,12 +1835,16 @@ l<!doctype html>
           divider.textContent =
             date;
 
-          area.appendChild(divider);
+          area.appendChild(
+            divider
+          );
+
         }
 
         const mine =
           sameId(
-            m.senderId?._id || m.senderId,
+            m.senderId?._id ||
+            m.senderId,
             myId
           );
 
@@ -1626,7 +1858,7 @@ l<!doctype html>
         row.dataset.id =
           m._id;
 
-        if (!mine) {
+        if(!mine){
 
           const img =
             document.createElement("img");
@@ -1638,11 +1870,13 @@ l<!doctype html>
             avatar(m.senderId);
 
           img.onerror =
-            () => img.src = defaultAvatar;
+            () =>
+              img.src =
+                defaultAvatar;
 
           row.appendChild(img);
 
-        } else {
+        }else{
 
           const spacer =
             document.createElement("div");
@@ -1651,6 +1885,7 @@ l<!doctype html>
             "avatar-spacer";
 
           row.appendChild(spacer);
+
         }
 
         const content =
@@ -1659,7 +1894,10 @@ l<!doctype html>
         content.className =
           "message-content";
 
-        if (!mine && m.senderId?.fullName) {
+        if(
+          !mine &&
+          m.senderId?.fullName
+        ){
 
           const n =
             document.createElement("div");
@@ -1671,6 +1909,7 @@ l<!doctype html>
             m.senderId.fullName;
 
           content.appendChild(n);
+
         }
 
         const bubble =
@@ -1678,20 +1917,24 @@ l<!doctype html>
 
         bubble.className =
           "message-bubble" +
-          (m.deleted ? " deleted" : "");
+          (m.deleted
+            ? " deleted"
+            : "");
 
         bubble.dataset.messageId =
           m._id;
 
-        if (m.deleted) {
+        if(m.deleted){
 
           bubble.textContent =
             "Message deleted";
 
-        } else if (
+        }
+
+        else if(
           m.mediaType === "audio" &&
           m.mediaUrl
-        ) {
+        ){
 
           const audio =
             document.createElement("audio");
@@ -1705,10 +1948,12 @@ l<!doctype html>
 
           bubble.appendChild(audio);
 
-        } else if (
+        }
+
+        else if(
           m.mediaType === "image" &&
           m.mediaUrl
-        ) {
+        ){
 
           const img =
             document.createElement("img");
@@ -1724,84 +1969,90 @@ l<!doctype html>
 
           bubble.appendChild(img);
 
-          if (m.text) {
+          if(m.text)
             bubble.appendChild(
-              document.createTextNode(m.text)
+              document.createTextNode(
+                m.text
+              )
             );
-          }
 
-        } else if (
+        }
+
+        else if(
           m.mediaType === "video" &&
           m.mediaUrl
-        ) {
+        ){
 
-          const video =
+          const v =
             document.createElement("video");
 
-          video.className =
+          v.className =
             "message-media video";
 
-          video.controls = true;
-          video.playsInline = true;
-          video.src = m.mediaUrl;
+          v.controls = true;
+          v.playsInline = true;
+          v.src = m.mediaUrl;
 
-          bubble.appendChild(video);
+          bubble.appendChild(v);
 
-          if (m.text) {
+          if(m.text)
             bubble.appendChild(
-              document.createTextNode(m.text)
+              document.createTextNode(
+                m.text
+              )
             );
-          }
 
-        } else if (
+        }
+
+        else if(
           m.mediaType === "profile" &&
           m.profileShareId
-        ) {
+        ){
 
           bubble.innerHTML =
-            `
-              <div class="profile-card">
+            '<div class="profile-card">' +
+              '<img src="' +
+              esc(
+                avatar(
+                  m.profileShareId
+                )
+              ) +
+              '" alt="">' +
+              '<div class="profile-card-body">' +
+                '<div class="profile-card-name">' +
+                  esc(
+                    m.profileShareId.fullName
+                  ) +
+                '</div>' +
+                '<div class="profile-card-bio">' +
+                  esc(
+                    m.profileShareId.bio ||
+                    "Blogify profile"
+                  ) +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            (
+              m.text
+                ? '<div style="margin-top:7px">' +
+                    esc(m.text) +
+                  '</div>'
+                : ""
+            );
 
-                <img
-                  src="${esc(
-                    avatar(m.profileShareId)
-                  )}"
-                  alt="">
+        }
 
-                <div class="profile-card-body">
-
-                  <div class="profile-card-name">
-                    ${esc(
-                      m.profileShareId.fullName
-                    )}
-                  </div>
-
-                  <div class="profile-card-bio">
-                    ${esc(
-                      m.profileShareId.bio ||
-                      "Blogify profile"
-                    )}
-                  </div>
-
-                </div>
-              </div>
-
-              ${
-                m.text
-                  ? `<div style="margin-top:7px">
-                      ${esc(m.text)}
-                    </div>`
-                  : ""
-              }
-            `;
-
-        } else {
+        else{
 
           bubble.textContent =
             m.text || "";
+
         }
 
-        content.appendChild(bubble);
+        content.appendChild(
+          bubble
+        );
+
 
         const meta =
           document.createElement("div");
@@ -1810,38 +2061,36 @@ l<!doctype html>
           "message-meta";
 
         meta.innerHTML =
-          `
-            <span>
-              ${timeLabel(m.createdAt)}
-            </span>
+          "<span>" +
+          timeLabel(m.createdAt) +
+          "</span>" +
 
-            ${
-              m.edited && !m.deleted
-                ? `<span class="edited">
-                    · edited
-                  </span>`
-                : ""
-            }
+          (
+            m.edited &&
+            !m.deleted
+              ? '<span class="edited">· edited</span>'
+              : ""
+          ) +
 
-            ${
-              mine
-                ? `
-                  <span class="read-status">
-                    ${
-                      m.status === "read" ||
-                      m.status === "delivered"
-                        ? "✓✓"
-                        : "✓"
-                    }
-                  </span>
-                `
-                : ""
-            }
-          `;
+          (
+            mine
+              ? '<span class="read-status">' +
+                  (
+                    m.status === "read" ||
+                    m.status === "delivered"
+                      ? "✓✓"
+                      : "✓"
+                  ) +
+                "</span>"
+              : ""
+          );
 
-        content.appendChild(meta);
+        content.appendChild(
+          meta
+        );
 
-        if (m.reactions?.length) {
+
+        if(m.reactions?.length){
 
           const rl =
             document.createElement("div");
@@ -1861,41 +2110,52 @@ l<!doctype html>
               r.emoji;
 
             rl.appendChild(b);
+
           });
 
           content.appendChild(rl);
+
         }
 
-        row.appendChild(content);
+        row.appendChild(
+          content
+        );
 
-        area.appendChild(row);
+        area.appendChild(
+          row
+        );
 
         bubble.addEventListener(
           "click",
           () => {
-            if (!m.deleted)
+
+            if(!m.deleted)
               openSheet(m);
+
           }
         );
 
         return date;
+
       }
 
-      async function load() {
 
-        try {
+      async function load(){
+
+        try{
 
           const r =
             await fetch(
               "/messages/conversation",
               {
-                method: "POST",
-                headers: {
+                method:"POST",
+                headers:{
                   "Content-Type":
                     "application/json"
                 },
-                body: JSON.stringify({
-                  userId: targetUserId
+                body:JSON.stringify({
+                  userId:
+                    targetUserId
                 })
               }
             );
@@ -1903,7 +2163,10 @@ l<!doctype html>
           const d =
             await r.json();
 
-          if (!r.ok || !d.success)
+          if(
+            !r.ok ||
+            !d.success
+          )
             throw new Error(
               d.message ||
               "Unable to create conversation"
@@ -1912,7 +2175,9 @@ l<!doctype html>
           conversationId =
             d.conversationId;
 
-          setTarget(d.target);
+          setTarget(
+            d.target
+          );
 
           const h =
             await fetch(
@@ -1923,7 +2188,10 @@ l<!doctype html>
           const data =
             await h.json();
 
-          if (!h.ok || !data.success)
+          if(
+            !h.ok ||
+            !data.success
+          )
             throw new Error(
               data.message ||
               "Unable to load messages"
@@ -1932,9 +2200,13 @@ l<!doctype html>
           setTarget(
             data.conversation?.participants
               ?.find(
-                p => !sameId(p._id, myId)
+                p =>
+                  !sameId(
+                    p._id,
+                    myId
+                  )
               ) ||
-            d.target
+              d.target
           );
 
           renderMessages(
@@ -1943,12 +2215,13 @@ l<!doctype html>
 
           initSocket();
 
-        } catch (e) {
+        }
+
+        catch(e){
 
           area.innerHTML = `
             <div class="empty-state">
               <div class="empty-inner">
-
                 <strong>
                   Unable to load chat
                 </strong>
@@ -1969,25 +2242,32 @@ l<!doctype html>
           `;
 
           toast(e.message);
+
         }
+
       }
 
-      function initSocket() {
 
-        if (
+      function initSocket(){
+
+        if(
           typeof window.io !==
           "function"
-        ) {
+        ){
+
           toast(
             "Chat connection is unavailable"
           );
+
           return;
+
         }
 
         socket =
           window.io({
-            withCredentials: true
+            withCredentials:true
           });
+
 
         socket.on(
           "connect",
@@ -2004,101 +2284,117 @@ l<!doctype html>
                 conversationId
               }
             );
+
           }
         );
 
+
         socket.on(
           "connect_error",
-          () => {
+          () =>
             toast(
               "Chat connection unavailable"
-            );
-          }
+            )
         );
+
 
         socket.on(
           "user:online",
           d => {
 
-            if (
+            if(
               target &&
               sameId(
                 d.userId,
                 target._id
               )
-            ) {
+            ){
 
-              target.online = true;
+              target.online =
+                true;
 
               updateOnline();
+
             }
+
           }
         );
+
 
         socket.on(
           "user:offline",
           d => {
 
-            if (
+            if(
               target &&
               sameId(
                 d.userId,
                 target._id
               )
-            ) {
+            ){
 
-              target.online = false;
+              target.online =
+                false;
 
               updateOnline();
+
             }
+
           }
         );
+
 
         socket.on(
           "typing:start",
           d => {
 
-            if (
+            if(
               target &&
               sameId(
                 d.userId,
                 target._id
               )
-            ) {
+            ){
 
-              $("typingIndicator").innerHTML =
-                `
-                  Typing
-                  <span class="typing-dot"></span>
-                  <span class="typing-dot"></span>
-                  <span class="typing-dot"></span>
-                `;
+              $("typingIndicator")
+                .innerHTML =
+                'Typing ' +
+                '<span class="typing-dot"></span>' +
+                '<span class="typing-dot"></span>' +
+                '<span class="typing-dot"></span>';
+
             }
+
           }
         );
+
 
         socket.on(
           "typing:stop",
           d => {
 
-            if (
+            if(
               target &&
               sameId(
                 d.userId,
                 target._id
               )
-            ) {
+            ){
+
               $("typingIndicator")
                 .innerHTML = "";
+
             }
+
           }
         );
+
 
         socket.on(
           "message:new",
           m => {
 
-            if (
+            if(
               !sameId(
                 m.conversationId,
                 conversationId
@@ -2106,21 +2402,23 @@ l<!doctype html>
             )
               return;
 
+            const lastDate = "";
+
             renderMessage(
               m,
               true,
-              ""
+              lastDate
             );
 
             scrollBottom();
 
-            if (
+            if(
               !sameId(
                 m.senderId?._id ||
                 m.senderId,
                 myId
               )
-            ) {
+            ){
 
               socket.emit(
                 "message:read",
@@ -2128,16 +2426,19 @@ l<!doctype html>
                   conversationId
                 }
               );
+
             }
+
           }
         );
 
+
         socket.on(
           "message:edited",
-          m => {
-            replaceMessage(m);
-          }
+          m =>
+            replaceMessage(m)
         );
+
 
         socket.on(
           "message:unsent",
@@ -2150,7 +2451,7 @@ l<!doctype html>
                 '"]'
               );
 
-            if (r) {
+            if(r){
 
               const b =
                 r.querySelector(
@@ -2162,9 +2463,12 @@ l<!doctype html>
 
               b.textContent =
                 "Message deleted";
+
             }
+
           }
         );
+
 
         socket.on(
           "message:reactions",
@@ -2177,7 +2481,7 @@ l<!doctype html>
                 '"]'
               );
 
-            if (!r)
+            if(!r)
               return;
 
             const old =
@@ -2185,13 +2489,15 @@ l<!doctype html>
                 ".reaction-list"
               );
 
-            if (old)
+            if(old)
               old.remove();
 
-            if (d.reactions?.length) {
+            if(d.reactions?.length){
 
               const rl =
-                document.createElement("div");
+                document.createElement(
+                  "div"
+                );
 
               rl.className =
                 "reaction-list";
@@ -2199,7 +2505,9 @@ l<!doctype html>
               d.reactions.forEach(x => {
 
                 const b =
-                  document.createElement("span");
+                  document.createElement(
+                    "span"
+                  );
 
                 b.className =
                   "reaction-badge";
@@ -2208,61 +2516,69 @@ l<!doctype html>
                   x.emoji;
 
                 rl.appendChild(b);
+
               });
 
               r.querySelector(
                 ".message-content"
               ).appendChild(rl);
+
             }
+
           }
         );
+
 
         socket.on(
           "message:read",
           d => {
 
-            if (
+            if(
               sameId(
                 d.conversationId,
                 conversationId
               )
-            ) {
+            ){
 
               area
                 .querySelectorAll(
                   ".read-status"
                 )
                 .forEach(
-                  x => x.textContent = "✓✓"
+                  x =>
+                    x.textContent =
+                      "✓✓"
                 );
+
             }
+
           }
         );
+
 
         socket.on(
           "message:error",
-          d => {
-
+          d =>
             toast(
               d.message ||
               "Unable to send message"
-            );
-          }
+            )
         );
+
 
         socket.on(
           "message:action:error",
-          d => {
-
+          d =>
             toast(
               d.message ||
               "Action failed"
-            );
-          }
+            )
         );
+
       }
 
-      function replaceMessage(m) {
+
+      function replaceMessage(m){
 
         const old =
           area.querySelector(
@@ -2271,7 +2587,7 @@ l<!doctype html>
             '"]'
           );
 
-        if (!old)
+        if(!old)
           return;
 
         old.remove();
@@ -2281,9 +2597,11 @@ l<!doctype html>
           true,
           ""
         );
+
       }
 
-      async function upload(file) {
+
+      async function upload(file){
 
         const fd =
           new FormData();
@@ -2297,78 +2615,101 @@ l<!doctype html>
           await fetch(
             "/messages/upload",
             {
-              method: "POST",
-              body: fd
+              method:"POST",
+              body:fd
             }
           );
 
         const d =
           await r.json();
 
-        if (!r.ok || !d.success)
+        if(
+          !r.ok ||
+          !d.success
+        )
           throw new Error(
             d.message ||
             "Upload failed"
           );
 
         return d;
+
       }
+
 
       async function sendMessage(
         text = "",
         audioData = null
-      ) {
+      ){
 
-        if (
+        if(
           !socket ||
           !socket.connected
-        ) {
+        ){
+
           toast(
             "Chat connection is unavailable"
           );
+
           return;
+
         }
 
-        if (!conversationId)
+        if(!conversationId)
           return;
 
-        try {
+        try{
 
           let url = "";
           let type = "";
 
-          if (audioData) {
+          if(audioData){
 
             const d =
-              await upload(audioData);
+              await upload(
+                audioData
+              );
 
-            url = d.mediaUrl;
-            type = "audio";
+            url =
+              d.mediaUrl;
 
-          } else if (mediaFile) {
+            type =
+              "audio";
+
+          }
+
+          else if(mediaFile){
 
             const d =
-              await upload(mediaFile);
+              await upload(
+                mediaFile
+              );
 
-            url = d.mediaUrl;
-            type = d.mediaType;
+            url =
+              d.mediaUrl;
+
+            type =
+              d.mediaType;
 
             clearAttachment();
+
           }
+
 
           socket.emit(
             "message:send",
             {
               conversationId,
-              text: text.trim(),
-              mediaUrl: url,
-              mediaType: type,
+              text:text.trim(),
+              mediaUrl:url,
+              mediaType:type,
               replyTo:
                 replyTo
                   ? replyTo._id
                   : null
             }
           );
+
 
           replyTo = null;
 
@@ -2382,13 +2723,22 @@ l<!doctype html>
 
           updateSendState();
 
-        } catch (e) {
+          scrollBottom();
 
-          toast(e.message);
         }
+
+        catch(e){
+
+          toast(
+            e.message
+          );
+
+        }
+
       }
 
-      function updateSendState() {
+
+      function updateSendState(){
 
         const hasText =
           !!input.value.trim();
@@ -2402,9 +2752,11 @@ l<!doctype html>
           hasText || mediaFile
             ? "none"
             : "grid";
+
       }
 
-      function resizeInput() {
+
+      function resizeInput(){
 
         input.style.height =
           "auto";
@@ -2414,9 +2766,11 @@ l<!doctype html>
             input.scrollHeight,
             110
           ) + "px";
+
       }
 
-      function clearAttachment() {
+
+      function clearAttachment(){
 
         mediaFile = null;
 
@@ -2434,9 +2788,11 @@ l<!doctype html>
           .value = "";
 
         updateSendState();
+
       }
 
-      function openSheet(m) {
+
+      function openSheet(m){
 
         selectedMessage = m;
 
@@ -2466,11 +2822,14 @@ l<!doctype html>
           )
             ? "flex"
             : "none";
+
       }
 
-      function closeSheet() {
 
-        selectedMessage = null;
+      function closeSheet(){
+
+        selectedMessage =
+          null;
 
         $("overlay")
           .classList
@@ -2479,11 +2838,15 @@ l<!doctype html>
         $("actionSheet")
           .classList
           .remove("open");
+
       }
 
-      function resetRecordingUI() {
 
-        clearInterval(recordTimer);
+      function resetRecordingUI(){
+
+        clearInterval(
+          recordTimer
+        );
 
         recordTimer = null;
 
@@ -2500,22 +2863,26 @@ l<!doctype html>
           "none";
 
         recordTitle.innerHTML =
-          '<i class="fas fa-microphone"></i> Recording voice message';
+          '<i class="fas fa-microphone"></i> ' +
+          "Recording voice message";
 
         recordBar.classList
           .remove("show");
 
         recordTime.textContent =
           "0:00";
+
       }
 
-      function showRecordedVoice() {
+
+      function showRecordedVoice(){
 
         recordBar.classList
           .add("show");
 
         recordTitle.innerHTML =
-          '<i class="fas fa-check-circle"></i> Voice message ready';
+          '<i class="fas fa-check-circle"></i> ' +
+          "Voice message ready";
 
         stopRecord.style.display =
           "none";
@@ -2526,36 +2893,40 @@ l<!doctype html>
         recordTime.textContent =
           recordedVoice?.duration ||
           "0:00";
+
       }
 
-      async function startRecording() {
 
-        if (
+      async function startRecording(){
+
+        if(
           recording ||
           recordedVoice
         )
           return;
 
-        if (
+        if(
           !navigator.mediaDevices?.getUserMedia ||
           typeof MediaRecorder ===
-          "undefined"
-        ) {
+            "undefined"
+        ){
 
           toast(
             "Voice recording is not supported on this browser"
           );
 
           return;
+
         }
 
-        try {
+        try{
 
           const stream =
             await navigator.mediaDevices
               .getUserMedia({
-                audio: true
+                audio:true
               });
+
 
           const preferred = [
             "audio/webm;codecs=opus",
@@ -2566,6 +2937,7 @@ l<!doctype html>
               MediaRecorder
                 .isTypeSupported(x)
           );
+
 
           recording =
             preferred
@@ -2580,27 +2952,30 @@ l<!doctype html>
                   stream
                 );
 
+
           recordChunks = [];
 
           recordStarted =
             Date.now();
 
+
           recording.ondataavailable =
             e => {
 
-              if (e.data.size)
+              if(e.data.size)
                 recordChunks.push(
                   e.data
                 );
+
             };
 
-          recording.onerror =
-            () => {
 
+          recording.onerror =
+            () =>
               toast(
                 "Voice recording failed"
               );
-            };
+
 
           recording.onstop =
             () => {
@@ -2608,14 +2983,16 @@ l<!doctype html>
               stream
                 .getTracks()
                 .forEach(
-                  t => t.stop()
+                  t =>
+                    t.stop()
                 );
 
               clearInterval(
                 recordTimer
               );
 
-              recordTimer = null;
+              recordTimer =
+                null;
 
               const type =
                 recording?.mimeType ||
@@ -2633,9 +3010,10 @@ l<!doctype html>
                 Math.max(
                   1,
                   Math.floor(
-                    (Date.now() -
-                      recordStarted) /
-                    1000
+                    (
+                      Date.now() -
+                      recordStarted
+                    ) / 1000
                   )
                 );
 
@@ -2660,8 +3038,11 @@ l<!doctype html>
                     }
                   : null;
 
-              recording = null;
-              recordStarted = 0;
+              recording =
+                null;
+
+              recordStarted =
+                0;
 
               voice.classList
                 .remove("recording");
@@ -2669,11 +3050,13 @@ l<!doctype html>
               voice.innerHTML =
                 '<i class="fas fa-microphone"></i>';
 
-              if (recordedVoice)
+              if(recordedVoice)
                 showRecordedVoice();
               else
                 resetRecordingUI();
+
             };
+
 
           recording.start();
 
@@ -2681,7 +3064,8 @@ l<!doctype html>
             .add("show");
 
           recordTitle.innerHTML =
-            '<i class="fas fa-microphone"></i> Recording voice message';
+            '<i class="fas fa-microphone"></i> ' +
+            "Recording voice message";
 
           voice.classList
             .add("recording");
@@ -2695,9 +3079,10 @@ l<!doctype html>
 
                 const s =
                   Math.floor(
-                    (Date.now() -
-                      recordStarted) /
-                    1000
+                    (
+                      Date.now() -
+                      recordStarted
+                    ) / 1000
                   );
 
                 recordTime.textContent =
@@ -2711,58 +3096,81 @@ l<!doctype html>
                     2,
                     "0"
                   );
+
               },
               250
             );
 
-        } catch (e) {
+        }
+
+        catch(e){
 
           toast(
             "Microphone permission is required for voice messages"
           );
+
         }
+
       }
 
-      function stopRecording() {
 
-        if (
+      function stopRecording(){
+
+        if(
           recording &&
           recording.state !==
-          "inactive"
-        ) {
+            "inactive"
+        )
           recording.stop();
-        }
+
       }
 
-      function cancelVoice() {
 
-        if (recording) {
+      function cancelVoice(){
 
-          recordedVoice = null;
-          recordStarted = 0;
+        if(recording){
 
-          try {
+          recordedVoice =
+            null;
+
+          recordStarted =
+            0;
+
+          try{
+
             recording.stop();
-          } catch (e) {
-            resetRecordingUI();
+
           }
 
-        } else {
+          catch(e){
 
-          recordedVoice = null;
+            resetRecordingUI();
+
+          }
+
+        }
+
+        else{
+
+          recordedVoice =
+            null;
 
           resetRecordingUI();
+
         }
+
       }
 
-      async function sendRecordedVoice() {
 
-        if (!recordedVoice)
+      async function sendRecordedVoice(){
+
+        if(!recordedVoice)
           return;
 
-        sendRecord.disabled = true;
+        sendRecord.disabled =
+          true;
 
-        try {
+        try{
 
           const file =
             new File(
@@ -2782,21 +3190,25 @@ l<!doctype html>
             file
           );
 
-          recordedVoice = null;
+          recordedVoice =
+            null;
 
           resetRecordingUI();
 
-        } finally {
+        }
+
+        finally{
 
           sendRecord.disabled =
             false;
+
         }
+
       }
 
 
-      /*
-       * Composer events
-       */
+      /* FORM */
+
       $("composer")
         .addEventListener(
           "submit",
@@ -2804,29 +3216,33 @@ l<!doctype html>
 
             e.preventDefault();
 
-            if (
+            if(
               input.value.trim() ||
               mediaFile
-            ) {
+            )
               sendMessage(
                 input.value
               );
-            }
+
           }
         );
+
 
       input.addEventListener(
         "input",
         () => {
 
           resizeInput();
+
           updateSendState();
 
-          if (
+          keepComposerVisible();
+
+          if(
             socket &&
             socket.connected &&
             conversationId
-          ) {
+          ){
 
             socket.emit(
               "typing:start",
@@ -2850,56 +3266,71 @@ l<!doctype html>
                   ),
                 900
               );
+
           }
+
         }
       );
+
+
+      input.addEventListener(
+        "focus",
+        () => {
+
+          keepComposerVisible();
+
+        }
+      );
+
 
       input.addEventListener(
         "keydown",
         e => {
 
-          if (
+          if(
             e.key === "Enter" &&
             !e.shiftKey
-          ) {
+          ){
 
             e.preventDefault();
 
-            if (
+            if(
               input.value.trim() ||
               mediaFile
-            ) {
+            )
               send.click();
-            }
+
           }
+
         }
       );
 
 
-      /*
-       * Voice
-       */
       voice.addEventListener(
         "click",
         () => {
 
-          if (recording)
+          if(recording)
             stopRecording();
 
-          else if (!recordedVoice)
+          else if(!recordedVoice)
             startRecording();
+
         }
       );
+
 
       stopRecord.addEventListener(
         "click",
         stopRecording
       );
 
+
       cancelRecord.addEventListener(
         "click",
         cancelVoice
       );
+
 
       sendRecord.addEventListener(
         "click",
@@ -2907,9 +3338,6 @@ l<!doctype html>
       );
 
 
-      /*
-       * Attachment
-       */
       $("attachmentButton")
         .addEventListener(
           "click",
@@ -2917,31 +3345,35 @@ l<!doctype html>
             $("mediaInput").click()
         );
 
+
       $("mediaInput")
         .addEventListener(
           "change",
           () => {
 
             const f =
-              $("mediaInput").files[0];
+              $("mediaInput")
+                .files[0];
 
-            if (!f)
+            if(!f)
               return;
 
-            if (
+            if(
               f.size >
               60 * 1024 * 1024
-            ) {
+            ){
 
-              $("mediaInput").value =
-                "";
+              $("mediaInput")
+                .value = "";
 
               return toast(
                 "File is too large"
               );
+
             }
 
-            mediaFile = f;
+            mediaFile =
+              f;
 
             $("attachmentPreview")
               .classList
@@ -2951,58 +3383,53 @@ l<!doctype html>
               .textContent =
               f.name;
 
+
             const objectUrl =
               URL.createObjectURL(f);
 
-            if (
+            if(
               f.type.startsWith(
                 "image/"
               )
-            ) {
+            ){
 
               $("attachmentThumb")
                 .innerHTML =
-                `
-                  <img
-                    src="${objectUrl}"
-                    alt="">
-                `;
+                '<img src="' +
+                objectUrl +
+                '" alt="">';
 
-            } else if (
+            }
+
+            else if(
               f.type.startsWith(
                 "video/"
               )
-            ) {
+            ){
 
               $("attachmentThumb")
                 .innerHTML =
-                `
-                  <video
-                    muted
-                    src="${objectUrl}">
-                  </video>
-                `;
+                '<video muted src="' +
+                objectUrl +
+                '"></video>';
 
-            } else {
+            }
+
+            else{
 
               $("attachmentThumb")
                 .innerHTML =
-                `
-                  <i
-                    class="fas fa-file"
-                    style="
-                      display:grid;
-                      place-items:center;
-                      height:100%;
-                      color:#fff;
-                    ">
-                  </i>
-                `;
+                '<i class="fas fa-file" ' +
+                'style="display:grid;place-items:center;' +
+                'height:100%;color:#fff"></i>';
+
             }
 
             updateSendState();
+
           }
         );
+
 
       $("removeAttachment")
         .addEventListener(
@@ -3011,24 +3438,16 @@ l<!doctype html>
         );
 
 
-      /*
-       * Navigation
-       */
       $("backButton")
         .addEventListener(
           "click",
-          () => {
-
-            if (
-              history.length > 1
-            ) {
-              history.back();
-            } else {
-              location.href =
-                "/messages/chatlog";
-            }
-          }
+          () =>
+            history.length > 1
+              ? history.back()
+              : location.href =
+                  "/messages/chatlog"
         );
+
 
       $("menuButton")
         .addEventListener(
@@ -3040,30 +3459,31 @@ l<!doctype html>
             $("userMenu")
               .classList
               .toggle("open");
+
           }
         );
+
 
       document.addEventListener(
         "click",
         e => {
 
-          if (
+          if(
             !e.target.closest(
               ".header-actions"
             )
-          ) {
+          ){
 
             $("userMenu")
               .classList
               .remove("open");
+
           }
+
         }
       );
 
 
-      /*
-       * Mute
-       */
       $("muteMenu")
         .addEventListener(
           "click",
@@ -3094,44 +3514,41 @@ l<!doctype html>
                 ? "Notifications unmuted"
                 : "Notifications muted"
             );
+
           }
         );
 
 
-      /*
-       * Block
-       */
       $("blockMenu")
         .addEventListener(
           "click",
           async () => {
 
-            if (!targetUserId)
+            if(!targetUserId)
               return;
 
-            try {
+            try{
 
               const r =
                 await fetch(
                   "/messages/block/" +
                   targetUserId,
                   {
-                    method: "POST"
+                    method:"POST"
                   }
                 );
 
               const d =
                 await r.json();
 
-              if (
+              if(
                 !r.ok ||
                 !d.success
-              ) {
+              )
                 throw new Error(
                   d.message ||
                   "Unable to block"
                 );
-              }
 
               toast(
                 "User blocked"
@@ -3144,30 +3561,33 @@ l<!doctype html>
                 500
               );
 
-            } catch (e) {
+            }
+
+            catch(e){
 
               toast(
                 e.message
               );
+
             }
+
           }
         );
 
 
-      /*
-       * Message action sheet
-       */
       $("overlay")
         .addEventListener(
           "click",
           closeSheet
         );
 
+
       $("closeSheet")
         .addEventListener(
           "click",
           closeSheet
         );
+
 
       document
         .querySelectorAll(
@@ -3179,10 +3599,10 @@ l<!doctype html>
               "click",
               () => {
 
-                if (
+                if(
                   selectedMessage &&
                   socket
-                ) {
+                ){
 
                   socket.emit(
                     "message:react",
@@ -3196,21 +3616,20 @@ l<!doctype html>
                   );
 
                   closeSheet();
+
                 }
+
               }
             )
         );
 
 
-      /*
-       * Reply
-       */
       $("replyAction")
         .addEventListener(
           "click",
           () => {
 
-            if (selectedMessage) {
+            if(selectedMessage){
 
               replyTo =
                 selectedMessage;
@@ -3225,26 +3644,27 @@ l<!doctype html>
                 .add("show");
 
               input.focus();
+
+              keepComposerVisible();
+
             }
 
             closeSheet();
+
           }
         );
 
 
-      /*
-       * Copy
-       */
       $("copyAction")
         .addEventListener(
           "click",
           async () => {
 
-            if (
+            if(
               selectedMessage?.text
-            ) {
+            ){
 
-              try {
+              try{
 
                 await navigator
                   .clipboard
@@ -3252,93 +3672,98 @@ l<!doctype html>
                     selectedMessage.text
                   );
 
-                toast(
-                  "Copied"
-                );
+                toast("Copied");
 
-              } catch (e) {
+              }
+
+              catch(e){
 
                 toast(
                   "Unable to copy"
                 );
+
               }
+
             }
 
             closeSheet();
+
           }
         );
 
 
-      /*
-       * Edit
-       */
       $("editAction")
         .addEventListener(
           "click",
           () => {
 
-            if (!selectedMessage)
-              return;
+            if(selectedMessage){
 
-            input.value =
-              selectedMessage.text ||
-              "";
+              input.value =
+                selectedMessage.text ||
+                "";
 
-            input.focus();
+              input.focus();
 
-            resizeInput();
+              resizeInput();
 
-            const oldSubmit =
-              $("composer").onsubmit;
-
-            $("composer").onsubmit =
-              e => {
-
-                e.preventDefault();
-
-                if (
-                  socket &&
-                  selectedMessage
-                ) {
-
-                  socket.emit(
-                    "message:edit",
-                    {
-                      conversationId,
-                      messageId:
-                        selectedMessage._id,
-                      text:
-                        input.value
-                    }
-                  );
-                }
-
+              const oldSubmit =
                 $("composer")
-                  .onsubmit =
-                  oldSubmit;
+                  .onsubmit;
 
-                input.value = "";
+              $("composer")
+                .onsubmit =
+                e => {
 
-                updateSendState();
+                  e.preventDefault();
 
-                closeSheet();
-              };
+                  if(
+                    socket &&
+                    selectedMessage
+                  ){
+
+                    socket.emit(
+                      "message:edit",
+                      {
+                        conversationId,
+                        messageId:
+                          selectedMessage._id,
+                        text:
+                          input.value
+                      }
+                    );
+
+                  }
+
+                  $("composer")
+                    .onsubmit =
+                    oldSubmit;
+
+                  input.value = "";
+
+                  updateSendState();
+
+                  closeSheet();
+
+                };
+
+              keepComposerVisible();
+
+            }
+
           }
         );
 
 
-      /*
-       * Unsend
-       */
       $("unsendAction")
         .addEventListener(
           "click",
           () => {
 
-            if (
+            if(
               selectedMessage &&
               socket
-            ) {
+            ){
 
               socket.emit(
                 "message:unsend",
@@ -3348,16 +3773,15 @@ l<!doctype html>
                     selectedMessage._id
                 }
               );
+
             }
 
             closeSheet();
+
           }
         );
 
 
-      /*
-       * Cancel reply
-       */
       $("cancelReply")
         .addEventListener(
           "click",
@@ -3368,32 +3792,84 @@ l<!doctype html>
             $("replyBar")
               .classList
               .remove("show");
+
           }
         );
 
 
-      /*
-       * Cleanup
-       */
       window.addEventListener(
         "beforeunload",
         () => {
 
-          if (recording) {
+          if(recording){
 
-            try {
+            try{
               recording.stop();
-            } catch (e) {}
+            }
+            catch(e){}
+
           }
 
           recordedVoice = null;
+
         }
       );
 
 
       /*
-       * Start
-       */
+        Android keyboard handling.
+        When keyboard opens, resize the chat area and
+        keep the composer accessible.
+      */
+
+      if(window.visualViewport){
+
+        let lastHeight =
+          window.visualViewport.height;
+
+        window.visualViewport
+          .addEventListener(
+            "resize",
+            () => {
+
+              const current =
+                window.visualViewport
+                  .height;
+
+              const keyboardOpened =
+                current <
+                lastHeight - 120;
+
+              updateViewport();
+
+              if(keyboardOpened){
+
+                setTimeout(
+                  () => {
+
+                    scrollBottom();
+
+                    input.scrollIntoView({
+                      block:"nearest"
+                    });
+
+                  },
+                  100
+                );
+
+              }
+
+              lastHeight =
+                current;
+
+            }
+          );
+
+      }
+
+
+      /* START */
+
       load();
 
     })();
