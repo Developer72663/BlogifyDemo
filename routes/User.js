@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
-const { sendOTPEmail, sendResetPasswordEmail } = require('../services/email');
+const { sendOTPEmail } = require('../services/email');
+const { sendResetPasswordEmail } = require('../services/resetEmail');
 const { creatTokenForUser } = require('../services/authentication');
 const crypto = require('crypto');
 const { loginLimiter, otpLimiter } = require('../middlewares/rateLimiting');
 const { validateEmail } = require('../middlewares/validation');
 
-// In-memory stores (for production, use Redis or database)
+// OTP remains in-memory for signup. Password reset tokens are stateless so they
+// survive Vercel serverless instance changes.
 const otpStore = new Map();
-const resetTokens = new Map();
 
-// Development-only email test endpoint. Never expose it in production.
 router.post('/test-email', async (req, res) => {
     if (process.env.NODE_ENV === 'production' || !process.env.TEST_EMAIL_SECRET || req.get('x-test-email-secret') !== process.env.TEST_EMAIL_SECRET) {
         return res.status(404).json({ success: false, message: 'Not found' });
@@ -115,20 +115,35 @@ router.post('/forgot-password', loginLimiter, async (req, res) => {
         const normalizedEmail = email.toLowerCase().trim();
         const user = await User.findOne({ email: normalizedEmail });
         if (!user) return res.status(200).json({ success: true, message: 'If this email exists, a password reset link has been sent' });
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        resetTokens.set(resetToken, { email: normalizedEmail, expires: Date.now() + 30 * 60 * 1000 });
+
+        // Encode the email and expiry into a signed token so a reset request does
+        // not depend on the memory of a particular Vercel function instance.
+        const expiresAt = Date.now() + 30 * 60 * 1000;
+        const secret = process.env.RESET_PASSWORD_SECRET || process.env.JWT_SECRET;
+        if (!secret) {
+            console.error('Password reset is not configured: RESET_PASSWORD_SECRET/JWT_SECRET is missing');
+            return res.status(500).json({ success: false, message: 'Password reset is temporarily unavailable. Please try again later.' });
+        }
+
+        const payload = Buffer.from(JSON.stringify({ email: normalizedEmail, exp: expiresAt })).toString('base64url');
+        const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
+        const resetToken = `${payload}.${signature}`;
+
+        const configuredBase = process.env.APP_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.RENDER_EXTERNAL_URL;
         const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
         const host = req.headers['x-forwarded-host'] || req.headers.host;
-        const configuredBase = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL;
-        const baseUrl = configuredBase ? configuredBase.replace(/\/$/, '') : `${protocol}://${host}`;
+        const baseUrl = configuredBase
+            ? (/^https?:\/\//i.test(configuredBase) ? configuredBase.replace(/\/$/, '') : `https://${configuredBase.replace(/\/$/, '')}`)
+            : `${protocol}://${host}`;
         const resetLink = `${baseUrl}/user/reset-password?token=${encodeURIComponent(resetToken)}`;
+
         try {
             await sendResetPasswordEmail(normalizedEmail, resetLink);
         } catch (emailError) {
-            resetTokens.delete(resetToken);
             console.error('Reset email failed:', emailError.message);
             return res.status(500).json({ success: false, message: 'Unable to send reset email. Please try again.' });
         }
+
         res.json({ success: true, message: 'If this email exists, a password reset link has been sent' });
     } catch (error) {
         console.error('Forgot Password Error:', error.message);
@@ -136,34 +151,43 @@ router.post('/forgot-password', loginLimiter, async (req, res) => {
     }
 });
 
-router.get('/reset-password', (req, res) => {
-    const { token } = req.query;
-    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return res.status(400).render('404', { message: 'Invalid reset link' });
-    const stored = resetTokens.get(token);
-    if (!stored) return res.status(400).render('404', { message: 'Reset link not found. Please request a new one.' });
-    if (stored.expires < Date.now()) {
-        resetTokens.delete(token);
-        return res.status(400).render('404', { message: 'Reset link has expired. Please request a new one.' });
+function verifyResetToken(token) {
+    const secret = process.env.RESET_PASSWORD_SECRET || process.env.JWT_SECRET;
+    if (!secret || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const [payload, signature] = parts;
+    const expected = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    try {
+        const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+        if (!data.email || !Number.isFinite(data.exp) || data.exp < Date.now()) return null;
+        return data;
+    } catch (_) {
+        return null;
     }
-    res.render('reset-password', { token, error: null });
+}
+
+router.get('/reset-password', (req, res) => {
+    const data = verifyResetToken(req.query.token);
+    if (!data) return res.status(400).render('404', { message: 'Reset link is invalid or expired. Please request a new one.' });
+    res.render('reset-password', { token: req.query.token, error: null });
 });
 
 router.post('/reset-password', loginLimiter, async (req, res) => {
     const { token, newPassword, confirmPassword } = req.body;
-    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token) || !newPassword || !confirmPassword) return res.status(400).json({ success: false, message: 'Invalid reset request' });
+    if (!token || !newPassword || !confirmPassword) return res.status(400).json({ success: false, message: 'Invalid reset request' });
     if (newPassword !== confirmPassword) return res.status(400).json({ success: false, message: 'Passwords do not match' });
     if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
     try {
-        const stored = resetTokens.get(token);
-        if (!stored || stored.expires < Date.now()) {
-            resetTokens.delete(token);
-            return res.status(400).json({ success: false, message: 'Reset link is invalid or expired' });
-        }
-        const user = await User.findOne({ email: stored.email });
+        const data = verifyResetToken(token);
+        if (!data) return res.status(400).json({ success: false, message: 'Reset link is invalid or expired' });
+        const user = await User.findOne({ email: data.email });
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
         user.password = newPassword;
         await user.save();
-        resetTokens.delete(token);
         res.json({ success: true, message: 'Password reset successfully. Redirecting to login...', redirect: '/user/signin' });
     } catch (error) {
         console.error('Reset Password Error:', error.message);
@@ -174,7 +198,6 @@ router.post('/reset-password', loginLimiter, async (req, res) => {
 setInterval(() => {
     const now = Date.now();
     for (const [email, data] of otpStore.entries()) if (data.expires < now) otpStore.delete(email);
-    for (const [token, data] of resetTokens.entries()) if (data.expires < now) resetTokens.delete(token);
 }, 5 * 60 * 1000);
 
 module.exports = router;
