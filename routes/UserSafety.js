@@ -5,6 +5,9 @@ const User = require('../models/user');
 const Report = require('../models/Report');
 const UserSafetyAction = require('../models/UserSafetyAction');
 const Conversation = require('../models/Conversation');
+const Blog = require('../models/Blog');
+const Comment = require('../models/Comment');
+const Notification = require('../models/Notification');
 
 function auth(req, res, next) {
   if (!req.user) return res.status(401).json({ success: false, message: 'Authentication required' });
@@ -111,6 +114,24 @@ router.get('/status/:userId', auth, async (req,res) => {
     ]);
     res.json({ success:true, blocked:!!me?.blockedUsers?.some(id=>id.toString()===req.params.userId), restricted:!!restrict, hidden:!!hidden });
   } catch(e) { res.status(500).json({ success:false, message:'Unable to load safety status' }); }
+});
+
+router.get('/account/export', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const [user, blogs, comments, notifications, reports] = await Promise.all([
+      User.findById(userId).select('-password -salt -__v').lean(),
+      Blog.find({ createdBy: userId }).select('-__v').lean(),
+      Comment.find({ createdBy: userId }).select('-__v').lean(),
+      Notification.find({ recipient: userId }).select('-__v').lean(),
+      Report.find({ reporter: userId }).select('-__v').lean()
+    ]);
+    if (!user) return res.status(404).json({ success:false, message:'User not found' });
+    res.json({ success:true, exportedAt:new Date().toISOString(), data:{ user, blogs, comments, notifications, reports } });
+  } catch (e) {
+    console.error('Account export error', e);
+    res.status(500).json({ success:false, message:'Unable to export account data' });
+  }
 });
 
 module.exports = router;
