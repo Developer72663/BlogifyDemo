@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "/socket.io/socket.io.js",
+      "dest": "https://blogifydemo.onrender.com/socket.io/socket.io.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "app.js"
     }
