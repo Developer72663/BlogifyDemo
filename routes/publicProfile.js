@@ -4,71 +4,19 @@ const mongoose = require("mongoose");
 const Blog = require("../models/Blog");
 const User = require("../models/user");
 const FollowRequest = require("../models/FollowRequest");
+const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
+const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
 
-// Backward-compatible unblock endpoint for the settings page.
-// The settings UI previously called /profile/settings/unblock/:userId,
-// while the authenticated Profile router is mounted at /user/profile.
-// Keep this alias protected so an unauthenticated visitor cannot modify blocks.
-router.patch("/settings/unblock/:userId", async (req,res)=>{
-    try{
-        if(!req.user) return res.status(401).json({success:false,message:"Authentication required"});
-        const targetId=String(req.params.userId||"");
-        if(!mongoose.Types.ObjectId.isValid(targetId)) return res.status(400).json({success:false,message:"Invalid user"});
-        if(String(req.user._id)===targetId) return res.status(400).json({success:false,message:"Invalid user"});
-        const user=await User.findById(req.user._id).select("blockedUsers");
-        if(!user) return res.status(404).json({success:false,message:"User not found"});
-        const before=user.blockedUsers?.length||0;
-        user.blockedUsers=(user.blockedUsers||[]).filter(id=>String(id)!==targetId);
-        if(before!==user.blockedUsers.length) await user.save();
-        return res.json({success:true,message:before!==user.blockedUsers.length?"User unblocked":"User was already unblocked",removed:before!==user.blockedUsers.length});
-    }catch(error){
-        console.error("Public profile unblock error:",error);
-        return res.status(500).json({success:false,message:"Unable to unblock user"});
-    }
-});
+// Compatibility aliases for the settings page. Canonical settings endpoints live under /user/profile.
+router.patch("/settings/unblock/:userId", restrictToLoggedInUserOnly, async (req,res)=>{try{const id=String(req.params.userId||"");if(!mongoose.Types.ObjectId.isValid(id)||id===String(req.user._id))return res.status(400).json({success:false,message:"Invalid user"});const u=await User.findById(req.user._id);if(!u)return res.status(404).json({success:false,message:"User not found"});const before=u.blockedUsers?.length||0;u.blockedUsers=(u.blockedUsers||[]).filter(x=>String(x)!==id);if(before!==u.blockedUsers.length)await u.save();res.json({success:true,message:before!==u.blockedUsers.length?"User unblocked":"User was already unblocked",removed:before!==u.blockedUsers.length});}catch(e){console.error(e);res.status(500).json({success:false,message:"Unable to unblock user"});}});
+router.put("/update",restrictToLoggedInUserOnly,async(req,res)=>{try{const {fullName,bio,website,location}=req.body,u=await User.findById(req.user._id);if(!u)return res.status(404).json({success:false,message:"User not found"});if(typeof fullName==="string"&&fullName.trim())u.fullName=fullName.trim();if(typeof bio==="string")u.bio=bio.trim().slice(0,500);if(typeof website==="string")u.website=website.trim();if(typeof location==="string")u.location=location.trim().slice(0,120);await u.save();res.json({success:true,user:u});}catch(e){res.status(500).json({success:false,message:e.message||"Failed to update profile"});}});
+router.post("/upload-image",restrictToLoggedInUserOnly,(req,res)=>{cloudinaryUpload.single("profileImage")(req,res,async err=>{if(err)return res.status(400).json({success:false,message:err.message||"Upload failed"});try{if(!req.file?.buffer?.length)return res.status(400).json({success:false,message:"Please select a profile photo"});const r=await cloudinaryUpload.uploadBuffer(req.file.buffer,{folder:"blogify/profile",resource_type:"image",transformation:[{width:800,height:800,crop:"limit"}]}),u=await User.findById(req.user._id);if(!u)return res.status(404).json({success:false,message:"User not found"});u.profileImageURL=r.secure_url;await u.save();res.json({success:true,imageURL:u.profileImageURL});}catch(e){console.error(e);res.status(500).json({success:false,message:e.message||"Unable to upload profile photo"});}});});
+router.patch("/settings/privacy",restrictToLoggedInUserOnly,async(req,res)=>{try{const isPrivate=req.body.isPrivate===true||req.body.isPrivate==="true",u=await User.findByIdAndUpdate(req.user._id,{isPrivate},{new:true});res.json({success:true,isPrivate:u.isPrivate});}catch(e){res.status(500).json({success:false,message:"Unable to save privacy setting"});}});
+router.patch("/settings/notifications",restrictToLoggedInUserOnly,async(req,res)=>{try{const allowed=["emailOnComment","emailOnNewFollower","emailOnFollowRequest","emailOnRequestAccepted","emailOnLike","emailOnMention","emailDigest","pushEnabled","pushOnMessage","pushOnComment","pushOnReply","pushOnLike","pushOnFollow","pushOnFollowRequest","pushOnMention","pushOnBlogPost"],set={};for(const k of allowed)if(typeof req.body[k]==="boolean")set[`notificationSettings.${k}`]=req.body[k];if(!Object.keys(set).length)return res.status(400).json({success:false,message:"No notification setting supplied"});const u=await User.findByIdAndUpdate(req.user._id,{$set:set},{new:true});res.json({success:true,notificationSettings:u.notificationSettings});}catch(e){res.status(500).json({success:false,message:"Unable to save notification settings"});}});
+router.patch("/settings/theme",restrictToLoggedInUserOnly,async(req,res)=>{try{const theme=String(req.body.theme||"").toLowerCase();if(!["light","dark","system"].includes(theme))return res.status(400).json({success:false,message:"Invalid theme"});const u=await User.findByIdAndUpdate(req.user._id,{theme},{new:true});res.json({success:true,theme:u.theme});}catch(e){res.status(500).json({success:false,message:"Unable to save theme"});}});
+router.patch("/settings/general",restrictToLoggedInUserOnly,async(req,res)=>{try{const allowed=["blogSettings","commentSettings","interfaceSettings"],set={};for(const g of allowed){if(!req.body[g]||typeof req.body[g]!=="object")continue;for(const [k,v] of Object.entries(req.body[g])){if(g==="blogSettings"&&k==="defaultTags")set[`${g}.${k}`]=Array.isArray(v)?v.map(String).map(x=>x.trim()).filter(Boolean).slice(0,20):[];else if(g==="blogSettings"&&k==="defaultVisibility")set[`${g}.${k}`]=["public","followers"].includes(v)?v:"public";else if(typeof v==="boolean"||typeof v==="string")set[`${g}.${k}`]=v;}}if(!Object.keys(set).length)return res.status(400).json({success:false,message:"No settings supplied"});const u=await User.findByIdAndUpdate(req.user._id,{$set:set},{new:true});res.json({success:true,settings:{blogSettings:u.blogSettings,commentSettings:u.commentSettings,interfaceSettings:u.interfaceSettings}});}catch(e){res.status(500).json({success:false,message:"Unable to save settings"});}});
+router.post("/change-password",restrictToLoggedInUserOnly,async(req,res)=>{try{const {currentPassword,newPassword}=req.body;if(!currentPassword||!newPassword)return res.status(400).json({success:false,message:"Current and new passwords are required"});if(newPassword.length<6)return res.status(400).json({success:false,message:"New password must be at least 6 characters"});const u=await User.findById(req.user._id);if(u.googleId&&!u.password)return res.status(400).json({success:false,message:"This account uses Google Sign-In. Cannot change password."});const {createHmac}=require("crypto"),hash=createHmac("sha256",u.salt).update(currentPassword).digest("hex");if(u.password!==hash)return res.status(401).json({success:false,message:"Current password is incorrect"});u.password=newPassword;await u.save();res.json({success:true,message:"Password changed successfully"});}catch(e){res.status(500).json({success:false,message:"Failed to change password"});}});
+router.delete("/delete-account",restrictToLoggedInUserOnly,async(req,res)=>{try{await Blog.deleteMany({createdBy:req.user._id});await User.findByIdAndDelete(req.user._id);res.clearCookie("token");res.json({success:true,message:"Account deleted successfully"});}catch(e){res.status(500).json({success:false,message:"Failed to delete account"});}});
 
-router.get("/:userId", async (req,res)=>{
-    try{
-        const {userId}=req.params;
-        if(!mongoose.Types.ObjectId.isValid(userId)) return res.status(404).render("404",{user:req.user||null});
-        const profileUser=await User.findById(userId).select("fullName profileImageURL bio website location isPrivate followers following createdAt").lean();
-        if(!profileUser) return res.status(404).render("404",{user:req.user||null});
-        const viewerId=req.user?._id?.toString();
-        const isOwner=viewerId===userId;
-        let viewerBlocked=false;
-        let blockedViewer=false;
-        if(!isOwner && viewerId){
-            const [viewer, target]=await Promise.all([
-                User.findById(viewerId).select("blockedUsers").lean(),
-                User.findById(userId).select("blockedUsers").lean()
-            ]);
-            viewerBlocked=!!viewer?.blockedUsers?.some(id=>id.toString()===userId);
-            blockedViewer=!!target?.blockedUsers?.some(id=>id.toString()===viewerId);
-        }
-        if(!isOwner && (viewerBlocked || blockedViewer)) return res.status(404).render("404",{user:req.user||null});
-        const isFollowing=!!viewerId && profileUser.followers.some(id=>id.toString()===viewerId);
-        const canSeePrivateContent=isOwner || !profileUser.isPrivate || isFollowing;
-        const [blogCount, pendingRequest]=await Promise.all([
-            Blog.countDocuments({createdBy:userId,isDeleted:false,status:"published"}),
-            viewerId && !isOwner ? FollowRequest.findOne({requester:viewerId,recipient:userId,status:"pending"}).lean() : null
-        ]);
-
-        let blogs=[];
-        let followers=[];
-        let following=[];
-        if(canSeePrivateContent){
-            blogs=await Blog.find({createdBy:userId,isDeleted:false,status:"published"}).sort({createdAt:-1}).populate("createdBy","fullName profileImageURL").lean();
-            followers=await User.find({_id:{$in:profileUser.followers}}).select("fullName profileImageURL bio").lean();
-            following=await User.find({_id:{$in:profileUser.following}}).select("fullName profileImageURL bio").lean();
-        }
-        res.render("publicProfile",{
-            user:req.user||null,profileUser,blogs,
-            stats:{blogCount,followerCount:profileUser.followers.length,followingCount:profileUser.following.length},
-            isOwner,isFollowing,isPrivate:profileUser.isPrivate,canSeePrivateContent,
-            showFollowersList:canSeePrivateContent,showFollowingList:canSeePrivateContent,
-            visibleFollowers:followers,visibleFollowing:following,
-            followRequested:!!pendingRequest
-        });
-    } catch(error){ console.error("Public Profile Error:",error); res.status(500).render("error",{user:req.user||null,error:"Failed to load profile"}); }
-});
+router.get("/:userId", async (req,res)=>{try{const {userId}=req.params;if(!mongoose.Types.ObjectId.isValid(userId))return res.status(404).render("404",{user:req.user||null});const profileUser=await User.findById(userId).select("fullName profileImageURL bio website location isPrivate followers following createdAt").lean();if(!profileUser)return res.status(404).render("404",{user:req.user||null});const viewerId=req.user?._id?.toString(),isOwner=viewerId===userId;let viewerBlocked=false,blockedViewer=false;if(!isOwner&&viewerId){const [viewer,target]=await Promise.all([User.findById(viewerId).select("blockedUsers").lean(),User.findById(userId).select("blockedUsers").lean()]);viewerBlocked=!!viewer?.blockedUsers?.some(id=>id.toString()===userId);blockedViewer=!!target?.blockedUsers?.some(id=>id.toString()===viewerId);}if(!isOwner&&(viewerBlocked||blockedViewer))return res.status(404).render("404",{user:req.user||null});const isFollowing=!!viewerId&&profileUser.followers.some(id=>id.toString()===viewerId),canSeePrivateContent=isOwner||!profileUser.isPrivate||isFollowing;const [blogCount,pendingRequest]=await Promise.all([Blog.countDocuments({createdBy:userId,isDeleted:false,status:"published"}),viewerId&&!isOwner?FollowRequest.findOne({requester:viewerId,recipient:userId,status:"pending"}).lean():null]);let blogs=[],followers=[],following=[];if(canSeePrivateContent){blogs=await Blog.find({createdBy:userId,isDeleted:false,status:"published"}).sort({createdAt:-1}).populate("createdBy","fullName profileImageURL").lean();followers=await User.find({_id:{$in:profileUser.followers}}).select("fullName profileImageURL bio").lean();following=await User.find({_id:{$in:profileUser.following}}).select("fullName profileImageURL bio").lean();}res.render("publicProfile",{user:req.user||null,profileUser,blogs,stats:{blogCount,followerCount:profileUser.followers.length,followingCount:profileUser.following.length},isOwner,isFollowing,isPrivate:profileUser.isPrivate,canSeePrivateContent,showFollowersList:canSeePrivateContent,showFollowingList:canSeePrivateContent,visibleFollowers:followers,visibleFollowing:following,followRequested:!!pendingRequest});}catch(error){console.error("Public Profile Error:",error);res.status(500).render("error",{user:req.user||null,error:"Failed to load profile"});}});
 module.exports=router;
