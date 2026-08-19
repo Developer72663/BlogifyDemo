@@ -42,7 +42,68 @@ UserSchema.virtual("followerCount").get(function() { return this.followers ? thi
 UserSchema.virtual("followingCount").get(function() { return this.following ? this.following.length : 0; });
 UserSchema.pre("save", async function (next) { if (this.googleId || !this.password || !this.isModified("password")) return next(); try { const salt = randomBytes(16).toString("hex"); this.salt = salt; this.password = createHmac("sha256", salt).update(this.password).digest("hex"); next(); } catch (error) { next(error); } });
 UserSchema.static("matchPassword", async function (email, password) { const user = await this.findOne({ email: email.toLowerCase() }); if (!user) throw new Error("User not found"); if (user.isDeactivated) throw new Error("Account is deactivated"); if (!user.password) throw new Error("This account uses Google Sign-In"); const userProvidedHash = createHmac("sha256", user.salt).update(password).digest("hex"); if (user.password !== userProvidedHash) throw new Error("Incorrect Password"); return creatTokenForUser(user); });
-UserSchema.static("findOrCreateGoogleUser", async function (profile) { const email = profile.emails[0].value.toLowerCase(); const googleId = profile.id; let user = await this.findOne({ googleId }); if (!user) { user = await this.findOne({ email }); if (user) { if (user.isDeactivated) throw new Error("Account is deactivated"); user.googleId = googleId; if (profile.photos?.[0]?.value) user.profileImageURL = profile.photos[0].value; await user.save(); } else user = await this.create({ fullName: profile.displayName || "Google User", email, googleId, profileImageURL: profile.photos?.[0]?.value || "/imgs/default.png" }); } else if (user.isDeactivated) throw new Error("Account is deactivated"); return user; });
+
+// Find an existing Blogify account by Google ID or email, or create one for a
+// new Google account. The duplicate-key recovery makes this safe when two
+// Google callbacks happen close together (for example after a browser retry).
+UserSchema.static("findOrCreateGoogleUser", async function (profile) {
+    const googleId = String(profile?.id || "").trim();
+    const email = String(profile?.emails?.[0]?.value || "").trim().toLowerCase();
+
+    if (!googleId) throw new Error("Google account ID is missing.");
+    if (!email) throw new Error("Google account email is missing.");
+
+    const displayName = String(profile?.displayName || "Google User").trim() || "Google User";
+    const photo = profile?.photos?.[0]?.value ? String(profile.photos[0].value).trim() : "";
+
+    let user = await this.findOne({ googleId });
+    if (user) {
+        if (user.isDeactivated) throw new Error("Account is deactivated");
+        if (photo && user.profileImageURL !== photo) {
+            user.profileImageURL = photo;
+            await user.save();
+        }
+        return user;
+    }
+
+    user = await this.findOne({ email });
+    if (user) {
+        if (user.isDeactivated) throw new Error("Account is deactivated");
+        if (user.googleId && user.googleId !== googleId) {
+            throw new Error("This email is already linked to another Google account.");
+        }
+        user.googleId = googleId;
+        if (photo) user.profileImageURL = photo;
+        await user.save();
+        return user;
+    }
+
+    try {
+        return await this.create({
+            fullName: displayName,
+            email,
+            googleId,
+            profileImageURL: photo || "/imgs/default.png"
+        });
+    } catch (error) {
+        // MongoDB can reject the create if another callback created the same
+        // email/googleId between our lookup and create. Recover by reading it.
+        if (error?.code === 11000) {
+            const existing = await this.findOne({ $or: [{ googleId }, { email }] });
+            if (existing) {
+                if (existing.isDeactivated) throw new Error("Account is deactivated");
+                if (!existing.googleId) {
+                    existing.googleId = googleId;
+                    if (photo) existing.profileImageURL = photo;
+                    await existing.save();
+                }
+                return existing;
+            }
+        }
+        throw error;
+    }
+});
+
 UserSchema.methods.followUser = async function(userId) { if (!this.following.includes(userId)) { this.following.push(userId); await this.save(); } };
 UserSchema.methods.unfollowUser = async function(userId) { this.following = this.following.filter(id => id.toString() !== userId.toString()); await this.save(); };
 UserSchema.methods.isFollowing = function(userId) { return this.following.some(id => id.toString() === userId.toString()); };
