@@ -12,14 +12,11 @@ const checkForAuthenticationCookie = (cookieName) => {
 
         try {
             const tokenUser = verifyToken(token);
-
-            // The JWT contains a snapshot of the user's profile. After an
-            // avatar/profile update that snapshot can be stale, so always
-            // refresh the user from MongoDB before rendering pages.
             const currentUser = await User.findById(tokenUser._id).lean();
 
-            if (!currentUser) {
+            if (!currentUser || currentUser.isDeactivated) {
                 req.user = null;
+                res.clearCookie(cookieName);
                 return next();
             }
 
@@ -32,7 +29,6 @@ const checkForAuthenticationCookie = (cookieName) => {
     };
 };
 
-// Restrict to Logged-in Users Only
 const restrictToLoggedInUserOnly = (req, res, next) => {
     if (!req.user) {
         return res.redirect("/user/signin");
@@ -40,7 +36,6 @@ const restrictToLoggedInUserOnly = (req, res, next) => {
     next();
 };
 
-// Restrict to Admin Only
 const restrictTo = (roles = []) => {
     return (req, res, next) => {
         if (!req.user) {
