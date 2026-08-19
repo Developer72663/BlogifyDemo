@@ -9,14 +9,12 @@ router.use(restrictToLoggedInUserOnly);
 router.get("/", async (req, res) => {
     try {
         const { page = 1, limit = 20 } = req.query;
-        
         const result = await NotificationService.getUserNotifications(
             req.user._id,
             parseInt(limit),
             parseInt(page)
         );
 
-        // Content negotiation: Browser -> HTML page, API/JS -> JSON
         const accept = req.headers.accept || "";
         if (accept.includes("text/html")) {
             return res.render("notification", {
@@ -55,11 +53,19 @@ router.get("/unread/count", async (req, res) => {
 // ====================== MARK AS READ ======================
 router.put("/:notificationId/read", async (req, res) => {
     try {
-        await NotificationService.markAsRead(req.params.notificationId);
+        // Scope the update to the authenticated user. NotificationService
+        // requires the recipient id to prevent cross-user notification access.
+        const updated = await NotificationService.markAsRead(
+            req.params.notificationId,
+            req.user._id
+        );
+        if (!updated) {
+            return res.status(404).json({ success: false, message: "Notification not found" });
+        }
         res.json({ success: true, message: "Marked as read" });
     } catch (error) {
         console.error("Error marking notification as read:", error);
-        res.status(500).json({ success: false, message: "Failed to mark as read" });
+        res.status(500).json({ success: false, message: "Failed to mark notification as read" });
     }
 });
 
