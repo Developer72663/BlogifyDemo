@@ -5,6 +5,28 @@ const Blog = require("../models/Blog");
 const User = require("../models/user");
 const FollowRequest = require("../models/FollowRequest");
 
+// Backward-compatible unblock endpoint for the settings page.
+// The settings UI previously called /profile/settings/unblock/:userId,
+// while the authenticated Profile router is mounted at /user/profile.
+// Keep this alias protected so an unauthenticated visitor cannot modify blocks.
+router.patch("/settings/unblock/:userId", async (req,res)=>{
+    try{
+        if(!req.user) return res.status(401).json({success:false,message:"Authentication required"});
+        const targetId=String(req.params.userId||"");
+        if(!mongoose.Types.ObjectId.isValid(targetId)) return res.status(400).json({success:false,message:"Invalid user"});
+        if(String(req.user._id)===targetId) return res.status(400).json({success:false,message:"Invalid user"});
+        const user=await User.findById(req.user._id).select("blockedUsers");
+        if(!user) return res.status(404).json({success:false,message:"User not found"});
+        const before=user.blockedUsers?.length||0;
+        user.blockedUsers=(user.blockedUsers||[]).filter(id=>String(id)!==targetId);
+        if(before!==user.blockedUsers.length) await user.save();
+        return res.json({success:true,message:before!==user.blockedUsers.length?"User unblocked":"User was already unblocked",removed:before!==user.blockedUsers.length});
+    }catch(error){
+        console.error("Public profile unblock error:",error);
+        return res.status(500).json({success:false,message:"Unable to unblock user"});
+    }
+});
+
 router.get("/:userId", async (req,res)=>{
     try{
         const {userId}=req.params;
