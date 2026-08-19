@@ -1,135 +1,91 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - All Users & Blogs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .user-card { 
-            transition: all 0.3s; 
-            margin-bottom: 25px;
-        }
-        .user-card:hover { 
-            transform: translateY(-5px); 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
-        }
-        .profile-img { 
-            width: 60px; 
-            height: 60px; 
-            object-fit: cover; 
-        }
-        .blog-img { 
-            width: 100%; 
-            max-height: 160px; 
-            object-fit: cover; 
-            border-radius: 8px; 
-        }
-        .password-cell { 
-            font-family: monospace; 
-            color: #6c757d; 
-            background: #f8f9fa; 
-            padding: 4px 8px; 
-            border-radius: 4px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Admin • Users | Blogify</title>
+  <style>
+    :root{--bg:#f6f7fb;--surface:#fff;--soft:#f8fafc;--text:#172033;--muted:#687386;--line:#e4e8f0;--primary:#6366f1;--primary2:#7c3aed;--danger:#ef4444;--shadow:0 14px 40px rgba(15,23,42,.09)}
+    html[data-theme="dark"],body.dark,body.dark-mode{--bg:#09090b;--surface:#111113;--soft:#18181b;--text:#f5f5f5;--muted:#a1a1aa;--line:#29292e;--shadow:0 18px 45px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}button,input{font:inherit}.admin-page{width:min(1180px,100%);margin:0 auto;padding:24px 18px 50px}.admin-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.admin-title{margin:0;font-size:clamp(1.35rem,3vw,2rem);letter-spacing:-.03em}.admin-subtitle{margin:5px 0 0;color:var(--muted);font-size:.84rem}.admin-count{font-weight:800;color:var(--text)}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:16px}.search{flex:1 1 260px;min-width:0;height:44px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--text);outline:0;padding:0 13px}.search:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}.filter{height:44px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--text);padding:0 12px;outline:0}.user-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;margin-bottom:12px;overflow:visible;box-shadow:0 3px 16px rgba(15,23,42,.035);transition:.18s}.user-card:hover{border-color:rgba(99,102,241,.4);box-shadow:var(--shadow)}.user-main{padding:15px}.user-head{display:flex;align-items:center;gap:12px}.avatar{width:52px;height:52px;border-radius:15px;object-fit:cover;background:var(--soft);border:1px solid var(--line);flex:none}.identity{min-width:0;flex:1}.name{font-size:1rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.email{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}.badges{display:flex;gap:6px;align-items:center;margin-top:6px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:800}.badge.admin{background:#fee2e2;color:#b91c1c}.badge.user{background:#eef2ff;color:#4f46e5}.menu-wrap{position:relative;flex:none}.menu-btn{width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);cursor:pointer}.menu-btn:hover{background:var(--soft);border-color:var(--primary)}.user-menu{position:absolute;right:0;top:46px;width:190px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);z-index:30;display:none}.user-menu.open{display:block}.user-menu button,.user-menu a{width:100%;min-height:40px;border:0;background:transparent;color:var(--text);border-radius:9px;display:flex;align-items:center;gap:9px;padding:0 10px;text-decoration:none;font-size:.8rem;font-weight:700;text-align:left;cursor:pointer}.user-menu button:hover,.user-menu a:hover{background:var(--soft)}.user-menu .danger{color:var(--danger)}.menu-divider{height:1px;background:var(--line);margin:5px 2px}.password-status{margin-top:13px;padding:9px 10px;border-radius:11px;background:var(--soft);color:var(--muted);font-size:.75rem}.password-status strong{color:var(--text)}.blogs{border-top:1px solid var(--line);padding:13px 15px 15px}.blogs-title{font-size:.78rem;font-weight:800;margin-bottom:9px}.blog-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.blog{min-width:0;border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--soft)}.blog-img,.blog-placeholder{width:100%;height:110px;border-radius:9px;object-fit:cover;background:var(--surface)}.blog-placeholder{display:grid;place-items:center;color:var(--muted);font-size:.7rem}.blog-title{font-size:.74rem;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:7px}.blog-date{font-size:.66rem;color:var(--muted);margin-top:3px}.empty{padding:70px 20px;text-align:center;color:var(--muted)}.empty strong{display:block;color:var(--text);font-size:1rem;margin-bottom:5px}.no-results{display:none;padding:40px 15px;text-align:center;color:var(--muted)}.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,15px);background:#18181b;color:#fff;border-radius:999px;padding:9px 14px;font-size:.75rem;opacity:0;visibility:hidden;transition:.2s;z-index:100}.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+    @media(max-width:700px){.admin-page{padding:14px 10px 35px}.admin-head{align-items:flex-start}.toolbar{margin-bottom:12px}.user-card{border-radius:17px}.user-main{padding:12px}.avatar{width:46px;height:46px;border-radius:13px}.name{font-size:.92rem}.email{font-size:.72rem}.blog-grid{grid-template-columns:1fr 1fr}.blog-img,.blog-placeholder{height:90px}.user-menu{position:fixed;right:10px;top:auto;bottom:10px;width:min(240px,calc(100vw - 20px));border-radius:16px;padding:8px;z-index:200}.user-menu button,.user-menu a{min-height:44px}.admin-title{font-size:1.35rem}}
+    @media(max-width:430px){.blog-grid{grid-template-columns:1fr}.blog-img,.blog-placeholder{height:120px}.filter{flex:1}}
+  </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>👥 All Users & Their Blogs</h1>
-            <p class="text-muted mb-0">Total Users: <strong><%= users.length %></strong></p>
-        </div>
+<body>
+  <main class="admin-page">
+    <header class="admin-head">
+      <div><h1 class="admin-title">Users</h1><p class="admin-subtitle">Manage users and review their published blogs.</p></div>
+      <div class="admin-subtitle">Total <span class="admin-count"><%= users.length %></span></div>
+    </header>
 
-        <% users.forEach(user => { %>
-            <div class="card user-card">
-                <div class="card-body">
-                    <!-- User Header -->
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="d-flex align-items-center">
-                            <img src="<%= user.profileImageURL %>" 
-                                 alt="Profile" 
-                                 class="rounded-circle profile-img me-3">
-                            <div>
-                                <h5 class="mb-1"><%= user.fullName %></h5>
-                                <p class="mb-1 text-muted"><%= user.email %></p>
-                                <span class="badge <%= user.role === 'ADMIN' ? 'bg-danger' : 'bg-primary' %>">
-                                    <%= user.role %>
-                                </span>
-                            </div>
-                        </div>
-
-                        <button class="btn btn-danger btn-sm delete-btn" 
-                                data-id="<%= user._id %>">
-                            🗑 Delete User
-                        </button>
-                    </div>
-
-                    <!-- Password Status -->
-                    <div class="mb-3">
-                        <strong>Password:</strong> 
-                        <span class="password-cell">
-                            <%= user.googleId ? "Google Account (No Password)" : "Hashed (Security Protected)" %>
-                        </span>
-                    </div>
-
-                    <hr>
-
-                    <!-- Blogs Section -->
-                    <h6 class="mb-3">📝 Blogs Posted (<%= user.blogs.length %>)</h6>
-                    
-                    <% if (user.blogs.length === 0) { %>
-                        <p class="text-muted">No blogs posted yet.</p>
-                    <% } else { %>
-                        <div class="row">
-                            <% user.blogs.forEach(blog => { %>
-                                <div class="col-md-6 col-lg-4 mb-3">
-                                    <div class="border p-2 rounded h-100">
-                                        <% if (blog.coverImageURL) { %>
-                                            <img src="<%= blog.coverImageURL %>" 
-                                                 alt="Blog Cover" 
-                                                 class="blog-img mb-2">
-                                        <% } else { %>
-                                            <div class="bg-light text-center py-5 mb-2 rounded">
-                                                <small class="text-muted">No Cover Image</small>
-                                            </div>
-                                        <% } %>
-                                        <h6 class="mb-1 text-truncate"><%= blog.title %></h6>
-                                        <small class="text-muted">
-                                            <%= new Date(blog.createdAt).toLocaleDateString('en-IN') %>
-                                        </small>
-                                    </div>
-                                </div>
-                            <% }) %>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-        <% }) %>
+    <div class="toolbar">
+      <input id="userSearch" class="search" type="search" placeholder="Search by name or email…" autocomplete="off">
+      <select id="roleFilter" class="filter" aria-label="Filter users">
+        <option value="all">All users</option><option value="ADMIN">Admins</option><option value="USER">Users</option>
+      </select>
     </div>
 
-    <script>
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (!confirm('⚠️ Are you sure? This will delete the user and ALL their blogs permanently.')) return;
+    <section id="userList">
+      <% if(users.length){ %>
+        <% users.forEach(user => { %>
+          <article class="user-card" data-name="<%= (user.fullName || '').toLowerCase() %>" data-email="<%= (user.email || '').toLowerCase() %>" data-role="<%= user.role || 'USER' %>">
+            <div class="user-main">
+              <div class="user-head">
+                <img class="avatar" src="<%= user.profileImageURL || '/imgs/default.png' %>" alt="Profile" onerror="this.src='/imgs/default.png'">
+                <div class="identity">
+                  <div class="name"><%= user.fullName || 'Unnamed user' %></div>
+                  <div class="email"><%= user.email || 'No email' %></div>
+                  <div class="badges"><span class="badge <%= user.role === 'ADMIN' ? 'admin' : 'user' %>"><%= user.role || 'USER' %></span><span class="badge user"><%= user.blogs.length %> blogs</span></div>
+                </div>
+                <div class="menu-wrap">
+                  <button class="menu-btn" type="button" aria-label="Manage <%= user.fullName || 'user' %>" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
+                  <div class="user-menu">
+                    <a href="/user/profile/<%= user._id %>"><i class="fas fa-user"></i><span>View profile</span></a>
+                    <button type="button" class="copy-email" data-email="<%= user.email || '' %>"><i class="fas fa-copy"></i><span>Copy email</span></button>
+                    <div class="menu-divider"></div>
+                    <button type="button" class="delete-user danger" data-id="<%= user._id %>" data-name="<%= user.fullName || 'this user' %>"><i class="fas fa-trash"></i><span>Delete user</span></button>
+                  </div>
+                </div>
+              </div>
+              <div class="password-status"><strong>Password:</strong> <%= user.googleId ? 'Google Account (no local password)' : 'Hashed and protected' %></div>
+            </div>
 
-                const userId = btn.dataset.id;
+            <div class="blogs">
+              <div class="blogs-title">Published blogs (<%= user.blogs.length %>)</div>
+              <% if(user.blogs.length){ %>
+                <div class="blog-grid">
+                  <% user.blogs.forEach(blog => { %>
+                    <div class="blog">
+                      <% if(blog.coverImageURL){ %><img class="blog-img" src="<%= blog.coverImageURL %>" alt="Blog cover" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><div class="blog-placeholder" style="display:none">No cover</div><% }else{ %><div class="blog-placeholder">No cover image</div><% } %>
+                      <div class="blog-title" title="<%= blog.title %>"><%= blog.title || 'Untitled blog' %></div>
+                      <div class="blog-date"><%= blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-IN') : '' %></div>
+                    </div>
+                  <% }) %>
+                </div>
+              <% }else{ %><div class="admin-subtitle">No blogs posted yet.</div><% } %>
+            </div>
+          </article>
+        <% }) %>
+      <% }else{ %><div class="empty"><strong>No users found</strong><span>There are no registered users to manage.</span></div><% } %>
+    </section>
+    <div id="noResults" class="no-results">No users match your search.</div>
+  </main>
+  <div id="toast" class="toast"></div>
 
-                try {
-                    const res = await fetch(`/admin/users/${userId}`, { method: 'DELETE' });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        alert(data.message);
-                        location.reload();
-                    } else {
-                        alert(data.message || "Failed to delete");
-                    }
-                } catch (err) {
-                    alert("Error: " + err.message);
-                }
-            });
-        });
-    </script>
+  <script>
+    (function(){
+      const search=document.getElementById('userSearch'),filter=document.getElementById('roleFilter'),noResults=document.getElementById('noResults');
+      function closeMenus(except){document.querySelectorAll('.user-menu.open').forEach(m=>{if(m!==except){m.classList.remove('open');const b=m.previousElementSibling;if(b)b.setAttribute('aria-expanded','false')}})}
+      document.querySelectorAll('.menu-btn').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const menu=btn.nextElementSibling;const open=menu.classList.toggle('open');closeMenus(open?menu:null);btn.setAttribute('aria-expanded',String(open))}));
+      document.addEventListener('click',()=>closeMenus());
+      document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenus()});
+      function applyFilter(){const q=(search.value||'').trim().toLowerCase(),r=filter.value;let shown=0;document.querySelectorAll('.user-card').forEach(card=>{const ok=(!q||card.dataset.name.includes(q)||card.dataset.email.includes(q))&&(r==='all'||card.dataset.role===r);card.style.display=ok?'block':'none';if(ok)shown++});noResults.style.display=shown?'none':'block'}
+      search.addEventListener('input',applyFilter);filter.addEventListener('change',applyFilter);
+      function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),1800)}
+      document.querySelectorAll('.copy-email').forEach(btn=>btn.addEventListener('click',async()=>{const email=btn.dataset.email;if(!email)return;try{await navigator.clipboard.writeText(email);toast('Email copied')}catch(e){toast('Unable to copy email')}closeMenus()}));
+      document.querySelectorAll('.delete-user').forEach(btn=>btn.addEventListener('click',async()=>{const name=btn.dataset.name||'this user';if(!confirm('Delete '+name+' and all their blogs permanently?'))return;btn.disabled=true;try{const res=await fetch('/admin/users/'+encodeURIComponent(btn.dataset.id),{method:'DELETE',headers:{Accept:'application/json'}});let data={};try{data=await res.json()}catch(e){}if(!res.ok||!data.success)throw new Error(data.message||'Failed to delete user');const card=btn.closest('.user-card');card.remove();toast(data.message||'User deleted');applyFilter();}catch(err){btn.disabled=false;alert(err.message)}finally{closeMenus()}}));
+    })();
+  </script>
 </body>
 </html>
