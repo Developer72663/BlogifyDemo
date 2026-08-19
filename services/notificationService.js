@@ -1,21 +1,309 @@
-const Notification=require("../models/Notification");
-const User=require("../models/user");
-const {sendEmail,sendCommentNotificationEmail,sendFollowNotificationEmail}=require("./email");
-const {sendToUser}=require("./webPush");
-const messagePopulate={path:"messageRef",select:"text senderId receiverId likes createdAt status isRead deleted",populate:{path:"senderId",select:"_id fullName profileImageURL"}};
-const pushSettingForType={message:"pushOnMessage",comment:"pushOnComment",reply:"pushOnReply",like:"pushOnLike",follow:"pushOnFollow",follow_request:"pushOnFollowRequest",mention:"pushOnMention",blog_post:"pushOnBlogPost"};
-function getNotificationUrl(type,data={}){if(data.url)return data.url;if(type==="message"&&data.conversationId)return `/messages?conversation=${data.conversationId}`;if((type==="comment"||type==="reply"||type==="like"||type==="blog_post")&&data.blog)return `/blogs/${data.blog}`;if(type==="follow"||type==="follow_request"||type==="mention")return data.actor?`/profile/${data.actor}`:"/notifications";return "/notifications";}
-async function sendPushForNotification(recipientId,type,data={}){try{const setting=pushSettingForType[type];if(!setting)return;const user=await User.findById(recipientId).select(`notificationSettings.${setting} notificationSettings.pushEnabled`).lean();if(!user?.notificationSettings?.pushEnabled||user.notificationSettings[setting]===false)return;await sendToUser(recipientId,{title:data.pushTitle||data.title||"Blogify",body:data.pushMessage||data.message||"You have a new notification",icon:"/imgs/default.png",badge:"/imgs/default.png",tag:`blogify-${type}-${data.blog||data.messageRef||data.actor||Date.now()}`,data:{url:getNotificationUrl(type,data),type}});}catch(error){console.error("Web Push notification error:",error.message);}}
-class NotificationService{
-static async createNotification(recipientId,type,data){const notification=await Notification.create({recipient:recipientId,type,title:data.title,message:data.message,blog:data.blog||null,actor:data.actor||null,request:data.request||null,messageRef:data.messageRef||null,conversationId:data.conversationId||null});await sendPushForNotification(recipientId,type,data);return notification;}
-static async createBlogPostNotifications(authorId,blogId,blogTitle){try{const author=await User.findById(authorId).select("fullName followers").lean();if(!author?.followers?.length)return;await Notification.insertMany(author.followers.map(f=>({recipient:f,type:"blog_post",title:"New blog post",message:`${author.fullName} published a new blog: "${blogTitle}"`,blog:blogId,actor:authorId})));await Promise.all(author.followers.map(f=>sendPushForNotification(f,"blog_post",{title:"New blog post",message:`${author.fullName} published a new blog: "${blogTitle}"`,blog:blogId,actor:authorId})));}catch(e){console.error("Error creating blog post notifications:",e.message);}}
-static async sendEmailNotification(user,type,data){try{if(!user?.email)return;if(user.notificationSettings){let canSend=true;if(type==="comment")canSend=user.notificationSettings.emailOnComment!==false;if(type==="follow")canSend=user.notificationSettings.emailOnNewFollower!==false;if(type==="digest")canSend=user.notificationSettings.emailDigest!==false;if(!canSend)return;}switch(type){case"comment":if(data.blogTitle&&data.actorName&&data.comment)await sendCommentNotificationEmail(user.email,{blogTitle:data.blogTitle,actorName:data.actorName,comment:data.comment.substring(0,100),blogLink:data.blogLink||process.env.APP_URL||"http://localhost:8000"});break;case"follow":if(data.actorName)await sendFollowNotificationEmail(user.email,{followerName:data.actorName,followerImage:data.followerImage||"/imgs/default.png",profileLink:data.profileLink||process.env.APP_URL||"http://localhost:8000"});break;case"like":if(data.blogTitle&&data.actorName)await sendEmail(user.email,`Someone liked your blog "${data.blogTitle}"`,`<p><strong>${data.actorName}</strong> liked your blog <strong>"${data.blogTitle}"</strong>.</p>`);break;default:break;}}catch(e){console.error(`Error sending ${type} email notification:`,e.message);}}
-static async getUserNotifications(userId,limit=20,page=1){try{limit=Math.min(Math.max(parseInt(limit)||20,1),50);page=Math.max(parseInt(page)||1,1);const skip=(page-1)*limit;const [notifications,total]=await Promise.all([Notification.find({recipient:userId}).sort({createdAt:-1}).skip(skip).limit(limit).populate("actor","_id fullName profileImageURL email").populate("blog","title slug coverImageURL createdAt").populate("request").populate(messagePopulate).lean(),Notification.countDocuments({recipient:userId})]);return{notifications,total,pages:Math.ceil(total/limit),currentPage:page};}catch(e){console.error("Error getting notifications:",e.message);return{notifications:[],total:0,pages:0,currentPage:1};}}
-static async markAsRead(notificationId,userId){return Notification.findOneAndUpdate({_id:notificationId,recipient:userId},{$set:{isRead:true}},{new:true});}
-static async markAllAsRead(userId){return Notification.updateMany({recipient:userId,isRead:false},{$set:{isRead:true}});}
-static async getUnreadCount(userId){return Notification.countDocuments({recipient:userId,isRead:false});}
-static async deleteNotification(notificationId,userId){return Notification.findOneAndDelete({_id:notificationId,recipient:userId});}
-static async deleteAllNotifications(userId){return Notification.deleteMany({recipient:userId});}
-static async getUnreadNotifications(userId,limit=5){return Notification.find({recipient:userId,isRead:false}).sort({createdAt:-1}).limit(parseInt(limit)).populate("actor","_id fullName profileImageURL").populate("blog","title slug coverImageURL").populate("request").populate(messagePopulate).lean();}
+const Notification = require("../models/Notification");
+const User = require("../models/user");
+const Blog = require("../models/Blog");
+const {
+    sendEmail,
+    sendCommentNotificationEmail,
+    sendFollowNotificationEmail
+} = require("./email");
+const { sendToUser } = require("./webPush");
+
+const messagePopulate = {
+    path: "messageRef",
+    select: "text senderId receiverId likes createdAt status isRead deleted",
+    populate: { path: "senderId", select: "_id fullName profileImageURL" }
+};
+
+const pushSettingForType = {
+    message: "pushOnMessage",
+    comment: "pushOnComment",
+    reply: "pushOnReply",
+    like: "pushOnLike",
+    follow: "pushOnFollow",
+    follow_request: "pushOnFollowRequest",
+    mention: "pushOnMention",
+    blog_post: "pushOnBlogPost"
+};
+
+const emailSettingForType = {
+    comment: "emailOnComment",
+    reply: "emailOnComment",
+    follow: "emailOnNewFollower",
+    follow_request: "emailOnFollowRequest",
+    like: "emailOnLike",
+    mention: "emailOnMention"
+};
+
+function getAppUrl() {
+    const configured = String(process.env.APP_URL || "").trim().replace(/\/$/, "");
+    if (configured) return configured;
+
+    const vercelUrl = String(process.env.VERCEL_URL || "").trim();
+    if (vercelUrl) return `https://${vercelUrl}`;
+
+    return "http://localhost:8000";
 }
-module.exports=NotificationService;
+
+function getNotificationUrl(type, data = {}) {
+    if (data.url) return data.url;
+    if (type === "message" && data.conversationId) {
+        return `/messages?conversation=${data.conversationId}`;
+    }
+    if ((type === "comment" || type === "reply" || type === "like" || type === "blog_post") && data.blog) {
+        return `/blogs/${data.blog}`;
+    }
+    if (type === "follow" || type === "follow_request" || type === "mention") {
+        return data.actor ? `/profile/${data.actor}` : "/notifications";
+    }
+    return "/notifications";
+}
+
+function absoluteUrl(pathOrUrl) {
+    if (!pathOrUrl) return getAppUrl();
+    if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+    return `${getAppUrl()}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+}
+
+async function sendPushForNotification(recipientId, type, data = {}) {
+    try {
+        const setting = pushSettingForType[type];
+        if (!setting) return;
+
+        const user = await User.findById(recipientId)
+            .select(`notificationSettings.${setting} notificationSettings.pushEnabled`)
+            .lean();
+
+        if (!user?.notificationSettings?.pushEnabled || user.notificationSettings[setting] === false) {
+            return;
+        }
+
+        await sendToUser(recipientId, {
+            title: data.pushTitle || data.title || "Blogify",
+            body: data.pushMessage || data.message || "You have a new notification",
+            icon: "/imgs/default.png",
+            badge: "/imgs/default.png",
+            tag: `blogify-${type}-${data.blog || data.messageRef || data.actor || Date.now()}`,
+            data: { url: getNotificationUrl(type, data), type }
+        });
+    } catch (error) {
+        // Push is a secondary delivery channel. It must never break the main action.
+        console.error("Web Push notification error:", error.message);
+    }
+}
+
+async function sendEmailForNotification(recipientId, type, data = {}) {
+    try {
+        const setting = emailSettingForType[type];
+        if (!setting) return;
+
+        const user = await User.findById(recipientId)
+            .select("fullName email profileImageURL notificationSettings")
+            .lean();
+
+        if (!user?.email) return;
+        if (user.notificationSettings?.[setting] === false) return;
+
+        let actor = null;
+        if (data.actor) {
+            actor = await User.findById(data.actor)
+                .select("fullName profileImageURL")
+                .lean();
+        }
+
+        let blog = null;
+        if (data.blog) {
+            blog = await Blog.findById(data.blog).select("title slug").lean();
+        }
+
+        const actorName = actor?.fullName || data.actorName || "Someone";
+        const blogTitle = blog?.title || data.blogTitle || "your blog";
+        const blogPath = blog?.slug ? `/blogs/${blog.slug}` : getNotificationUrl(type, data);
+        const blogLink = absoluteUrl(blogPath);
+        const profileLink = absoluteUrl(`/profile/${data.actor || ""}`);
+
+        switch (type) {
+            case "comment":
+            case "reply":
+                await sendCommentNotificationEmail(user.email, {
+                    blogTitle,
+                    actorName,
+                    comment: String(data.comment || data.message || "You have a new comment.").substring(0, 500),
+                    blogLink
+                });
+                break;
+
+            case "follow":
+                await sendFollowNotificationEmail(user.email, {
+                    followerName: actorName,
+                    followerImage: actor?.profileImageURL || "/imgs/default.png",
+                    profileLink
+                });
+                break;
+
+            case "like":
+                await sendEmail(
+                    user.email,
+                    `${actorName} liked your blog "${blogTitle}"`,
+                    `<p><strong>${actorName}</strong> liked your blog <strong>"${blogTitle}"</strong>.</p><p><a href="${blogLink}">View your blog</a></p>`
+                );
+                break;
+
+            case "follow_request":
+                await sendEmail(
+                    user.email,
+                    `${actorName} requested to follow you`,
+                    `<p><strong>${actorName}</strong> requested to follow you on Blogify.</p><p><a href="${absoluteUrl("/notifications")}">Review the follow request</a></p>`
+                );
+                break;
+
+            case "mention":
+                await sendEmail(
+                    user.email,
+                    `${actorName} mentioned you on Blogify`,
+                    `<p><strong>${actorName}</strong> mentioned you on Blogify.</p><p><a href="${absoluteUrl(getNotificationUrl(type, data))}">View notification</a></p>`
+                );
+                break;
+
+            default:
+                break;
+        }
+    } catch (error) {
+        // Email must never make comments, likes, follows, etc. fail.
+        console.error(`Email notification error (${type}):`, error.message);
+    }
+}
+
+class NotificationService {
+    static async createNotification(recipientId, type, data = {}) {
+        const notification = await Notification.create({
+            recipient: recipientId,
+            type,
+            title: data.title,
+            message: data.message,
+            blog: data.blog || null,
+            actor: data.actor || null,
+            request: data.request || null,
+            messageRef: data.messageRef || null,
+            conversationId: data.conversationId || null
+        });
+
+        // Keep all delivery channels behind one notification entry point.
+        await Promise.allSettled([
+            sendPushForNotification(recipientId, type, data),
+            sendEmailForNotification(recipientId, type, data)
+        ]);
+
+        return notification;
+    }
+
+    static async createBlogPostNotifications(authorId, blogId, blogTitle) {
+        try {
+            const author = await User.findById(authorId)
+                .select("fullName followers")
+                .lean();
+
+            if (!author?.followers?.length) return;
+
+            const data = {
+                title: "New blog post",
+                message: `${author.fullName} published a new blog: "${blogTitle}"`,
+                blog: blogId,
+                actor: authorId
+            };
+
+            await Notification.insertMany(
+                author.followers.map(recipientId => ({
+                    recipient: recipientId,
+                    type: "blog_post",
+                    title: data.title,
+                    message: data.message,
+                    blog: blogId,
+                    actor: authorId
+                }))
+            );
+
+            await Promise.allSettled(
+                author.followers.map(recipientId => sendPushForNotification(recipientId, "blog_post", data))
+            );
+        } catch (error) {
+            console.error("Error creating blog post notifications:", error.message);
+        }
+    }
+
+    static async sendEmailNotification(user, type, data = {}) {
+        // Backward-compatible public method for existing callers.
+        if (!user?._id) return;
+        return sendEmailForNotification(user._id, type, data);
+    }
+
+    static async getUserNotifications(userId, limit = 20, page = 1) {
+        try {
+            limit = Math.min(Math.max(parseInt(limit) || 20, 1), 50);
+            page = Math.max(parseInt(page) || 1, 1);
+            const skip = (page - 1) * limit;
+
+            const [notifications, total] = await Promise.all([
+                Notification.find({ recipient: userId })
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .populate("actor", "_id fullName profileImageURL email")
+                    .populate("blog", "title slug coverImageURL createdAt")
+                    .populate("request")
+                    .populate(messagePopulate)
+                    .lean(),
+                Notification.countDocuments({ recipient: userId })
+            ]);
+
+            return {
+                notifications,
+                total,
+                pages: Math.ceil(total / limit),
+                currentPage: page
+            };
+        } catch (error) {
+            console.error("Error getting notifications:", error.message);
+            return { notifications: [], total: 0, pages: 0, currentPage: 1 };
+        }
+    }
+
+    static async markAsRead(notificationId, userId) {
+        return Notification.findOneAndUpdate(
+            { _id: notificationId, recipient: userId },
+            { $set: { isRead: true } },
+            { new: true }
+        );
+    }
+
+    static async markAllAsRead(userId) {
+        return Notification.updateMany(
+            { recipient: userId, isRead: false },
+            { $set: { isRead: true } }
+        );
+    }
+
+    static async getUnreadCount(userId) {
+        return Notification.countDocuments({ recipient: userId, isRead: false });
+    }
+
+    static async deleteNotification(notificationId, userId) {
+        return Notification.findOneAndDelete({ _id: notificationId, recipient: userId });
+    }
+
+    static async deleteAllNotifications(userId) {
+        return Notification.deleteMany({ recipient: userId });
+    }
+
+    static async getUnreadNotifications(userId, limit = 5) {
+        return Notification.find({ recipient: userId, isRead: false })
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit))
+            .populate("actor", "_id fullName profileImageURL")
+            .populate("blog", "title slug coverImageURL")
+            .populate("request")
+            .populate(messagePopulate)
+            .lean();
+    }
+}
+
+module.exports = NotificationService;
