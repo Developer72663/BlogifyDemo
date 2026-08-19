@@ -122,7 +122,7 @@ router.get('/account/export', auth, async (req, res) => {
     const [user, blogs, comments, notifications, reports] = await Promise.all([
       User.findById(userId).select('-password -salt -__v').lean(),
       Blog.find({ createdBy: userId }).select('-__v').lean(),
-      Comment.find({ createdBy: userId }).select('-__v').lean(),
+      Comment.find({ author: userId }).select('-__v').lean(),
       Notification.find({ recipient: userId }).select('-__v').lean(),
       Report.find({ reporter: userId }).select('-__v').lean()
     ]);
