@@ -49,8 +49,12 @@
                             <% } %>
                             <div class="card-body">
                                 <a class="title d-block" href="/blogs/<%= blog._id %>"><%= blog.title %></a>
-                                <% if (blog.excerpt) { %><p class="muted small mt-2 mb-0"><%= truncate(blog.excerpt,120) %></p><% } %>
-                                <% if (blog.createdBy) { %><div class="author">By <%= blog.createdBy.fullName %> · <%= formatDate(blog.createdAt) %></div><% } %>
+                                <% if (blog.excerpt) { %>
+                                    <p class="muted small mt-2 mb-0"><%= blog.excerpt.length > 120 ? blog.excerpt.slice(0,120) + '…' : blog.excerpt %></p>
+                                <% } %>
+                                <% if (blog.createdBy) { %>
+                                    <div class="author">By <%= blog.createdBy.fullName || 'Unknown author' %> · <%= blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : '' %></div>
+                                <% } %>
                             </div>
                         </article>
                     </div>
