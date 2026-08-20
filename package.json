@@ -6,41 +6,10 @@
   "author": "",
   "type": "commonjs",
   "main": "app.js",
-  "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "build": "echo 'No build step required for Express server'",
-    "test": "node tests/smoke.js"
-  },
-  "engines": {
-    "node": "20.x"
-  },
+  "scripts": {"start": "node app.js", "dev": "nodemon app.js", "build": "echo 'No build step required for Express server'", "test": "node tests/smoke.js"},
+  "engines": {"node": "24.x"},
   "dependencies": {
-    "@upstash/ratelimit": "^2.0.7",
-    "@upstash/redis": "^1.35.3",
-    "bcryptjs": "^3.0.2",
-    "cloudinary": "^1.41.3",
-    "cookie-parser": "^1.4.7",
-    "dotenv": "^16.4.7",
-    "ejs": "^3.1.10",
-    "express": "^4.21.2",
-    "express-rate-limit": "^7.5.0",
-    "graphql": "^16.14.1",
-    "graphql-http": "^1.22.4",
-    "highlight.js": "^11.11.1",
-    "jsonwebtoken": "^9.0.2",
-    "marked": "^15.0.7",
-    "marked-highlight": "^2.2.1",
-    "mongoose": "^8.14.1",
-    "multer": "^2.0.1",
-    "multer-storage-cloudinary": "^4.0.0",
-    "nodemailer": "^6.10.0",
-    "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0",
-    "socket.io": "^4.8.1",
-    "web-push": "3.6.7"
+    "@upstash/ratelimit": "^2.0.7", "@upstash/redis": "^1.35.3", "bcryptjs": "^3.0.2", "cloudinary": "^1.41.3", "cookie-parser": "^1.4.7", "dotenv": "^16.4.7", "ejs": "^3.1.10", "express": "^4.21.2", "express-rate-limit": "^7.5.0", "graphql": "^16.14.1", "graphql-http": "^1.22.4", "highlight.js": "^11.11.1", "jsonwebtoken": "^9.0.2", "marked": "^15.0.7", "marked-highlight": "^2.2.1", "mongoose": "^8.14.1", "multer": "^2.0.1", "multer-storage-cloudinary": "^4.0.0", "nodemailer": "^6.10.0", "passport": "^0.7.0", "passport-google-oauth20": "^2.0.0", "socket.io": "^4.8.1", "web-push": "3.6.7"
   },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
+  "devDependencies": {"nodemon": "^3.1.10"}
 }
