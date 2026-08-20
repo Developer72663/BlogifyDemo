@@ -29,7 +29,15 @@ router.post('/test-email', async (req, res) => {
 
 router.get('/signin', (req, res) => {
     if (req.user) return res.redirect('/');
-    res.render('signin', { error: null });
+
+    const googleErrors = {
+        google_not_configured: 'Google sign-in is not configured on this deployment. Please contact the administrator.',
+        google_auth_failed: 'Google sign-in failed. Check the Google OAuth redirect URI and try again.'
+    };
+
+    res.render('signin', {
+        error: googleErrors[req.query.error] || null
+    });
 });
 
 router.post('/signin', loginLimiter, async (req, res) => {
