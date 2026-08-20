@@ -12,14 +12,7 @@ function createDistributedLimiter(name, limit, duration, keyFn) {
         if (process.env.NODE_ENV === 'production') {
             console.warn(`[rate-limit] ${name} is using process-local fallback. Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for distributed protection.`);
         }
-        return rateLimit({
-            windowMs: duration,
-            max: limit,
-            standardHeaders: true,
-            legacyHeaders: false,
-            keyGenerator: keyFn,
-            message: limiterMessage,
-        });
+        return rateLimit({ windowMs: duration, max: limit, standardHeaders: true, legacyHeaders: false, keyGenerator: keyFn, message: limiterMessage });
     }
 
     const limiter = new Ratelimit({
@@ -38,10 +31,9 @@ function createDistributedLimiter(name, limit, duration, keyFn) {
             if (!result.success) return res.status(429).json({ success: false, message: limiterMessage });
             return next();
         } catch (error) {
-            console.error(`[rate-limit] ${name} failed:`, error.message);
             // Availability is preferable to taking the entire application down
-            when Redis is temporarily unavailable. Log it so production monitoring
-            can alert on the degraded protection.
+            // when Redis is temporarily unavailable. Monitoring should alert on this.
+            console.error(`[rate-limit] ${name} failed:`, error.message);
             return next();
         }
     };
