@@ -32,7 +32,15 @@ router.post("/add-new",blogCreationLimiter,mediaUpload.single("mediaFile"),async
     try{
         const {title,body,tags,category,status,metaDescription,excerpt,mediaType="blog"}=req.body;
         if(!["blog","photo","video"].includes(mediaType))return res.status(400).render("addBlog",{user:req.user,error:"Invalid post type."});
-        const validation=validateBlog(title,body,tags?tags.split(","):[]);
+
+        // Accept the canonical `body` field while remaining compatible with older clients
+        // that may still send `content` or `description`.
+        const submittedBody=typeof body==="string"?body:"";
+        const fallbackBody=typeof req.body.content==="string"?req.body.content:(typeof req.body.description==="string"?req.body.description:"");
+        const effectiveBody=submittedBody.trim()?submittedBody:fallbackBody;
+        const effectiveTitle=(typeof title==="string"?title:"").trim();
+        const mediaBody=mediaType!=="blog"&&effectiveBody.trim().length===0?(typeof excerpt==="string"&&excerpt.trim()?excerpt:(effectiveTitle||`${mediaType} post`)):effectiveBody;
+        const validation=validateBlog(effectiveTitle,mediaBody,tags?tags.split(","):[]);
         if(!validation.isValid)return res.status(400).render("addBlog",{user:req.user,error:validation.errors.join(", ")});
         if(mediaType==="video"&&!req.file)return res.status(400).render("addBlog",{user:req.user,error:"Please select a video."});
         if(mediaType==="photo"&&!req.file)return res.status(400).render("addBlog",{user:req.user,error:"Please select a photo."});
@@ -46,7 +54,7 @@ router.post("/add-new",blogCreationLimiter,mediaUpload.single("mediaFile"),async
             coverImageURL=await uploadCoverImage(req.file);
         }
         const tagsArray=tags?tags.split(",").map(t=>t.trim()).filter(Boolean):[];
-        const newBlog=await Blog.create({title:sanitizeInput(title),body:sanitizeInput(body),coverImageURL,videoURL,videoDuration,mediaType,tags:tagsArray,category:category||"General",status:status||"published",metaDescription:sanitizeInput(metaDescription),excerpt:sanitizeInput(excerpt),createdBy:req.user._id});
+        const newBlog=await Blog.create({title:sanitizeInput(effectiveTitle),body:sanitizeInput(mediaBody),coverImageURL,videoURL,videoDuration,mediaType,tags:tagsArray,category:category||"General",status:status||"published",metaDescription:sanitizeInput(metaDescription),excerpt:sanitizeInput(excerpt),createdBy:req.user._id});
         await require("../models/BlogAnalytics").create({blog:newBlog._id,author:req.user._id});
         if(newBlog.status==="published")try{await NotificationService.createBlogPostNotifications(req.user._id,newBlog._id,newBlog.title);}catch(e){console.error(e);}
         res.redirect(`/blogs/${newBlog._id}`);
