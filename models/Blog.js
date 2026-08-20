@@ -21,12 +21,7 @@ const BlogSchema = new Schema({
     featuredRank: { type: Number, default: 0 },
     viewCount: { type: Number, default: 0 },
     likes: [{ type: Schema.Types.ObjectId, ref: "user" }],
-    readingTime: { type: Number, default: 0 },
-    viewers: [{
-        viewerId: { type: String, required: true },
-        viewedAt: { type: Date, required: true },
-        isAuthenticated: { type: Boolean, default: false }
-    }]
+    readingTime: { type: Number, default: 0 }
 }, { timestamps: true });
 
 BlogSchema.query.notDeleted = function () { return this.where({ isDeleted: false }); };
@@ -35,7 +30,6 @@ BlogSchema.index({ tags: 1 });
 BlogSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
 BlogSchema.index({ isFeatured: 1, featuredRank: 1 });
 BlogSchema.index({ viewCount: -1 });
-BlogSchema.index({ "viewers.viewerId": 1, "viewers.viewedAt": 1 });
 
 BlogSchema.pre("save", function (next) {
     if (this.isModified("body")) {
