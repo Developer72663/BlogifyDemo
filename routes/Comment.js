@@ -7,11 +7,15 @@ const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const { validateComment } = require("../middlewares/validation");
 const NotificationService = require("../services/notificationService");
 
-router.use(restrictToLoggedInUserOnly);
-
+// Reading comments is public for public blogs. Authentication is required only
+// for creating, editing, deleting and liking comments. This prevents an
+// anonymous reader from receiving a redirect-to-signin HTML page when the
+// frontend expects JSON.
 async function canAccessBlog(blog, viewerId) {
     const author = await User.findById(blog.createdBy).select("isPrivate followers").lean();
-    if (!author || !author.isPrivate) return true;
+    if (!author) return false;
+    if (!author.isPrivate) return true;
+    if (!viewerId) return false;
     return author._id.toString() === viewerId.toString() || author.followers.some(id => id.toString() === viewerId.toString());
 }
 
@@ -30,19 +34,23 @@ function buildCommentTree(comments) {
     return roots;
 }
 
+// GET is intentionally not protected by restrictToLoggedInUserOnly.
 router.get("/blog/:blogId", async (req, res) => {
     try {
         const blog = await Blog.findById(req.params.blogId).lean();
         if (!blog) return res.status(404).json({ success: false, message: "Blog not found" });
-        if (!(await canAccessBlog(blog, req.user._id))) {
-            return res.status(403).json({ success: false, message: "Only followers can view comments on this private blog" });
+
+        const viewerId = req.user?._id || null;
+        if (!(await canAccessBlog(blog, viewerId))) {
+            return res.status(403).json({
+                success: false,
+                message: "Only the author and followers can view comments on this private blog"
+            });
         }
 
         const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
         const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
 
-        // Load the complete comment tree first so replies are never lost because
-        // of a single populate level. Root comments are paginated afterwards.
         const allComments = await Comment.find({ blog: req.params.blogId, isDeleted: false })
             .populate("author", "fullName profileImageURL")
             .sort({ createdAt: 1 })
@@ -60,7 +68,7 @@ router.get("/blog/:blogId", async (req, res) => {
             rootTotal: roots.length,
             pages: Math.max(Math.ceil(roots.length / limit), 1),
             currentPage: page,
-            currentUserId: req.user._id.toString()
+            currentUserId: req.user?._id?.toString() || null
         });
     } catch (error) {
         console.error("Fetch comments error:", error);
@@ -68,7 +76,8 @@ router.get("/blog/:blogId", async (req, res) => {
     }
 });
 
-router.post("/blog/:blogId", async (req, res) => {
+// All write operations require authentication.
+router.post("/blog/:blogId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
         const { content, parentCommentId } = req.body;
         const validation = validateComment(content);
@@ -111,7 +120,7 @@ router.post("/blog/:blogId", async (req, res) => {
     }
 });
 
-router.put("/:commentId", async (req, res) => {
+router.put("/:commentId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
         const validation = validateComment(req.body.content);
         if (!validation.isValid) return res.status(400).json({ success: false, errors: validation.errors });
@@ -126,12 +135,11 @@ router.put("/:commentId", async (req, res) => {
     }
 });
 
-router.delete("/:commentId", async (req, res) => {
+router.delete("/:commentId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
         const comment = await Comment.findById(req.params.commentId);
         if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
         if (comment.author.toString() !== req.user._id.toString()) return res.status(403).json({ success: false, message: "Not authorized" });
-
         comment.isDeleted = true;
         comment.content = "This comment was deleted.";
         await comment.save();
@@ -141,7 +149,7 @@ router.delete("/:commentId", async (req, res) => {
     }
 });
 
-router.post("/:commentId/like", async (req, res) => {
+router.post("/:commentId/like", restrictToLoggedInUserOnly, async (req, res) => {
     try {
         const comment = await Comment.findById(req.params.commentId);
         if (!comment || comment.isDeleted) return res.status(404).json({ success: false, message: "Comment not found" });
