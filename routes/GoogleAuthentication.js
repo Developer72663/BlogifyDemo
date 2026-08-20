@@ -11,15 +11,14 @@ const router = Router();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim();
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET?.trim();
 const GOOGLE_CALLBACK_PATH = "/auth/google/callback";
+const GOOGLE_STATE_COOKIE = "blogify_google_oauth_state";
+const GOOGLE_STATE_MAX_AGE = 10 * 60 * 1000;
 
 function normalizeBaseUrl(value) {
     if (!value) return "";
-
     let url = String(value).trim();
     if (!url) return "";
-
     if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
-
     return url.replace(/\/$/, "");
 }
 
@@ -32,55 +31,29 @@ function appendCallbackPath(value) {
 }
 
 /*
- * IMPORTANT FOR VERCEL:
- * GOOGLE_CALLBACK_URL is deliberately checked FIRST.
- *
- * Google OAuth requires the redirect_uri sent by the app to be an EXACT
- * character-for-character match with an Authorized redirect URI in Google
- * Cloud Console. Vercel creates different hostnames for preview deployments,
- * so automatically choosing VERCEL_URL can cause redirect_uri_mismatch.
- *
- * Set GOOGLE_CALLBACK_URL in the Vercel Production environment to the exact
- * callback URI registered in Google Cloud Console, for example:
- * https://your-production-domain.com/auth/google/callback
- *
- * Render can use RENDER_EXTERNAL_URL. Local development falls back to
- * localhost.
+ * Google requires an exact redirect URI. Prefer the explicitly configured
+ * GOOGLE_CALLBACK_URL on Render/Vercel. Do not use a random Vercel preview
+ * hostname when a production callback is configured.
  */
 function getGoogleCallbackURL() {
-    const explicitlyConfigured = appendCallbackPath(
-        process.env.GOOGLE_CALLBACK_URL
+    const explicit = appendCallbackPath(process.env.GOOGLE_CALLBACK_URL);
+    if (explicit) return explicit;
+
+    const render = appendCallbackPath(process.env.RENDER_EXTERNAL_URL);
+    if (render) return render;
+
+    const vercelProduction = appendCallbackPath(
+        process.env.VERCEL_PROJECT_PRODUCTION_URL
     );
-    if (explicitlyConfigured) return explicitlyConfigured;
+    if (vercelProduction) return vercelProduction;
 
-    if (process.env.RENDER_EXTERNAL_URL) {
-        const renderUrl = appendCallbackPath(process.env.RENDER_EXTERNAL_URL);
-        if (renderUrl) return renderUrl;
-    }
+    const vercel = appendCallbackPath(process.env.VERCEL_URL);
+    if (vercel) return vercel;
 
-    if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-        const productionUrl = appendCallbackPath(
-            process.env.VERCEL_PROJECT_PRODUCTION_URL
-        );
-        if (productionUrl) return productionUrl;
-    }
-
-    if (process.env.VERCEL_URL) {
-        const vercelUrl = appendCallbackPath(process.env.VERCEL_URL);
-        if (vercelUrl) return vercelUrl;
-    }
-
-    const port = process.env.PORT || 8000;
-    return `http://localhost:${port}${GOOGLE_CALLBACK_PATH}`;
+    return `http://localhost:${process.env.PORT || 8000}${GOOGLE_CALLBACK_PATH}`;
 }
 
 const GOOGLE_CALLBACK_URL = getGoogleCallbackURL();
-
-// JWT-cookie authentication is used by Blogify, so Passport's session-based
-// OAuth state store is intentionally disabled. We validate our own short-lived
-// state value using an HttpOnly cookie instead.
-const GOOGLE_STATE_COOKIE = "blogify_google_oauth_state";
-const GOOGLE_STATE_MAX_AGE = 10 * 60 * 1000;
 
 console.log("Google OAuth configuration:", {
     clientIdConfigured: Boolean(GOOGLE_CLIENT_ID),
@@ -91,14 +64,24 @@ console.log("Google OAuth configuration:", {
         : process.env.RENDER
             ? "render"
             : "other",
-    explicitCallbackConfigured: Boolean(process.env.GOOGLE_CALLBACK_URL),
-    vercelProductionURL: process.env.VERCEL_PROJECT_PRODUCTION_URL || null,
-    vercelURL: process.env.VERCEL_URL || null,
-    renderURL: process.env.RENDER_EXTERNAL_URL || null,
 });
 
 function isProduction() {
     return process.env.NODE_ENV === "production";
+}
+
+function cookieOptions() {
+    return {
+        httpOnly: true,
+        secure: isProduction(),
+        sameSite: "lax",
+        maxAge: GOOGLE_STATE_MAX_AGE,
+        // IMPORTANT: the callback can be reached at both
+        // /auth/google/callback and /user/auth/google/callback because the
+        // route is mounted twice in app.js. Path=/ makes the state cookie
+        // available to either callback and fixes Vercel callback failures.
+        path: "/",
+    };
 }
 
 function generateOAuthState() {
@@ -117,22 +100,16 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                 clientID: GOOGLE_CLIENT_ID,
                 clientSecret: GOOGLE_CLIENT_SECRET,
                 callbackURL: GOOGLE_CALLBACK_URL,
-                // Do not use Passport's session state store; this application
-                // does not use express-session.
+                // Blogify uses JWT cookies, not express-session.
                 state: false,
             },
             async (accessToken, refreshToken, profile, done) => {
                 try {
                     if (!profile?.id) {
-                        return done(
-                            new Error("Google did not return a valid account ID.")
-                        );
+                        return done(new Error("Google did not return a valid account ID."));
                     }
 
-                    const email = profile.emails?.[0]?.value
-                        ?.trim()
-                        .toLowerCase();
-
+                    const email = profile.emails?.[0]?.value?.trim().toLowerCase();
                     if (!email) {
                         return done(
                             new Error(
@@ -142,11 +119,8 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                     }
 
                     const user = await User.findOrCreateGoogleUser(profile);
-
                     if (!user) {
-                        return done(
-                            new Error("Unable to create or find your Blogify account.")
-                        );
+                        return done(new Error("Unable to create or find your Blogify account."));
                     }
 
                     if (user.isBlocked === true) {
@@ -167,8 +141,8 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
     );
 }
 
+// Kept for Passport compatibility. Blogify itself uses JWT cookies.
 passport.serializeUser((user, done) => done(null, user.id));
-
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await User.findById(id);
@@ -187,12 +161,12 @@ router.get("/auth/google", (req, res, next) => {
 
     const state = generateOAuthState();
 
-    res.cookie(GOOGLE_STATE_COOKIE, state, {
-        httpOnly: true,
-        secure: isProduction(),
-        sameSite: "lax",
-        maxAge: GOOGLE_STATE_MAX_AGE,
-        path: "/auth/google",
+    res.cookie(GOOGLE_STATE_COOKIE, state, cookieOptions());
+
+    console.log("Starting Google OAuth", {
+        callbackURL: GOOGLE_CALLBACK_URL,
+        stateStored: true,
+        requestPath: req.originalUrl,
     });
 
     return passport.authenticate("google", {
@@ -210,25 +184,18 @@ router.get("/auth/google/callback", (req, res, next) => {
             req.query.error,
             req.query.error_description || ""
         );
-
-        res.clearCookie(GOOGLE_STATE_COOKIE, {
-            httpOnly: true,
-            secure: isProduction(),
-            sameSite: "lax",
-            path: "/auth/google",
-        });
-
+        res.clearCookie(GOOGLE_STATE_COOKIE, cookieOptions());
         return redirectToSignin(res);
     }
 
     const returnedState =
         typeof req.query?.state === "string" ? req.query.state : "";
 
-    let storedState = "";
+    // cookie-parser is installed globally in app.js. The raw-cookie fallback
+    // also keeps this route working if middleware order changes later.
+    let storedState = req.cookies?.[GOOGLE_STATE_COOKIE] || "";
 
-    if (req.cookies) {
-        storedState = req.cookies[GOOGLE_STATE_COOKIE] || "";
-    } else {
+    if (!storedState) {
         const cookieHeader = req.headers.cookie || "";
         const match = cookieHeader
             .split(";")
@@ -242,35 +209,38 @@ router.get("/auth/google/callback", (req, res, next) => {
         }
     }
 
-    res.clearCookie(GOOGLE_STATE_COOKIE, {
-        httpOnly: true,
-        secure: isProduction(),
-        sameSite: "lax",
-        path: "/auth/google",
-    });
+    res.clearCookie(GOOGLE_STATE_COOKIE, cookieOptions());
 
-    if (
-        !returnedState ||
-        !storedState ||
-        returnedState.length !== storedState.length
-    ) {
-        console.error("Google OAuth state validation failed.");
+    if (!returnedState || !storedState) {
+        console.error("Google OAuth state validation failed: missing state", {
+            returnedState: Boolean(returnedState),
+            storedState: Boolean(storedState),
+            callbackPath: req.path,
+            host: req.get("host"),
+        });
+        return redirectToSignin(res);
+    }
+
+    if (returnedState.length !== storedState.length) {
+        console.error("Google OAuth state validation failed: length mismatch");
         return redirectToSignin(res);
     }
 
     let stateValid = false;
-
     try {
         stateValid = crypto.timingSafeEqual(
             Buffer.from(returnedState, "utf8"),
             Buffer.from(storedState, "utf8")
         );
     } catch (error) {
-        stateValid = false;
+        console.error("Google OAuth state comparison failed:", error.message);
     }
 
     if (!stateValid) {
-        console.error("Google OAuth state mismatch.");
+        console.error("Google OAuth state mismatch", {
+            callbackPath: req.path,
+            host: req.get("host"),
+        });
         return redirectToSignin(res);
     }
 
@@ -302,11 +272,9 @@ router.get("/auth/google/callback", (req, res, next) => {
                     path: "/",
                 });
 
-                console.log(
-                    "Google login successful:",
-                    user.email || user._id
-                );
+                console.log("Google login successful:", user.email || user._id);
 
+                // This route is handled by app.js and renders home.ejs.
                 return res.redirect("/?auth=success");
             } catch (tokenError) {
                 console.error("Google JWT creation failed:", tokenError);
