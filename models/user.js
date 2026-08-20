@@ -1,17 +1,29 @@
 const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
-const { createHmac, randomBytes } = require("crypto");
+const { createHmac, randomBytes, timingSafeEqual } = require("crypto");
+const bcrypt = require("bcryptjs");
 const { creatTokenForUser } = require("../services/authentication");
+
+const BCRYPT_ROUNDS = Math.max(12, Number.parseInt(process.env.BCRYPT_ROUNDS || "12", 10));
 
 const UserSchema = new Schema({
     fullName: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    salt: { type: String }, password: { type: String }, googleId: { type: String, unique: true, sparse: true },
-    profileImageURL: { type: String, default: "/imgs/default.png" }, bio: { type: String, default: "", maxlength: 500 },
-    website: { type: String, default: "" }, location: { type: String, default: "", maxlength: 120 }, role: { type: String, enum: ["USER", "ADMIN"], default: "USER" },
-    theme: { type: String, enum: ["light", "dark", "system"], default: "system" }, isPrivate: { type: Boolean, default: false },
+    salt: { type: String },
+    password: { type: String },
+    passwordHashVersion: { type: String, enum: ["legacy-hmac-sha256", "bcrypt"], default: "bcrypt" },
+    googleId: { type: String, unique: true, sparse: true },
+    profileImageURL: { type: String, default: "/imgs/default.png" },
+    bio: { type: String, default: "", maxlength: 500 },
+    website: { type: String, default: "" },
+    location: { type: String, default: "", maxlength: 120 },
+    role: { type: String, enum: ["USER", "ADMIN"], default: "USER" },
+    theme: { type: String, enum: ["light", "dark", "system"], default: "system" },
+    isPrivate: { type: Boolean, default: false },
     isDeactivated: { type: Boolean, default: false },
-    followers: [{ type: Schema.Types.ObjectId, ref: "user" }], following: [{ type: Schema.Types.ObjectId, ref: "user" }], blockedUsers: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    followers: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    following: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    blockedUsers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     notificationSettings: {
         emailOnComment: { type: Boolean, default: true }, emailOnNewFollower: { type: Boolean, default: true }, emailOnFollowRequest: { type: Boolean, default: true },
         emailOnRequestAccepted: { type: Boolean, default: true }, emailOnLike: { type: Boolean, default: true }, emailOnMention: { type: Boolean, default: true }, emailDigest: { type: Boolean, default: true },
@@ -37,19 +49,57 @@ const UserSchema = new Schema({
     interfaceSettings: { compactLayout: { type: Boolean, default: false }, reduceAnimations: { type: Boolean, default: false } }
 }, { timestamps: true });
 
-UserSchema.index({ email: 1 }); UserSchema.index({ followers: 1 }); UserSchema.index({ following: 1 });
+UserSchema.index({ email: 1 });
+UserSchema.index({ followers: 1 });
+UserSchema.index({ following: 1 });
 UserSchema.virtual("followerCount").get(function() { return this.followers ? this.followers.length : 0; });
 UserSchema.virtual("followingCount").get(function() { return this.following ? this.following.length : 0; });
-UserSchema.pre("save", async function (next) { if (this.googleId || !this.password || !this.isModified("password")) return next(); try { const salt = randomBytes(16).toString("hex"); this.salt = salt; this.password = createHmac("sha256", salt).update(this.password).digest("hex"); next(); } catch (error) { next(error); } });
-UserSchema.static("matchPassword", async function (email, password) { const user = await this.findOne({ email: email.toLowerCase() }); if (!user) throw new Error("User not found"); if (user.isDeactivated) throw new Error("Account is deactivated"); if (!user.password) throw new Error("This account uses Google Sign-In"); const userProvidedHash = createHmac("sha256", user.salt).update(password).digest("hex"); if (user.password !== userProvidedHash) throw new Error("Incorrect Password"); return creatTokenForUser(user); });
 
-// Find an existing Blogify account by Google ID or email, or create one for a
-// new Google account. The duplicate-key recovery makes this safe when two
-// Google callbacks happen close together (for example after a browser retry).
+UserSchema.pre("save", async function (next) {
+    if (this.googleId || !this.password || !this.isModified("password")) return next();
+    try {
+        this.password = await bcrypt.hash(this.password, BCRYPT_ROUNDS);
+        this.passwordHashVersion = "bcrypt";
+        this.salt = undefined;
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+function legacyPasswordMatches(password, user) {
+    if (!user.salt || !user.password) return false;
+    const provided = createHmac("sha256", user.salt).update(password).digest("hex");
+    const a = Buffer.from(provided, "utf8");
+    const b = Buffer.from(user.password, "utf8");
+    return a.length === b.length && timingSafeEqual(a, b);
+}
+
+UserSchema.static("matchPassword", async function (email, password) {
+    const user = await this.findOne({ email: email.toLowerCase() });
+    if (!user) throw new Error("User not found");
+    if (user.isDeactivated) throw new Error("Account is deactivated");
+    if (!user.password) throw new Error("This account uses Google Sign-In");
+
+    let valid = false;
+    if (user.passwordHashVersion === "bcrypt" || String(user.password).startsWith("$2")) {
+        valid = await bcrypt.compare(password, user.password);
+    } else {
+        valid = legacyPasswordMatches(password, user);
+        if (valid) {
+            // Seamlessly migrate an existing legacy account after the first
+            // successful login. The plaintext password is only held in memory.
+            user.password = password;
+            await user.save();
+        }
+    }
+    if (!valid) throw new Error("Incorrect Password");
+    return creatTokenForUser(user);
+});
+
 UserSchema.static("findOrCreateGoogleUser", async function (profile) {
     const googleId = String(profile?.id || "").trim();
     const email = String(profile?.emails?.[0]?.value || "").trim().toLowerCase();
-
     if (!googleId) throw new Error("Google account ID is missing.");
     if (!email) throw new Error("Google account email is missing.");
 
@@ -59,19 +109,14 @@ UserSchema.static("findOrCreateGoogleUser", async function (profile) {
     let user = await this.findOne({ googleId });
     if (user) {
         if (user.isDeactivated) throw new Error("Account is deactivated");
-        if (photo && user.profileImageURL !== photo) {
-            user.profileImageURL = photo;
-            await user.save();
-        }
+        if (photo && user.profileImageURL !== photo) { user.profileImageURL = photo; await user.save(); }
         return user;
     }
 
     user = await this.findOne({ email });
     if (user) {
         if (user.isDeactivated) throw new Error("Account is deactivated");
-        if (user.googleId && user.googleId !== googleId) {
-            throw new Error("This email is already linked to another Google account.");
-        }
+        if (user.googleId && user.googleId !== googleId) throw new Error("This email is already linked to another Google account.");
         user.googleId = googleId;
         if (photo) user.profileImageURL = photo;
         await user.save();
@@ -79,24 +124,13 @@ UserSchema.static("findOrCreateGoogleUser", async function (profile) {
     }
 
     try {
-        return await this.create({
-            fullName: displayName,
-            email,
-            googleId,
-            profileImageURL: photo || "/imgs/default.png"
-        });
+        return await this.create({ fullName: displayName, email, googleId, profileImageURL: photo || "/imgs/default.png" });
     } catch (error) {
-        // MongoDB can reject the create if another callback created the same
-        // email/googleId between our lookup and create. Recover by reading it.
         if (error?.code === 11000) {
             const existing = await this.findOne({ $or: [{ googleId }, { email }] });
             if (existing) {
                 if (existing.isDeactivated) throw new Error("Account is deactivated");
-                if (!existing.googleId) {
-                    existing.googleId = googleId;
-                    if (photo) existing.profileImageURL = photo;
-                    await existing.save();
-                }
+                if (!existing.googleId) { existing.googleId = googleId; if (photo) existing.profileImageURL = photo; await existing.save(); }
                 return existing;
             }
         }
@@ -109,4 +143,6 @@ UserSchema.methods.unfollowUser = async function(userId) { this.following = this
 UserSchema.methods.isFollowing = function(userId) { return this.following.some(id => id.toString() === userId.toString()); };
 UserSchema.methods.addFollower = async function(userId) { if (!this.followers.includes(userId)) { this.followers.push(userId); await this.save(); } };
 UserSchema.methods.removeFollower = async function(userId) { this.followers = this.followers.filter(id => id.toString() !== userId.toString()); await this.save(); };
-const User = mongoose.models.user || model("user", UserSchema); module.exports = User;
+
+const User = mongoose.models.user || model("user", UserSchema);
+module.exports = User;
