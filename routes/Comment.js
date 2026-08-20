@@ -69,7 +69,6 @@ async function getComments(req, res) {
             .sort({ createdAt: 1 })
             .lean();
 
-        // Do not let a stale/deleted author break the entire comments panel.
         const safeComments = allComments.filter(comment => comment.author);
         const roots = buildCommentTree(safeComments);
         const total = safeComments.length;
@@ -96,29 +95,58 @@ async function getComments(req, res) {
     }
 }
 
+// Comment writes are AJAX/API requests. Return JSON for an expired/missing session
+// instead of redirecting the axios request to an HTML sign-in page.
+function requireCommentUser(req, res, next) {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: "Authentication required. Please sign in again."
+        });
+    }
+    next();
+}
+
 // Public comment reads for public blogs.
 router.get("/blog/:blogId", getComments);
-
-// Backward-compatible alias for older view.ejs builds that request /comments/:blogId.
 router.get("/:blogId", getComments);
 
-// All write operations require authentication.
-router.post("/blog/:blogId", restrictToLoggedInUserOnly, async (req, res) => {
+async function createComment(req, res) {
     try {
-        const { content, parentCommentId } = req.body;
-        const validation = validateComment(content);
-        if (!validation.isValid) return res.status(400).json({ success: false, errors: validation.errors });
+        const { blogId } = req.params;
+        const { content, parentCommentId } = req.body || {};
 
-        const blog = await Blog.findById(req.params.blogId);
-        if (!blog || blog.isDeleted) return res.status(404).json({ success: false, message: "Blog not found" });
+        if (!mongoose.Types.ObjectId.isValid(blogId)) {
+            return res.status(400).json({ success: false, message: "Invalid blog ID" });
+        }
+
+        const validation = validateComment(content);
+        if (!validation.isValid) {
+            return res.status(400).json({ success: false, errors: validation.errors, message: validation.errors[0] });
+        }
+
+        const blog = await Blog.findById(blogId);
+        if (!blog || blog.isDeleted) {
+            return res.status(404).json({ success: false, message: "Blog not found" });
+        }
+
         if (!(await canAccessBlog(blog, req.user._id))) {
             return res.status(403).json({ success: false, message: "Only followers can comment on this private blog" });
         }
 
         let parent = null;
         if (parentCommentId) {
-            parent = await Comment.findOne({ _id: parentCommentId, blog: blog._id, isDeleted: false });
-            if (!parent) return res.status(400).json({ success: false, message: "Invalid reply target" });
+            if (!mongoose.Types.ObjectId.isValid(parentCommentId)) {
+                return res.status(400).json({ success: false, message: "Invalid reply target" });
+            }
+            parent = await Comment.findOne({
+                _id: parentCommentId,
+                blog: blog._id,
+                isDeleted: false
+            });
+            if (!parent) {
+                return res.status(400).json({ success: false, message: "Invalid reply target" });
+            }
         }
 
         const comment = await Comment.create({
@@ -134,7 +162,9 @@ router.post("/blog/:blogId", restrictToLoggedInUserOnly, async (req, res) => {
             try {
                 await NotificationService.createNotification(blog.createdBy, "comment", {
                     title: parent ? "New reply" : "New comment",
-                    message: parent ? `${req.user.fullName} replied to a comment on your blog` : `${req.user.fullName} commented on your blog`,
+                    message: parent
+                        ? `${req.user.fullName} replied to a comment on your blog`
+                        : `${req.user.fullName} commented on your blog`,
                     blog: blog._id,
                     actor: req.user._id
                 });
@@ -143,18 +173,19 @@ router.post("/blog/:blogId", restrictToLoggedInUserOnly, async (req, res) => {
             }
         }
 
-        res.status(201).json({ success: true, comment });
+        return res.status(201).json({ success: true, comment });
     } catch (error) {
         console.error("Create comment error:", error);
-        res.status(500).json({ success: false, message: "Failed to post comment" });
+        return res.status(500).json({ success: false, message: "Failed to post comment" });
     }
-});
+}
 
-// Backward-compatible write alias.
-router.post("/:blogId", restrictToLoggedInUserOnly, async (req, res, next) => {
-    req.url = `/blog/${req.params.blogId}`;
-    return next();
-});
+// Canonical endpoint used by views/view.ejs.
+router.post("/blog/:blogId", requireCommentUser, createComment);
+
+// Keep the legacy endpoint working by calling the same handler directly.
+// Rewriting req.url + next() does not re-run an already matched Express route.
+router.post("/:blogId", requireCommentUser, createComment);
 
 router.put("/:commentId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
