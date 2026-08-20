@@ -1,483 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <%- include("./partials/head") %>
-    <title>Sign In - Blogify</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            height: 100%;
-        }
-
-        body {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #764ba2 100%);
-            min-height: 100dvh;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow-x: hidden;
-            padding: 0.75rem;
-        }
-
-        .auth-container {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            padding: 0.5rem 0;
-        }
-
-        .auth-card {
-            background: rgba(255, 255, 255, 0.97);
-            backdrop-filter: blur(12px);
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            width: 100%;
-            max-width: 420px;
-            animation: slideIn 0.4s ease-out;
-        }
-
-        .auth-card-body {
-            padding: 2rem 1.75rem;
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .auth-header h2 {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 0.4rem;
-            letter-spacing: -0.5px;
-        }
-
-        .auth-header p {
-            color: #64748b;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 0.4rem;
-            display: block;
-            font-size: 0.9rem;
-        }
-
-        .form-control {
-            width: 100%;
-            border-radius: 10px;
-            padding: 0.75rem 0.9rem;
-            border: 2px solid #e2e8f0;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .form-control:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-            outline: none;
-        }
-
-        .form-control::placeholder {
-            color: #94a3b8;
-        }
-
-        .input-group {
-            display: flex;
-            align-items: stretch;
-        }
-
-        .input-group .form-control {
-            border-radius: 10px 0 0 10px;
-            margin: 0;
-        }
-
-        .input-group .btn {
-            border-radius: 0 10px 10px 0;
-            border: 2px solid #e2e8f0;
-            border-left: none;
-            background: white;
-            color: #64748b;
-            font-size: 1.1rem;
-            padding: 0.75rem 0.9rem;
-            min-width: 44px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .input-group .btn:hover {
-            background: #f8fafc;
-            color: #334155;
-        }
-
-        .btn-signin {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            border: none;
-            border-radius: 10px;
-            padding: 0.8rem 1.5rem;
-            color: white;
-            font-weight: 700;
-            font-size: 0.95rem;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 0.75rem;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .btn-signin:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-signin:active {
-            transform: translateY(0);
-        }
-
-        .btn-signin:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .forgot-link {
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        .forgot-link a {
-            color: #6366f1;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: color 0.3s ease;
-        }
-
-        .forgot-link a:hover {
-            color: #4f46e5;
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 1rem 0;
-            color: #94a3b8;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #e2e8f0;
-        }
-
-        .divider span {
-            padding: 0 0.75rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .btn-google {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            width: 100%;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 0.8rem 1.5rem;
-            background: white;
-            color: #1e293b;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-            margin-bottom: 1rem;
-        }
-
-        .btn-google:hover {
-            border-color: #cbd5e1;
-            background: #f8fafc;
-            transform: translateY(-1px);
-        }
-
-        .signup-link {
-            text-align: center;
-            margin-top: 1rem;
-            color: #64748b;
-            font-size: 0.85rem;
-        }
-
-        .signup-link a {
-            color: #6366f1;
-            text-decoration: none;
-            font-weight: 700;
-            transition: color 0.3s ease;
-        }
-
-        .signup-link a:hover {
-            color: #4f46e5;
-        }
-
-        .alert {
-            border-radius: 10px;
-            padding: 0.85rem;
-            margin-bottom: 1rem;
-            border: none;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .alert-danger {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Loading State */
-        .spinner-border {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            vertical-align: text-bottom;
-            border: 2px solid currentColor;
-            border-right-color: transparent;
-            border-radius: 50%;
-            animation: spinner-border 0.75s linear infinite;
-        }
-
-        @keyframes spinner-border {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 576px) {
-            body {
-                padding: 0.5rem;
-                justify-content: flex-start;
-                padding-top: 0.75rem;
-                padding-bottom: 0.75rem;
-            }
-
-            .auth-container {
-                align-items: flex-start;
-                padding: 0;
-            }
-
-            .auth-card {
-                max-width: 100%;
-                border-radius: 14px;
-            }
-
-            .auth-card-body {
-                padding: 1.5rem 1.25rem;
-            }
-
-            .auth-header h2 {
-                font-size: 1.4rem;
-            }
-
-            .auth-header p {
-                font-size: 0.85rem;
-            }
-
-            .form-control {
-                padding: 0.7rem 0.85rem;
-                font-size: 16px; /* Prevents iOS zoom on focus */
-            }
-
-            .form-label {
-                font-size: 0.85rem;
-            }
-
-            .btn-signin {
-                padding: 0.75rem 1.5rem;
-            }
-
-            .btn-google {
-                padding: 0.75rem 1.5rem;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .auth-card-body {
-                padding: 1.25rem 1rem;
-            }
-
-            .auth-header h2 {
-                font-size: 1.25rem;
-            }
-
-            .auth-header {
-                margin-bottom: 1.25rem;
-            }
-        }
-    </style>
-<base target="_blank">
+  <%- include("./partials/head") %>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Sign In - Blogify</title>
+  <style>
+    :root{--a-bg:#f5f7ff;--a-card:#fff;--a-text:#111827;--a-muted:#64748b;--a-border:#e5e7eb;--a-primary:#6366f1;--a-primary2:#8b5cf6;--a-soft:#f8fafc}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100dvh;background:radial-gradient(circle at 10% 10%,rgba(99,102,241,.14),transparent 32%),radial-gradient(circle at 90% 90%,rgba(139,92,246,.12),transparent 32%),var(--a-bg);color:var(--a-text);padding:82px 14px 24px}
+    .auth-container{width:100%;min-height:calc(100dvh - 106px);display:grid;place-items:center}
+    .auth-card{width:min(100%,430px);background:rgba(255,255,255,.94);border:1px solid rgba(255,255,255,.9);border-radius:24px;box-shadow:0 24px 70px rgba(30,41,59,.13);overflow:hidden;animation:rise .35s ease-out}
+    .auth-card-body{padding:30px 28px 26px}
+    .auth-brand{width:54px;height:54px;margin:0 auto 16px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--a-primary),var(--a-primary2));color:#fff;font-size:1.35rem;font-weight:900;box-shadow:0 12px 28px rgba(99,102,241,.28)}
+    .auth-header{text-align:center;margin-bottom:24px}.auth-header h2{margin:0 0 7px;font-size:1.7rem;letter-spacing:-.04em}.auth-header p{margin:0;color:var(--a-muted);font-size:.88rem;line-height:1.5}
+    .form-group{margin-bottom:16px}.form-label{display:block;margin:0 0 7px;font-size:.82rem;font-weight:750}.form-control{width:100%;height:48px;padding:0 13px;border:1.5px solid var(--a-border);border-radius:13px;background:var(--a-card);color:var(--a-text);font:500 16px Inter,system-ui;outline:0;transition:.18s}.form-control:focus{border-color:var(--a-primary);box-shadow:0 0 0 4px rgba(99,102,241,.12)}.form-control::placeholder{color:#9ca3af}
+    .input-group{display:flex}.input-group .form-control{border-radius:13px 0 0 13px}.input-group .btn{width:50px;border:1.5px solid var(--a-border);border-left:0;border-radius:0 13px 13px 0;background:var(--a-card);color:#64748b;cursor:pointer;font-size:1rem}.input-group .btn:hover{background:var(--a-soft)}
+    .btn-signin{width:100%;height:48px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--a-primary),var(--a-primary2));color:#fff;font:800 .9rem Inter,system-ui;cursor:pointer;box-shadow:0 10px 24px rgba(99,102,241,.22);transition:.18s}.btn-signin:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 28px rgba(99,102,241,.28)}.btn-signin:disabled{opacity:.65;cursor:not-allowed}
+    .forgot-link{text-align:right;margin:11px 1px 20px}.forgot-link a,.signup-link a{color:var(--a-primary);font-weight:750;text-decoration:none}.forgot-link a{font-size:.8rem}.forgot-link a:hover,.signup-link a:hover{text-decoration:underline}
+    .divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:#94a3b8;font-size:.72rem;font-weight:800}.divider:before,.divider:after{content:"";height:1px;flex:1;background:var(--a-border)}
+    .btn-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:10px;border:1.5px solid var(--a-border);border-radius:13px;background:var(--a-card);color:var(--a-text);font:750 .88rem Inter,system-ui;text-decoration:none;transition:.18s}.btn-google:hover{background:var(--a-soft);border-color:#cbd5e1;transform:translateY(-1px)}.btn-google img{width:19px;height:19px}
+    .signup-link{text-align:center;margin:20px 0 0;color:var(--a-muted);font-size:.82rem}.signup-link a{margin-left:3px}
+    .alert{padding:11px 13px;margin:0 0 16px;border-radius:12px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:.82rem;font-weight:650;line-height:1.4}
+    .spinner-border{display:inline-block;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-3px;margin-right:7px;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    html[data-theme="dark"] body{--a-bg:#080808;--a-card:#111;--a-text:#f5f5f5;--a-muted:#a3a3a3;--a-border:#292929;--a-soft:#181818;background:radial-gradient(circle at 10% 10%,rgba(99,102,241,.14),transparent 32%),#080808}html[data-theme="dark"] .auth-card{background:rgba(17,17,17,.96);border-color:#292929;box-shadow:0 24px 70px rgba(0,0,0,.45)}html[data-theme="dark"] .alert{background:#2b1517;color:#ffb4bb;border-color:#552126}
+    @media(max-width:600px){body{padding:72px 10px 14px}.auth-container{min-height:calc(100dvh - 86px);align-items:start}.auth-card{border-radius:20px}.auth-card-body{padding:25px 18px 21px}.auth-brand{width:48px;height:48px;border-radius:14px;margin-bottom:13px}.auth-header{margin-bottom:21px}.auth-header h2{font-size:1.48rem}.form-group{margin-bottom:14px}}
+  </style>
 </head>
 <body>
-    <%- include("./partials/nave") %>
-
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-card-body">
-                <div class="auth-header">
-                    <h2>Welcome Back</h2>
-                    <p>Sign in to access your Blogify account</p>
-                </div>
-
-                <% if (typeof error !== 'undefined' && error) { %>
-                    <div class="alert alert-danger"><%= error %></div>
-                <% } %>
-
-                <form id="signinForm">
-                    <div class="form-group">
-                        <label class="form-label">Email Address</label>
-                        <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Password</label>
-                        <div class="input-group">
-                            <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
-                            <button type="button" class="btn" id="togglePassword" title="Toggle password visibility">
-                                👁️
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-signin" id="submitBtn">
-                        Sign In
-                    </button>
-                </form>
-
-                <div class="forgot-link">
-                    <a href="#" id="forgotLink">Forgot Password?</a>
-                </div>
-
-                <div class="divider">
-                    <span>OR</span>
-                </div>
-
-                <a href="/user/auth/google" class="btn-google">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 
-                         width="20" height="20" alt="Google">
-                    Continue with Google
-                </a>
-
-                <p class="signup-link">
-                    Don't have an account? 
-                    <a href="/user/signup">Create one</a>
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <%- include("./partials/scripts") %>
-
-    <script>
-        // Password Visibility Toggle
-        const toggleBtn = document.getElementById('togglePassword');
-        toggleBtn.addEventListener('click', function () {
-            const passwordField = document.getElementById('password');
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                this.textContent = '🙈';
-            } else {
-                passwordField.type = 'password';
-                this.textContent = '👁️';
-            }
-        });
-
-        // Sign In Form
-        document.getElementById('signinForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="spinner-border me-2"></span>Signing In...`;
-
-            const data = {
-                email: document.getElementById('email').value.trim(),
-                password: document.getElementById('password').value
-            };
-
-            try {
-                const res = await fetch('/user/signin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await res.json();
-
-                if (result.success) {
-                    window.location.href = "/";
-                } else {
-                    alert(result.message || "Invalid email or password");
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = "Sign In";
-                }
-            } catch (err) {
-                alert("Something went wrong. Please try again.");
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Sign In";
-            }
-        });
-
-        // Forgot Password
-        document.getElementById('forgotLink').addEventListener('click', async function (e) {
-            e.preventDefault();
-            const email = prompt("Enter your registered email address:");
-            if (!email) return;
-
-            try {
-                const res = await fetch('/user/forgot-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const data = await res.json();
-                alert(data.message);
-            } catch (err) {
-                alert("Failed to send reset link");
-            }
-        });
-    </script>
+  <%- include("./partials/nave") %>
+  <main class="auth-container">
+    <section class="auth-card" aria-labelledby="signinTitle">
+      <div class="auth-card-body">
+        <div class="auth-brand" aria-hidden="true">B</div>
+        <header class="auth-header"><h2 id="signinTitle">Welcome back</h2><p>Sign in to continue to your Blogify account.</p></header>
+        <% if (typeof error !== 'undefined' && error) { %><div class="alert"><%= error %></div><% } %>
+        <form id="signinForm" novalidate>
+          <div class="form-group"><label class="form-label" for="email">Email address</label><input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" autocomplete="email" required></div>
+          <div class="form-group"><label class="form-label" for="password">Password</label><div class="input-group"><input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" autocomplete="current-password" required><button type="button" class="btn" id="togglePassword" aria-label="Show password">👁️</button></div></div>
+          <button type="submit" class="btn-signin" id="submitBtn">Sign In</button>
+        </form>
+        <div class="forgot-link"><a href="#" id="forgotLink">Forgot password?</a></div>
+        <div class="divider"><span>OR</span></div>
+        <a href="/user/auth/google" class="btn-google"><img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">Continue with Google</a>
+        <p class="signup-link">Don't have an account?<a href="/user/signup">Create one</a></p>
+      </div>
+    </section>
+  </main>
+  <%- include("./partials/scripts") %>
+  <script>
+    document.getElementById('togglePassword').addEventListener('click',function(){const p=document.getElementById('password');const show=p.type==='password';p.type=show?'text':'password';this.textContent=show?'🙈':'👁️';this.setAttribute('aria-label',show?'Hide password':'Show password')});
+    document.getElementById('signinForm').addEventListener('submit',async function(e){e.preventDefault();const b=document.getElementById('submitBtn');b.disabled=true;b.innerHTML='<span class="spinner-border"></span>Signing in...';try{const r=await fetch('/user/signin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value})});const d=await r.json();if(d.success)location.href='/';else{alert(d.message||'Invalid email or password');b.disabled=false;b.textContent='Sign In'}}catch(e){alert('Something went wrong. Please try again.');b.disabled=false;b.textContent='Sign In'}});
+    document.getElementById('forgotLink').addEventListener('click',async function(e){e.preventDefault();const email=prompt('Enter your registered email address:');if(!email)return;try{const r=await fetch('/user/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.trim()})});const d=await r.json();alert(d.message||'If the email exists, a reset link has been sent.')}catch(e){alert('Failed to send reset link')}});
+  </script>
 </body>
 </html>
