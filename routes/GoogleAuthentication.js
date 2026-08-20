@@ -1,6 +1,7 @@
 // routes/GoogleAuthentication.js
 
 const { Router } = require("express");
+const crypto = require("crypto");
 const passport = require("passport");
 const User = require("../models/user");
 const { creatTokenForUser } = require("../services/authentication");
@@ -12,57 +13,40 @@ const router = Router();
 |--------------------------------------------------------------------------
 | Google OAuth configuration
 |--------------------------------------------------------------------------
-|
-| Recommended environment variables:
-|
-| GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
-| GOOGLE_CLIENT_SECRET=xxxxxxxx
-|
-| GOOGLE_CALLBACK_URL=https://your-domain.com/auth/google/callback
-|
-| For Render, use:
-| https://blogifydemo.onrender.com/auth/google/callback
-|
-| If you also use Vercel, create a separate callback URL for the Vercel
-| deployment and add it to Google Cloud Console.
-|
 */
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim();
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET?.trim();
 
-/*
- * Build the callback URL safely.
- *
- * Priority:
- * 1. GOOGLE_CALLBACK_URL
- * 2. RENDER_EXTERNAL_URL
- * 3. VERCEL_URL
- *
- * GOOGLE_CALLBACK_URL is recommended because it gives you complete control.
- */
 function getGoogleCallbackURL() {
     if (process.env.GOOGLE_CALLBACK_URL?.trim()) {
         return process.env.GOOGLE_CALLBACK_URL.trim();
     }
 
     if (process.env.RENDER_EXTERNAL_URL?.trim()) {
-        return `${process.env.RENDER_EXTERNAL_URL.trim().replace(/\/$/, "")}/auth/google/callback`;
+        return (
+            process.env.RENDER_EXTERNAL_URL.trim().replace(/\/$/, "") +
+            "/auth/google/callback"
+        );
     }
 
     if (process.env.VERCEL_URL?.trim()) {
-        return `https://${process.env.VERCEL_URL.trim()}/auth/google/callback`;
+        return (
+            "https://" +
+            process.env.VERCEL_URL.trim() +
+            "/auth/google/callback"
+        );
     }
 
-    /*
-     * Local development fallback.
-     */
     const port = process.env.PORT || 8000;
 
     return `http://localhost:${port}/auth/google/callback`;
 }
 
 const GOOGLE_CALLBACK_URL = getGoogleCallbackURL();
+
+const GOOGLE_STATE_COOKIE = "blogify_google_oauth_state";
+const GOOGLE_STATE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
 
 console.log("Google OAuth configuration:", {
     clientIdConfigured: Boolean(GOOGLE_CLIENT_ID),
@@ -72,14 +56,45 @@ console.log("Google OAuth configuration:", {
 
 /*
 |--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+function isProduction() {
+    return process.env.NODE_ENV === "production";
+}
+
+function generateOAuthState() {
+    return crypto.randomBytes(32).toString("hex");
+}
+
+function safeRedirect(res, error = "google_auth_failed") {
+    return res.redirect(
+        `/user/signin?error=${encodeURIComponent(error)}`
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
 | Google Passport Strategy
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| Do NOT use:
+|
+|     state: true
+|
+| Passport's default OAuth state store requires express-session.
+|
+| Blogify uses JWT cookies rather than Passport sessions, so OAuth state
+| is handled manually with a secure short-lived cookie.
 |--------------------------------------------------------------------------
 */
 
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
     passport.use(
         "google",
-
         new GoogleStrategy(
             {
                 clientID: GOOGLE_CLIENT_ID,
@@ -87,17 +102,18 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                 callbackURL: GOOGLE_CALLBACK_URL,
 
                 /*
-                 * Passport will use the state parameter to protect the
-                 * OAuth flow against CSRF-style attacks.
+                 * IMPORTANT:
+                 *
+                 * Passport OAuth state is disabled here because the
+                 * application does not use Passport sessions.
+                 *
+                 * We generate and validate our own state value below.
                  */
-                state: true,
+                state: false,
             },
 
             async (accessToken, refreshToken, profile, done) => {
                 try {
-                    /*
-                     * Validate Google profile.
-                     */
                     if (!profile || !profile.id) {
                         return done(
                             new Error(
@@ -106,10 +122,6 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                         );
                     }
 
-                    /*
-                     * Google should normally return an email because
-                     * we request the email scope.
-                     */
                     const email = profile.emails?.[0]?.value
                         ?.trim()
                         .toLowerCase();
@@ -118,15 +130,16 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                         return done(
                             new Error(
                                 "Google did not return an email address. " +
-                                    "Please allow email access and try again."
+                                "Please allow email access and try again."
                             )
                         );
                     }
 
                     /*
-                     * Create or find the Blogify account.
+                     * Find/create the Blogify account.
                      */
-                    const user = await User.findOrCreateGoogleUser(profile);
+                    const user =
+                        await User.findOrCreateGoogleUser(profile);
 
                     if (!user) {
                         return done(
@@ -137,10 +150,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                     }
 
                     /*
-                     * Optional safety check.
-                     *
-                     * If your User model has an isBlocked field, prevent a
-                     * blocked account from logging in through Google.
+                     * Prevent blocked users from logging in through Google.
                      */
                     if (user.isBlocked === true) {
                         return done(
@@ -170,11 +180,11 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
 
 /*
 |--------------------------------------------------------------------------
-| Passport serialization
+| Passport compatibility
 |--------------------------------------------------------------------------
 |
-| Blogify itself uses JWT cookies instead of Passport sessions.
-| These functions remain here for Passport compatibility.
+| Blogify does NOT use Passport sessions for authentication.
+| JWT cookies are used instead.
 |--------------------------------------------------------------------------
 */
 
@@ -203,7 +213,7 @@ passport.deserializeUser(async (id, done) => {
 
 /*
 |--------------------------------------------------------------------------
-| Start Google authentication
+| Start Google OAuth
 |--------------------------------------------------------------------------
 */
 
@@ -213,27 +223,50 @@ router.get("/auth/google", (req, res, next) => {
             "Google login attempted but OAuth credentials are not configured."
         );
 
-        return res.redirect(
-            "/user/signin?error=google_not_configured"
+        return safeRedirect(
+            res,
+            "google_not_configured"
         );
     }
 
-    return passport.authenticate("google", {
-        scope: ["profile", "email"],
+    /*
+     * Generate cryptographically secure OAuth state.
+     */
+    const state = generateOAuthState();
 
-        /*
-         * Blogify uses JWT authentication, not Passport sessions.
-         */
-        session: false,
+    /*
+     * Store state in a short-lived HTTP-only cookie.
+     *
+     * This does NOT require express-session.
+     */
+    res.cookie(
+        GOOGLE_STATE_COOKIE,
+        state,
+        {
+            httpOnly: true,
+            secure: isProduction(),
+            sameSite: "lax",
+            maxAge: GOOGLE_STATE_MAX_AGE,
+            path: "/auth/google",
+        }
+    );
 
-        /*
-         * Explicitly request offline access only if your application
-         * actually needs a Google refresh token.
-         *
-         * We don't need one just to authenticate the Blogify user.
-         */
-        prompt: "select_account",
-    })(req, res, next);
+    /*
+     * Start Passport Google authentication.
+     *
+     * session:false is intentional because Blogify uses JWT.
+     *
+     * The generated state is supplied directly to Passport.
+     */
+    return passport.authenticate(
+        "google",
+        {
+            scope: ["profile", "email"],
+            session: false,
+            state,
+            prompt: "select_account",
+        }
+    )(req, res, next);
 });
 
 /*
@@ -246,7 +279,7 @@ router.get(
     "/auth/google/callback",
     (req, res, next) => {
         /*
-         * Google can send an OAuth error directly to this callback.
+         * Google may return an error instead of a code.
          */
         if (req.query?.error) {
             console.error(
@@ -255,96 +288,181 @@ router.get(
                 req.query.error_description || ""
             );
 
-            return res.redirect(
-                "/user/signin?error=google_auth_failed"
+            res.clearCookie(
+                GOOGLE_STATE_COOKIE,
+                {
+                    httpOnly: true,
+                    secure: isProduction(),
+                    sameSite: "lax",
+                    path: "/auth/google",
+                }
             );
+
+            return safeRedirect(res);
         }
 
+        /*
+         * Get state sent back by Google.
+         */
+        const returnedState =
+            typeof req.query?.state === "string"
+                ? req.query.state
+                : "";
+
+        /*
+         * Read our state cookie.
+         *
+         * cookie-parser is normally already available in Blogify.
+         * The fallback parser below keeps this route safe even if
+         * req.cookies is unavailable.
+         */
+        let storedState = "";
+
+        if (req.cookies) {
+            storedState =
+                req.cookies[GOOGLE_STATE_COOKIE] || "";
+        } else {
+            const cookieHeader =
+                req.headers.cookie || "";
+
+            const match = cookieHeader
+                .split(";")
+                .map((part) => part.trim())
+                .find((part) =>
+                    part.startsWith(
+                        `${GOOGLE_STATE_COOKIE}=`
+                    )
+                );
+
+            if (match) {
+                storedState = decodeURIComponent(
+                    match.substring(
+                        `${GOOGLE_STATE_COOKIE}=`.length
+                    )
+                );
+            }
+        }
+
+        /*
+         * Always clear the state cookie after callback processing.
+         */
+        res.clearCookie(
+            GOOGLE_STATE_COOKIE,
+            {
+                httpOnly: true,
+                secure: isProduction(),
+                sameSite: "lax",
+                path: "/auth/google",
+            }
+        );
+
+        /*
+         * OAuth state validation.
+         *
+         * This protects the callback from accepting an unrelated
+         * OAuth response.
+         */
+        if (
+            !returnedState ||
+            !storedState ||
+            returnedState.length !== storedState.length
+        ) {
+            console.error(
+                "Google OAuth state validation failed: missing or invalid state."
+            );
+
+            return safeRedirect(res);
+        }
+
+        let stateValid = false;
+
+        try {
+            stateValid = crypto.timingSafeEqual(
+                Buffer.from(returnedState, "utf8"),
+                Buffer.from(storedState, "utf8")
+            );
+        } catch (error) {
+            stateValid = false;
+        }
+
+        if (!stateValid) {
+            console.error(
+                "Google OAuth state validation failed: state mismatch."
+            );
+
+            return safeRedirect(res);
+        }
+
+        /*
+         * Now let Passport exchange the authorization code
+         * and obtain the Google profile.
+         */
         return passport.authenticate(
             "google",
             {
                 session: false,
             },
-
             (err, user, info) => {
-                /*
-                 * Passport authentication error.
-                 */
                 if (err) {
                     console.error(
                         "Google callback authentication failed:",
                         err
                     );
 
-                    return res.redirect(
-                        "/user/signin?error=google_auth_failed"
-                    );
+                    return safeRedirect(res);
                 }
 
-                /*
-                 * No user returned.
-                 */
                 if (!user) {
                     console.error(
                         "Google callback returned no user:",
                         info || "unknown reason"
                     );
 
-                    return res.redirect(
-                        "/user/signin?error=google_auth_failed"
-                    );
+                    return safeRedirect(res);
                 }
 
                 try {
                     /*
                      * Create Blogify JWT.
                      */
-                    const token = creatTokenForUser(user);
+                    const token =
+                        creatTokenForUser(user);
 
                     /*
-                     * Secure authentication cookie.
+                     * Store JWT securely.
                      */
-                    res.cookie("token", token, {
-                        httpOnly: true,
+                    res.cookie(
+                        "token",
+                        token,
+                        {
+                            httpOnly: true,
+                            secure: isProduction(),
+                            sameSite: "lax",
+                            maxAge:
+                                7 *
+                                24 *
+                                60 *
+                                60 *
+                                1000,
+                            path: "/",
+                        }
+                    );
 
-                        /*
-                         * HTTPS on Render/Vercel.
-                         */
-                        secure:
-                            process.env.NODE_ENV === "production",
+                    console.log(
+                        "Google login successful:",
+                        user.email || user._id
+                    );
 
-                        /*
-                         * Lax works well for OAuth callback redirects
-                         * while still providing CSRF protection.
-                         */
-                        sameSite: "lax",
-
-                        /*
-                         * Seven-day login.
-                         */
-                        maxAge:
-                            7 *
-                            24 *
-                            60 *
-                            60 *
-                            1000,
-
-                        path: "/",
-                    });
-
-                    /*
-                     * Successful Google login.
-                     */
-                    return res.redirect("/?auth=success");
+                    return res.redirect(
+                        "/?auth=success"
+                    );
                 } catch (tokenError) {
                     console.error(
                         "Google JWT creation failed:",
                         tokenError
                     );
 
-                    return res.redirect(
-                        "/user/signin?error=google_auth_failed"
-                    );
+                    return safeRedirect(res);
                 }
             }
         )(req, res, next);
@@ -353,7 +471,7 @@ router.get(
 
 /*
 |--------------------------------------------------------------------------
-| Export router
+| Export
 |--------------------------------------------------------------------------
 */
 
