@@ -8,21 +8,6 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const router = Router();
 
-/*
- * Google OAuth configuration
- *
- * IMPORTANT:
- * Google requires the callback URL used by the application to exactly match
- * one of the Authorized redirect URIs in Google Cloud Console.
- *
- * Recommended production setup:
- *   GOOGLE_CALLBACK_URL=https://<your-production-domain>/auth/google/callback
- *
- * On Vercel, VERCEL_PROJECT_PRODUCTION_URL is preferred over VERCEL_URL.
- * VERCEL_URL can point at a temporary deployment/preview URL, which is a
- * common reason Google reports "Access blocked: This app's request is invalid".
- */
-
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim();
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET?.trim();
 const GOOGLE_CALLBACK_PATH = "/auth/google/callback";
@@ -40,40 +25,45 @@ function normalizeBaseUrl(value) {
     return url.replace(/\/$/, "");
 }
 
+function appendCallbackPath(value) {
+    const base = normalizeBaseUrl(value);
+    if (!base) return "";
+    return base.endsWith(GOOGLE_CALLBACK_PATH)
+        ? base
+        : `${base}${GOOGLE_CALLBACK_PATH}`;
+}
+
+/*
+ * Google redirect URI must be deterministic and must exactly match Google
+ * Cloud Console.
+ *
+ * IMPORTANT:
+ * - On Vercel, never use a Render callback URL or a manually configured
+ *   GOOGLE_CALLBACK_URL if Vercel provides its deployment URL. This prevents
+ *   a shared GOOGLE_CALLBACK_URL from breaking the Vercel deployment.
+ * - VERCEL_PROJECT_PRODUCTION_URL is preferred because VERCEL_URL may be a
+ *   temporary preview deployment.
+ * - On Render, RENDER_EXTERNAL_URL is used.
+ * - GOOGLE_CALLBACK_URL is still supported for local/other deployments.
+ */
 function getGoogleCallbackURL() {
-    /*
-     * Explicit configuration always wins. This is the safest option because
-     * it makes the Google Console configuration deterministic.
-     */
-    const configured = normalizeBaseUrl(process.env.GOOGLE_CALLBACK_URL);
-    if (configured) {
-        return configured.endsWith(GOOGLE_CALLBACK_PATH)
-            ? configured
-            : `${configured}${GOOGLE_CALLBACK_PATH}`;
+    const isVercel = Boolean(process.env.VERCEL);
+
+    if (isVercel) {
+        const vercelProductionUrl = appendCallbackPath(
+            process.env.VERCEL_PROJECT_PRODUCTION_URL
+        );
+        if (vercelProductionUrl) return vercelProductionUrl;
+
+        const vercelUrl = appendCallbackPath(process.env.VERCEL_URL);
+        if (vercelUrl) return vercelUrl;
     }
 
-    /* Render production URL. */
-    const renderUrl = normalizeBaseUrl(process.env.RENDER_EXTERNAL_URL);
-    if (renderUrl) {
-        return `${renderUrl}${GOOGLE_CALLBACK_PATH}`;
-    }
+    const renderUrl = appendCallbackPath(process.env.RENDER_EXTERNAL_URL);
+    if (renderUrl) return renderUrl;
 
-    /*
-     * Vercel production URL MUST be preferred over VERCEL_URL.
-     * VERCEL_URL may be a deployment/preview hostname.
-     */
-    const vercelProductionUrl = normalizeBaseUrl(
-        process.env.VERCEL_PROJECT_PRODUCTION_URL
-    );
-    if (vercelProductionUrl) {
-        return `${vercelProductionUrl}${GOOGLE_CALLBACK_PATH}`;
-    }
-
-    /* Fallback for older Vercel/runtime configurations. */
-    const vercelUrl = normalizeBaseUrl(process.env.VERCEL_URL);
-    if (vercelUrl) {
-        return `${vercelUrl}${GOOGLE_CALLBACK_PATH}`;
-    }
+    const configured = appendCallbackPath(process.env.GOOGLE_CALLBACK_URL);
+    if (configured) return configured;
 
     const port = process.env.PORT || 8000;
     return `http://localhost:${port}${GOOGLE_CALLBACK_PATH}`;
@@ -81,7 +71,8 @@ function getGoogleCallbackURL() {
 
 const GOOGLE_CALLBACK_URL = getGoogleCallbackURL();
 
-/* Short-lived state cookie. No express-session is required. */
+// Short-lived CSRF state cookie. Passport's default state store requires
+// express-session, which this JWT-cookie application intentionally does not use.
 const GOOGLE_STATE_COOKIE = "blogify_google_oauth_state";
 const GOOGLE_STATE_MAX_AGE = 10 * 60 * 1000;
 
@@ -89,7 +80,14 @@ console.log("Google OAuth configuration:", {
     clientIdConfigured: Boolean(GOOGLE_CLIENT_ID),
     clientSecretConfigured: Boolean(GOOGLE_CLIENT_SECRET),
     callbackURL: GOOGLE_CALLBACK_URL,
+    deployment: process.env.VERCEL
+        ? "vercel"
+        : process.env.RENDER
+            ? "render"
+            : "other",
     vercelProductionURL: process.env.VERCEL_PROJECT_PRODUCTION_URL || null,
+    vercelURL: process.env.VERCEL_URL || null,
+    renderURL: process.env.RENDER_EXTERNAL_URL || null,
 });
 
 function isProduction() {
@@ -104,13 +102,6 @@ function redirectToSignin(res, error = "google_auth_failed") {
     return res.redirect(`/user/signin?error=${encodeURIComponent(error)}`);
 }
 
-/*
- * Passport Google strategy.
- *
- * state:false is intentional. Passport's default state store uses
- * express-session, while Blogify authenticates users with a JWT cookie.
- * State is generated and validated manually below.
- */
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
     passport.use(
         "google",
@@ -150,9 +141,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                     }
 
                     if (user.isBlocked === true) {
-                        return done(
-                            new Error("Your Blogify account has been blocked.")
-                        );
+                        return done(new Error("Your Blogify account has been blocked."));
                     }
 
                     return done(null, user);
@@ -169,23 +158,19 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
     );
 }
 
-/* Passport compatibility. Blogify itself uses JWT cookies, not sessions. */
+// Kept for Passport compatibility. Blogify authentication itself uses JWT cookies.
 passport.serializeUser((user, done) => done(null, user.id));
 
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await User.findById(id);
-        if (!user) return done(null, false);
-        return done(null, user);
+        return done(null, user || false);
     } catch (error) {
         console.error("Google deserializeUser error:", error);
         return done(error);
     }
 });
 
-/*
- * Start Google OAuth.
- */
 router.get("/auth/google", (req, res, next) => {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
         console.error("Google login attempted without OAuth credentials.");
@@ -210,9 +195,6 @@ router.get("/auth/google", (req, res, next) => {
     })(req, res, next);
 });
 
-/*
- * Google OAuth callback.
- */
 router.get("/auth/google/callback", (req, res, next) => {
     if (req.query?.error) {
         console.error(
