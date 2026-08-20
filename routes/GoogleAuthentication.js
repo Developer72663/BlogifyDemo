@@ -18,9 +18,7 @@ function normalizeBaseUrl(value) {
     let url = String(value).trim();
     if (!url) return "";
 
-    if (!/^https?:\/\//i.test(url)) {
-        url = `https://${url}`;
-    }
+    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
 
     return url.replace(/\/$/, "");
 }
@@ -34,36 +32,43 @@ function appendCallbackPath(value) {
 }
 
 /*
- * Google redirect URI must be deterministic and must exactly match Google
- * Cloud Console.
+ * IMPORTANT FOR VERCEL:
+ * GOOGLE_CALLBACK_URL is deliberately checked FIRST.
  *
- * IMPORTANT:
- * - On Vercel, never use a Render callback URL or a manually configured
- *   GOOGLE_CALLBACK_URL if Vercel provides its deployment URL. This prevents
- *   a shared GOOGLE_CALLBACK_URL from breaking the Vercel deployment.
- * - VERCEL_PROJECT_PRODUCTION_URL is preferred because VERCEL_URL may be a
- *   temporary preview deployment.
- * - On Render, RENDER_EXTERNAL_URL is used.
- * - GOOGLE_CALLBACK_URL is still supported for local/other deployments.
+ * Google OAuth requires the redirect_uri sent by the app to be an EXACT
+ * character-for-character match with an Authorized redirect URI in Google
+ * Cloud Console. Vercel creates different hostnames for preview deployments,
+ * so automatically choosing VERCEL_URL can cause redirect_uri_mismatch.
+ *
+ * Set GOOGLE_CALLBACK_URL in the Vercel Production environment to the exact
+ * callback URI registered in Google Cloud Console, for example:
+ * https://your-production-domain.com/auth/google/callback
+ *
+ * Render can use RENDER_EXTERNAL_URL. Local development falls back to
+ * localhost.
  */
 function getGoogleCallbackURL() {
-    const isVercel = Boolean(process.env.VERCEL);
+    const explicitlyConfigured = appendCallbackPath(
+        process.env.GOOGLE_CALLBACK_URL
+    );
+    if (explicitlyConfigured) return explicitlyConfigured;
 
-    if (isVercel) {
-        const vercelProductionUrl = appendCallbackPath(
+    if (process.env.RENDER_EXTERNAL_URL) {
+        const renderUrl = appendCallbackPath(process.env.RENDER_EXTERNAL_URL);
+        if (renderUrl) return renderUrl;
+    }
+
+    if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+        const productionUrl = appendCallbackPath(
             process.env.VERCEL_PROJECT_PRODUCTION_URL
         );
-        if (vercelProductionUrl) return vercelProductionUrl;
+        if (productionUrl) return productionUrl;
+    }
 
+    if (process.env.VERCEL_URL) {
         const vercelUrl = appendCallbackPath(process.env.VERCEL_URL);
         if (vercelUrl) return vercelUrl;
     }
-
-    const renderUrl = appendCallbackPath(process.env.RENDER_EXTERNAL_URL);
-    if (renderUrl) return renderUrl;
-
-    const configured = appendCallbackPath(process.env.GOOGLE_CALLBACK_URL);
-    if (configured) return configured;
 
     const port = process.env.PORT || 8000;
     return `http://localhost:${port}${GOOGLE_CALLBACK_PATH}`;
@@ -71,8 +76,9 @@ function getGoogleCallbackURL() {
 
 const GOOGLE_CALLBACK_URL = getGoogleCallbackURL();
 
-// Short-lived CSRF state cookie. Passport's default state store requires
-// express-session, which this JWT-cookie application intentionally does not use.
+// JWT-cookie authentication is used by Blogify, so Passport's session-based
+// OAuth state store is intentionally disabled. We validate our own short-lived
+// state value using an HttpOnly cookie instead.
 const GOOGLE_STATE_COOKIE = "blogify_google_oauth_state";
 const GOOGLE_STATE_MAX_AGE = 10 * 60 * 1000;
 
@@ -85,6 +91,7 @@ console.log("Google OAuth configuration:", {
         : process.env.RENDER
             ? "render"
             : "other",
+    explicitCallbackConfigured: Boolean(process.env.GOOGLE_CALLBACK_URL),
     vercelProductionURL: process.env.VERCEL_PROJECT_PRODUCTION_URL || null,
     vercelURL: process.env.VERCEL_URL || null,
     renderURL: process.env.RENDER_EXTERNAL_URL || null,
@@ -110,6 +117,8 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                 clientID: GOOGLE_CLIENT_ID,
                 clientSecret: GOOGLE_CLIENT_SECRET,
                 callbackURL: GOOGLE_CALLBACK_URL,
+                // Do not use Passport's session state store; this application
+                // does not use express-session.
                 state: false,
             },
             async (accessToken, refreshToken, profile, done) => {
@@ -158,7 +167,6 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
     );
 }
 
-// Kept for Passport compatibility. Blogify authentication itself uses JWT cookies.
 passport.serializeUser((user, done) => done(null, user.id));
 
 passport.deserializeUser(async (id, done) => {
