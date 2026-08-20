@@ -6,11 +6,9 @@
     <% visible.forEach(blog => { %>
       <article class="card post">
         <% if (blog.mediaType === 'video' && blog.videoURL) { %>
-          <a href="/blogs/<%= blog._id %>" aria-label="Open <%= blog.title %>">
-            <% if (blog.mediaPreviewURL) { %><img class="media" src="<%= blog.mediaPreviewURL %>" alt="<%= blog.title %> video preview" loading="lazy"><% } else { %><div class="media" style="display:grid;place-items:center;font-size:3rem;color:#635bff"><i class="fas fa-play-circle"></i></div><% } %>
-          </a>
+          <video class="media" controls preload="metadata" poster="<%= blog.mediaPreviewURL || '' %>" aria-label="<%= blog.title %> video"><source src="<%= blog.videoURL %>" type="video/mp4">Your browser does not support video playback.</video>
         <% } else if (blog.coverImageURL) { %>
-          <a href="/blogs/<%= blog._id %>"><img class="media" src="<%= blog.coverImageURL %>" alt="<%= blog.title %>" loading="lazy"></a>
+          <a href="/blogs/<%= blog._id %>"><img class="media" src="<%= blog.coverImageURL %>" alt="<%= blog.title %>" loading="lazy" onerror="this.style.display='none'"></a>
         <% } else if (blog.mediaType === 'photo') { %>
           <a href="/blogs/<%= blog._id %>"><div class="media" style="display:grid;place-items:center;font-size:3rem;color:#635bff"><i class="fas fa-image"></i></div></a>
         <% } %>
