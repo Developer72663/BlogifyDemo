@@ -4,459 +4,131 @@
     <%- include("./partials/head") %>
     <title>Edit Profile | Blogify</title>
     <style>
-        .profile-edit-container {
-            max-width: 600px;
-        }
-
-        .profile-img-wrapper {
-            position: relative;
-            width: 150px;
-            height: 150px;
-            margin: 0 auto 2rem;
-        }
-
-        .profile-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 4px solid #6366f1;
-        }
-
-        .img-edit-overlay {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            background: #6366f1;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 3px solid white;
-        }
-
-        .img-edit-overlay:hover {
-            background: #4f46e5;
-            transform: scale(1.1);
-        }
-
-        .img-edit-overlay i {
-            color: white;
-            font-size: 1.2rem;
-        }
-
-        .form-section {
-            background: #f8fafc;
-            padding: 2rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-        }
-
-        .form-section h5 {
-            color: #1e293b;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #6366f1;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: #64748b;
-            margin-top: 0.5rem;
-        }
-
-        .form-check-label {
-            font-weight: 500;
-            color: #1e293b;
-        }
-
-        @media (max-width: 576px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .profile-edit-container {
-                padding: 0 1rem;
-            }
-
-            .form-section {
-                padding: 1.5rem;
-            }
-        }
+        .profile-edit-container{max-width:600px;animation:pageIn .45s ease both}
+        @keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+        .profile-img-wrapper{position:relative;width:150px;height:150px;margin:0 auto 2rem}
+        .profile-img{width:100%;height:100%;object-fit:cover;border-radius:50%;border:4px solid #6366f1;transition:transform .3s ease,filter .3s ease,box-shadow .3s ease}
+        .profile-img-wrapper.uploading .profile-img{filter:brightness(.65);transform:scale(.98);box-shadow:0 0 0 8px rgba(99,102,241,.15),0 0 30px rgba(99,102,241,.35)}
+        .profile-img-wrapper.success .profile-img{animation:avatarSuccess .6s ease}
+        @keyframes avatarSuccess{0%{transform:scale(.96)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
+        .img-edit-overlay{position:absolute;bottom:0;right:0;background:#6366f1;border-radius:50%;width:50px;height:50px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s ease;border:3px solid white;box-shadow:0 6px 18px rgba(99,102,241,.3)}
+        .img-edit-overlay:hover{background:#4f46e5;transform:scale(1.1) rotate(4deg)}
+        .img-edit-overlay i{color:white;font-size:1.2rem}
+        .form-section{background:#f8fafc;padding:2rem;border-radius:12px;margin-bottom:2rem;transition:transform .25s ease,box-shadow .25s ease}
+        .form-section:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(15,23,42,.06)}
+        .form-section h5{color:#1e293b;font-weight:700;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid #e2e8f0}
+        .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem}
+        .stat-card{background:white;padding:1.5rem;border-radius:8px;border:1px solid #e2e8f0;text-align:center;transition:transform .25s ease,box-shadow .25s ease}
+        .stat-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(15,23,42,.08)}
+        .stat-value{font-size:1.8rem;font-weight:700;color:#6366f1}
+        .stat-label{font-size:.9rem;color:#64748b;margin-top:.5rem}
+        .form-check-label{font-weight:500;color:#1e293b}
+        .save-btn{position:relative;overflow:hidden;min-width:150px;transition:transform .2s ease,box-shadow .2s ease}
+        .save-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(13,110,253,.25)}
+        .save-btn.saving{pointer-events:none}
+        .save-btn.success-state{background:#198754;border-color:#198754}
+        .progress-shell{height:4px;width:100%;background:#e9ecef;border-radius:99px;overflow:hidden;margin-top:10px;display:none}
+        .progress-shell.active{display:block}
+        .progress-bar-animated{height:100%;width:35%;background:#6366f1;border-radius:99px;animation:progressMove 1s ease-in-out infinite}
+        @keyframes progressMove{0%{transform:translateX(-120%)}100%{transform:translateX(330%)}}
+        .upload-status{font-size:.82rem;text-align:center;margin-top:8px;min-height:20px;color:#64748b}
+        .loading-ring{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-4px;margin-right:7px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .success-check{animation:checkPop .45s ease}
+        @keyframes checkPop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.18)}100%{transform:scale(1);opacity:1}}
+        .form-control,.form-check-input{transition:border-color .2s ease,box-shadow .2s ease}
+        .form-control:focus{box-shadow:0 0 0 .2rem rgba(99,102,241,.12);border-color:#6366f1}
+        @media(max-width:576px){.stats-grid{grid-template-columns:1fr}.profile-edit-container{padding:0 1rem}.form-section{padding:1.5rem}}
     </style>
 </head>
 <body>
     <%- include("./partials/nave") %>
-
     <div class="container my-5 profile-edit-container">
         <div class="d-flex align-items-center justify-content-between mb-4">
             <h2 class="fw-bold"><i class="fas fa-user-edit"></i> Edit Profile</h2>
-            <a href="/user/profile" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left"></i> Back to Profile
-            </a>
+            <a href="/user/profile" class="btn btn-outline-primary"><i class="fas fa-arrow-left"></i> Back to Profile</a>
         </div>
+        <% if (locals.error) { %><div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="fas fa-exclamation-circle"></i> <%= locals.error %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><% } %>
+        <% if (locals.success) { %><div class="alert alert-success alert-dismissible fade show" role="alert"><i class="fas fa-check-circle"></i> <%= locals.success %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><% } %>
 
-        <% if (locals.error) { %>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle"></i> <%= locals.error %>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <% } %>
-
-        <% if (locals.success) { %>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle"></i> <%= locals.success %>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <% } %>
-
-        <!-- Profile Picture Section -->
         <div class="card shadow-sm mb-4">
             <div class="card-body p-4">
-                <div class="profile-img-wrapper">
-                    <img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" 
-                         alt="Profile" 
-                         class="profile-img"
-                         id="profilePreview"
-                         onerror="this.src='/imgs/default.png';">
-                    <label class="img-edit-overlay" for="profileImageInput" title="Change Profile Picture">
-                        <i class="fas fa-camera"></i>
-                    </label>
+                <div class="profile-img-wrapper" id="avatarWrapper">
+                    <img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" alt="Profile" class="profile-img" id="profilePreview" onerror="this.src='/imgs/default.png';">
+                    <label class="img-edit-overlay" for="profileImageInput" title="Change Profile Picture"><i class="fas fa-camera"></i></label>
                 </div>
-                <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
-                <p class="text-center text-muted small">Click the camera icon to change your profile picture</p>
+                <input type="file" id="profileImageInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">
+                <p class="text-center text-muted small" id="uploadStatus">Click the camera icon to change your profile picture</p>
+                <div class="progress-shell" id="uploadProgress"><div class="progress-bar-animated"></div></div>
             </div>
         </div>
 
-        <!-- Statistics Section -->
         <div class="stats-grid mb-5">
-            <div class="stat-card">
-                <div class="stat-value" id="blogCount">0</div>
-                <div class="stat-label">Blogs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="followerCount"><%= locals.user.followers ? locals.user.followers.length : 0 %></div>
-                <div class="stat-label">Followers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="followingCount"><%= locals.user.following ? locals.user.following.length : 0 %></div>
-                <div class="stat-label">Following</div>
-            </div>
+            <div class="stat-card"><div class="stat-value" id="blogCount">0</div><div class="stat-label">Blogs</div></div>
+            <div class="stat-card"><div class="stat-value" id="followerCount"><%= locals.user.followers ? locals.user.followers.length : 0 %></div><div class="stat-label">Followers</div></div>
+            <div class="stat-card"><div class="stat-value" id="followingCount"><%= locals.user.following ? locals.user.following.length : 0 %></div><div class="stat-label">Following</div></div>
         </div>
 
-        <!-- Basic Info Section -->
         <form id="editProfileForm">
             <div class="form-section">
                 <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
-
-                <div class="mb-3">
-                    <label class="form-label">Full Name *</label>
-                    <input type="text" name="fullName" class="form-control form-control-lg" 
-                           value="<%= locals.user.fullName %>"
-                           placeholder="Your full name"
-                           required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Email Address</label>
-                    <input type="email" class="form-control form-control-lg" 
-                           value="<%= locals.user.email %>"
-                           disabled>
-                    <small class="text-muted">Email cannot be changed</small>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Bio</label>
-                    <textarea name="bio" class="form-control" rows="4" 
-                              placeholder="Tell us about yourself..."
-                              maxlength="500"><%= locals.user.bio || '' %></textarea>
-                    <small class="text-muted">Max 500 characters</small>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Website URL</label>
-                    <input type="url" name="website" class="form-control" 
-                           placeholder="https://yourwebsite.com"
-                           value="<%= locals.user.website || '' %>">
-                    <small class="text-muted">Your personal or professional website</small>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Location</label>
-                    <input type="text" name="location" class="form-control" 
-                           placeholder="City, Country"
-                           value="<%= locals.user.location || '' %>">
-                </div>
+                <div class="mb-3"><label class="form-label">Full Name *</label><input type="text" name="fullName" class="form-control form-control-lg" value="<%= locals.user.fullName %>" placeholder="Your full name" required></div>
+                <div class="mb-3"><label class="form-label">Email Address</label><input type="email" class="form-control form-control-lg" value="<%= locals.user.email %>" disabled><small class="text-muted">Email cannot be changed</small></div>
+                <div class="mb-3"><label class="form-label">Bio</label><textarea name="bio" class="form-control" rows="4" placeholder="Tell us about yourself..." maxlength="500"><%= locals.user.bio || '' %></textarea><small class="text-muted">Max 500 characters</small></div>
+                <div class="mb-3"><label class="form-label">Website URL</label><input type="url" name="website" class="form-control" placeholder="https://yourwebsite.com" value="<%= locals.user.website || '' %>"><small class="text-muted">Your personal or professional website</small></div>
+                <div class="mb-3"><label class="form-label">Location</label><input type="text" name="location" class="form-control" placeholder="City, Country" value="<%= locals.user.location || '' %>"></div>
             </div>
 
-            <!-- Notification Preferences Section -->
             <div class="form-section">
                 <h5><i class="fas fa-bell"></i> Notification Preferences</h5>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="emailOnComment" 
-                           id="emailOnComment" 
-                           <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailOnComment) ? 'checked' : '' %>>
-                    <label class="form-check-label" for="emailOnComment">
-                        Email me when someone comments on my blog
-                    </label>
-                </div>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="emailOnNewFollower" 
-                           id="emailOnNewFollower"
-                           <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailOnNewFollower) ? 'checked' : '' %>>
-                    <label class="form-check-label" for="emailOnNewFollower">
-                        Email me when someone follows me
-                    </label>
-                </div>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="emailOnLike" 
-                           id="emailOnLike"
-                           <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailOnLike) ? 'checked' : '' %>>
-                    <label class="form-check-label" for="emailOnLike">
-                        Email me when someone likes my blog
-                    </label>
-                </div>
-
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="emailDigest" 
-                           id="emailDigest"
-                           <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailDigest) ? 'checked' : '' %>>
-                    <label class="form-check-label" for="emailDigest">
-                        Send me a weekly digest of activity
-                    </label>
-                </div>
+                <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="emailOnComment" id="emailOnComment" <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailOnComment) ? 'checked' : '' %>><label class="form-check-label" for="emailOnComment">Email me when someone comments on my blog</label></div>
+                <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="emailOnNewFollower" id="emailOnNewFollower" <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailOnNewFollower) ? 'checked' : '' %>><label class="form-check-label" for="emailOnNewFollower">Email me when someone follows me</label></div>
+                <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="emailOnLike" id="emailOnLike" <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailOnLike) ? 'checked' : '' %>><label class="form-check-label" for="emailOnLike">Email me when someone likes my blog</label></div>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="emailDigest" id="emailDigest" <%= (locals.user.notificationSettings && locals.user.notificationSettings.emailDigest) ? 'checked' : '' %>><label class="form-check-label" for="emailDigest">Send me a weekly digest of activity</label></div>
             </div>
 
-            <!-- Danger Zone Section -->
             <div class="form-section border border-danger">
                 <h5 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h5>
-
                 <p class="text-muted mb-3">These actions are irreversible. Please proceed with caution.</p>
-
-                <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" 
-                            data-bs-target="#changePasswordModal" id="changePasswordBtn">
-                        <i class="fas fa-key"></i> Change Password
-                    </button>
-                    <button type="button" class="btn btn-outline-danger" id="deleteAccountBtn">
-                        <i class="fas fa-trash-alt"></i> Delete Account
-                    </button>
-                </div>
+                <div class="d-grid gap-2"><button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal" id="changePasswordBtn"><i class="fas fa-key"></i> Change Password</button><button type="button" class="btn btn-outline-danger" id="deleteAccountBtn"><i class="fas fa-trash-alt"></i> Delete Account</button></div>
             </div>
 
-            <!-- Submit Buttons -->
-            <div class="d-flex gap-2 justify-content-end mt-4">
-                <a href="/user/profile" class="btn btn-outline-secondary btn-lg">
-                    <i class="fas fa-times"></i> Cancel
-                </a>
-                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                    <i class="fas fa-save"></i> Save Changes
-                </button>
+            <div class="d-flex gap-2 justify-content-end mt-4 align-items-center">
+                <a href="/user/profile" class="btn btn-outline-secondary btn-lg"><i class="fas fa-times"></i> Cancel</a>
+                <button type="submit" class="btn btn-primary btn-lg save-btn" id="submitBtn"><i class="fas fa-save"></i> Save Changes</button>
             </div>
+            <div class="progress-shell" id="saveProgress"><div class="progress-bar-animated"></div></div>
         </form>
     </div>
 
-    <!-- Change Password Modal -->
-    <div class="modal fade" id="changePasswordModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-key"></i> Change Password</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="changePasswordForm">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Current Password</label>
-                            <input type="password" name="currentPassword" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">New Password</label>
-                            <input type="password" name="newPassword" class="form-control" required minlength="6">
-                            <small class="text-muted">Min 6 characters</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Confirm New Password</label>
-                            <input type="password" name="confirmPassword" class="form-control" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Password</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <div class="modal fade" id="changePasswordModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="fas fa-key"></i> Change Password</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><form id="changePasswordForm"><div class="modal-body"><div class="mb-3"><label class="form-label">Current Password</label><input type="password" name="currentPassword" class="form-control" required></div><div class="mb-3"><label class="form-label">New Password</label><input type="password" name="newPassword" class="form-control" required minlength="8"><small class="text-muted">Min 8 characters</small></div><div class="mb-3"><label class="form-label">Confirm New Password</label><input type="password" name="confirmPassword" class="form-control" required></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Update Password</button></div></form></div></div></div>
 
     <%- include("./partials/scripts") %>
-
     <script>
-        // Profile Image Upload
-        document.getElementById('profileImageInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+      const notifySafe=(type,message)=>{if(window.notify&&typeof window.notify[type]==='function')window.notify[type](message);else alert(message)};
+      const resetSaveButton=()=>{const b=document.getElementById('submitBtn');b.disabled=false;b.classList.remove('saving');b.innerHTML='<i class="fas fa-save"></i> Save Changes';document.getElementById('saveProgress').classList.remove('active')};
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                document.getElementById('profilePreview').src = event.target.result;
-            };
-            reader.readAsDataURL(file);
+      document.getElementById('profileImageInput').addEventListener('change',async e=>{
+        const file=e.target.files[0];if(!file)return;
+        const allowed=['image/jpeg','image/png','image/webp','image/gif'];
+        if(!allowed.includes(file.type)){notifySafe('error','Please choose a JPG, PNG, WEBP, or GIF image.');e.target.value='';return;}
+        if(file.size>10*1024*1024){notifySafe('error','Profile photo must be 10MB or smaller.');e.target.value='';return;}
+        const wrapper=document.getElementById('avatarWrapper'),status=document.getElementById('uploadStatus'),progress=document.getElementById('uploadProgress'),preview=document.getElementById('profilePreview');
+        const reader=new FileReader();reader.onload=ev=>{preview.src=ev.target.result};reader.readAsDataURL(file);
+        wrapper.classList.add('uploading');progress.classList.add('active');status.textContent='Uploading your profile photo…';
+        const fd=new FormData();fd.append('profileImage',file);
+        try{const res=await fetch('/user/profile/upload-image',{method:'POST',body:fd,credentials:'same-origin',headers:{Accept:'application/json'}});const data=await res.json().catch(()=>({}));if(!res.ok||!data.success)throw new Error(data.message||'Failed to upload image');if(data.imageURL)preview.src=data.imageURL;wrapper.classList.remove('uploading');wrapper.classList.add('success');status.innerHTML='<span class="success-check"><i class="fas fa-check-circle text-success"></i> Profile photo updated successfully</span>';progress.classList.remove('active');notifySafe('success',data.message||'Profile picture updated!');setTimeout(()=>wrapper.classList.remove('success'),900)}catch(error){wrapper.classList.remove('uploading');progress.classList.remove('active');status.textContent='Upload failed. Please try again.';notifySafe('error',error.message||'Failed to upload image');}finally{e.target.value='';}
+      });
 
-            // Auto-upload profile image
-            const formData = new FormData();
-            formData.append('profileImage', file);
+      document.getElementById('editProfileForm').addEventListener('submit',async e=>{
+        e.preventDefault();const b=document.getElementById('submitBtn');if(b.disabled)return;b.disabled=true;b.classList.add('saving');b.innerHTML='<span class="loading-ring"></span>Saving…';document.getElementById('saveProgress').classList.add('active');
+        const formData=new FormData(e.currentTarget);const data=Object.fromEntries(formData.entries());
+        try{const res=await fetch('/user/profile/update',{method:'PUT',headers:{'Content-Type':'application/json',Accept:'application/json'},credentials:'same-origin',body:JSON.stringify(data)});const result=await res.json().catch(()=>({}));if(!res.ok||!result.success)throw new Error(result.message||'Failed to update profile');b.classList.remove('saving');b.classList.add('success-state');b.innerHTML='<span class="success-check"><i class="fas fa-check"></i></span> Saved!';document.getElementById('saveProgress').classList.remove('active');notifySafe('success',result.message||'Profile updated successfully!');setTimeout(()=>{window.location.href='/user/profile'},850)}catch(error){console.error('Update Error:',error);notifySafe('error',error.message||'An error occurred while updating your profile');resetSaveButton();}
+      });
 
-            try {
-                const res = await fetch('/user/profile/upload-image', {
-                    method: 'POST',
-                    body: formData
-                });
+      document.getElementById('changePasswordForm').addEventListener('submit',async e=>{e.preventDefault();const newPass=document.querySelector('input[name="newPassword"]').value,confirmPass=document.querySelector('input[name="confirmPassword"]').value;if(newPass!==confirmPass){notifySafe('error','Passwords do not match!');return}const data=Object.fromEntries(new FormData(e.currentTarget).entries());try{const res=await fetch('/user/change-password',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},credentials:'same-origin',body:JSON.stringify(data)});const result=await res.json().catch(()=>({}));if(!res.ok||!result.success)throw new Error(result.message||'Failed to change password');notifySafe('success','Password changed successfully!');e.currentTarget.reset();const modal=document.getElementById('changePasswordModal');if(window.bootstrap?.Modal)window.bootstrap.Modal.getInstance(modal)?.hide()}catch(error){notifySafe('error',error.message||'Failed to change password')}});
 
-                const data = await res.json();
-                if (data.success) {
-                    notify.success('Profile picture updated!');
-                } else {
-                    notify.error(data.message || 'Failed to upload image');
-                }
-            } catch (error) {
-                console.error('Upload Error:', error);
-                notify.error('Failed to upload image');
-            }
-        });
-
-        // Edit Profile Form Submit
-        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Saving...`;
-
-            const formData = new FormData(document.getElementById('editProfileForm'));
-            const data = Object.fromEntries(formData.entries());
-
-            try {
-                const res = await fetch('/user/profile/update', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await res.json();
-
-                if (result.success) {
-                    notify.success('Profile updated successfully!');
-                    setTimeout(() => window.location.href = '/user/profile', 1500);
-                } else {
-                    notify.error(result.message || 'Failed to update profile');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-                }
-            } catch (error) {
-                console.error('Update Error:', error);
-                notify.error('An error occurred while updating your profile');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-            }
-        });
-
-        // Change Password Form
-        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newPass = document.querySelector('input[name="newPassword"]').value;
-            const confirmPass = document.querySelector('input[name="confirmPassword"]').value;
-
-            if (newPass !== confirmPass) {
-                notify.error('Passwords do not match!');
-                return;
-            }
-
-            const formData = new FormData(document.getElementById('changePasswordForm'));
-            const data = Object.fromEntries(formData.entries());
-
-            try {
-                const res = await fetch('/user/change-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await res.json();
-
-                if (result.success) {
-                    notify.success('Password changed successfully!');
-                    document.getElementById('changePasswordForm').reset();
-                    bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
-                } else {
-                    notify.error(result.message || 'Failed to change password');
-                }
-            } catch (error) {
-                console.error('Password Change Error:', error);
-                notify.error('Failed to change password');
-            }
-        });
-
-        // Delete Account
-        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
-            const confirmed = await confirmAction('⚠️ Are you sure? This action is PERMANENT and cannot be undone. All your blogs and data will be deleted.');
-            
-            if (!confirmed) return;
-
-            const finalConfirm = prompt('Type "DELETE MY ACCOUNT" to confirm:');
-            if (finalConfirm !== 'DELETE MY ACCOUNT') {
-                notify.error('Account deletion cancelled');
-                return;
-            }
-
-            try {
-                const res = await fetch('/user/delete-account', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    notify.success('Account deleted. Redirecting...');
-                    setTimeout(() => window.location.href = '/', 2000);
-                } else {
-                    notify.error(data.message || 'Failed to delete account');
-                }
-            } catch (error) {
-                console.error('Delete Account Error:', error);
-                notify.error('Failed to delete account');
-            }
-        });
+      document.getElementById('deleteAccountBtn').addEventListener('click',async()=>{const confirmed=window.confirm('⚠️ Are you sure? This action is PERMANENT and cannot be undone. All your blogs and data will be deleted.');if(!confirmed)return;const finalConfirm=prompt('Type "DELETE MY ACCOUNT" to confirm:');if(finalConfirm!=='DELETE MY ACCOUNT'){notifySafe('error','Account deletion cancelled');return}try{const res=await fetch('/user/delete-account',{method:'DELETE',headers:{Accept:'application/json'},credentials:'same-origin'});const data=await res.json().catch(()=>({}));if(!res.ok||!data.success)throw new Error(data.message||'Failed to delete account');notifySafe('success','Account deleted. Redirecting…');setTimeout(()=>window.location.href='/',1200)}catch(error){notifySafe('error',error.message||'Failed to delete account')}});
     </script>
 </body>
 </html>
-
