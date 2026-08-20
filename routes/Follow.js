@@ -20,12 +20,21 @@ async function notifyRequest(recipient, requester, requestId) {
   }
 }
 
+// Count only user documents that still exist. This prevents stale ObjectIds
+// in followers/following arrays from making profile counts disagree with lists.
 async function countsFor(userId) {
   const user = await User.findById(userId).select("followers following").lean();
-  return {
-    followerCount: user?.followers?.length || 0,
-    followingCount: user?.following?.length || 0
-  };
+  if (!user) return { followerCount: 0, followingCount: 0 };
+
+  const followerIds = Array.isArray(user.followers) ? user.followers : [];
+  const followingIds = Array.isArray(user.following) ? user.following : [];
+
+  const [followerCount, followingCount] = await Promise.all([
+    User.countDocuments({ _id: { $in: followerIds } }),
+    User.countDocuments({ _id: { $in: followingIds } })
+  ]);
+
+  return { followerCount, followingCount };
 }
 
 router.post("/:userId/follow", async (req, res) => {
@@ -47,14 +56,7 @@ router.post("/:userId/follow", async (req, res) => {
         FollowRequest.deleteMany({ requester: currentUserId, recipient: userId, status: "pending" })
       ]);
       const [meCounts, targetCounts] = await Promise.all([countsFor(currentUserId), countsFor(userId)]);
-      return res.json({
-        success: true,
-        following: false,
-        requested: false,
-        followerCount: targetCounts.followerCount,
-        followingCount: meCounts.followingCount,
-        message: "Unfollowed successfully"
-      });
+      return res.json({ success: true, following: false, requested: false, followerCount: targetCounts.followerCount, followingCount: meCounts.followingCount, message: "Unfollowed successfully" });
     }
 
     if (targetUser.isPrivate) {
@@ -167,14 +169,24 @@ async function paginatedPeople(req, res, field) {
     if (!allowed) return res.status(403).json({ success: false, message: `${field === "followers" ? "Followers" : "Following"} list is private`, private: true });
 
     const ids = Array.isArray(user[field]) ? user[field] : [];
-    const total = ids.length;
-    const pageIds = ids.slice((page - 1) * 20, page * 20);
-    const people = pageIds.length
-      ? await User.find({ _id: { $in: pageIds } }).select("fullName profileImageURL bio").lean()
+    // Filter stale/deleted user IDs before pagination so `total` exactly matches
+    // the users that can actually be displayed in the list.
+    const validUsers = ids.length
+      ? await User.find({ _id: { $in: ids } }).select("fullName profileImageURL bio").lean()
       : [];
-    const order = new Map(pageIds.map((id, i) => [id.toString(), i]));
-    people.sort((a, b) => order.get(a._id.toString()) - order.get(b._id.toString()));
-    return res.json({ success: true, [field]: people, total, pages: Math.ceil(total / 20), page });
+    const order = new Map(ids.map((id, i) => [id.toString(), i]));
+    validUsers.sort((a, b) => order.get(a._id.toString()) - order.get(b._id.toString()));
+
+    const total = validUsers.length;
+    const pagePeople = validUsers.slice((page - 1) * 20, page * 20);
+
+    return res.json({
+      success: true,
+      [field]: pagePeople,
+      total,
+      pages: Math.max(Math.ceil(total / 20), 1),
+      page
+    });
   } catch (error) {
     console.error(`Fetch ${field} error:`, error);
     return res.status(500).json({ success: false, message: `Failed to fetch ${field}` });
