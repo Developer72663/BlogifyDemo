@@ -8,7 +8,7 @@ const cloudinaryUpload = require("../middlewares/CloudinaryUploads");
 
 router.get("/", async (req, res) => { if (!req.user) return res.redirect("/user/signin"); return renderProfile(req, res, req.user._id); });
 router.get("/settings", restrictToLoggedInUserOnly, async (req, res) => { try { const user = await User.findById(req.user._id).populate("blockedUsers", "fullName profileImageURL"); if (!user) return res.status(404).send("User not found"); res.render("settings", { user, activeSection: req.query.section || "profile" }); } catch (error) { console.error("Settings Page Error:", error); res.status(500).render("error", { error: "Unable to load settings" }); } });
-router.get("/edit", restrictToLoggedInUserOnly, async (req, res) => { try { const user = await User.findById(req.user._id).select("fullName email bio website location profileImageURL followers following notificationSettings").lean(); if (!user) return res.status(404).send("User not found"); res.render("editProfileV2", { user, success: null, error: null }); } catch (error) { console.error("Edit Profile Page Error:", error); res.status(500).render("error", { error: "Unable to load profile editor" }); } });
+router.get("/edit", restrictToLoggedInUserOnly, async (req, res) => { try { const user = await User.findById(req.user._id).select("fullName email bio website location profileImageURL followers following notificationSettings").lean(); if (!user) return res.status(404).send("User not found"); res.render("editProfile", { user, success: null, error: null }); } catch (error) { console.error("Edit Profile Page Error:", error); res.status(500).render("error", { error: "Unable to load profile editor" }); } });
 router.get("/:userId", async (req, res) => renderProfile(req, res, req.params.userId));
 function videoPosterFromUrl(videoURL) { if (!videoURL || typeof videoURL !== "string") return null; try { const url = new URL(videoURL); if (!url.hostname.includes("cloudinary.com")) return null; url.pathname = url.pathname.replace("/upload/", "/upload/so_0,w_1200,h_700,c_fill/"); url.pathname = url.pathname.replace(/\.(mp4|webm|mov|m4v)$/i, ".jpg"); return url.toString(); } catch (_) { return null; } }
 async function renderProfile(req, res, userId) {
@@ -27,7 +27,7 @@ async function renderProfile(req, res, userId) {
     const blogCount = await Blog.countDocuments(publishedFilter);
     let blogs = canViewPrivateContent ? await Blog.find(publishedFilter).sort({ createdAt: -1 }).limit(50).lean() : [];
     blogs = blogs.map(blog => ({ ...blog, mediaType: blog.mediaType || "blog", mediaPreviewURL: blog.mediaType === "video" ? (videoPosterFromUrl(blog.videoURL) || blog.coverImageURL || null) : (blog.coverImageURL || null) }));
-    return res.render("profileV2", { user, blogs, isOwnProfile, isLoggedIn: !!req.user, isFollower, contentLocked: !canViewPrivateContent, followState, followerCount: followerIds.length, followingCount: followingIds.length, blogCount });
+    return res.render("profile", { user, blogs, isOwnProfile, isLoggedIn: !!req.user, isFollower, contentLocked: !canViewPrivateContent, followState, followerCount: followerIds.length, followingCount: followingIds.length, blogCount });
   } catch (error) { console.error("Profile Route Error:", error); return res.status(500).render("error", { error: "Unable to load profile" }); }
 }
 router.use(restrictToLoggedInUserOnly);
