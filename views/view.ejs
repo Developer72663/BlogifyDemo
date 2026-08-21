@@ -2,39 +2,3512 @@
 <html lang="en">
 <head>
     <%- include("./partials/head") %>
+
     <title><%= blog.title %> | Blogify</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
     <style>
-        :root{--ink:#17181c;--muted:#70737b;--line:#e7e8eb;--surface:#fff;--soft:#f6f7f9;--accent:#6366f1;--page:#fafaf9;--input:#fff;--code:#17181c;--code-inline:#f0f1f3;--danger-soft:#fff1f2;--danger-border:#fecdd3;--comment-line:#f0f1f3;--reply-line:#eceef2}
-        body{background:var(--page);color:var(--ink)}.reader{max-width:1180px;margin:auto;padding:28px 18px 90px}.article-shell{max-width:820px;margin:auto}.article-head{padding:25px 0 28px;border-bottom:1px solid var(--line)}.back{color:var(--muted);text-decoration:none;font-size:.85rem}.back:hover{color:var(--accent)}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:.7rem;font-weight:800;color:var(--muted);margin-top:20px}.article-title{font-size:clamp(2.2rem,5vw,4.2rem);line-height:1.02;letter-spacing:-.055em;font-weight:850;margin:10px 0 20px;color:var(--ink)}.article-excerpt{font-size:1.1rem;line-height:1.7;color:var(--muted);max-width:720px}.author-row{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:24px}.author{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit}.author img{width:44px;height:44px;border-radius:50%;object-fit:cover}.author-name{font-weight:800;font-size:.9rem}.author-meta{font-size:.76rem;color:var(--muted)}.hero{width:100%;max-height:560px;object-fit:cover;border-radius:20px;margin:30px 0;background:var(--soft)}.article-body{font-size:1.13rem;line-height:1.95;color:var(--ink);overflow-wrap:anywhere}.article-body p{margin:0 0 1.6em}.article-body h1,.article-body h2,.article-body h3{line-height:1.2;letter-spacing:-.025em;margin:2.2em 0 .8em;color:var(--ink)}.article-body h1{font-size:2.3rem}.article-body h2{font-size:1.8rem;border-top:1px solid var(--line);padding-top:1.3em}.article-body h3{font-size:1.4rem}.article-body a{color:var(--accent)}.article-body strong,.article-body b{color:var(--ink)}.article-body img{max-width:100%;height:auto;border-radius:14px;margin:1.8em 0}.article-body blockquote{border-left:4px solid var(--accent);background:var(--soft);color:var(--ink);padding:18px 22px;margin:1.8em 0;border-radius:0 12px 12px 0}.article-body table{width:100%;border-collapse:collapse;margin:1.8em 0;color:var(--ink)}.article-body th,.article-body td{padding:11px;border-bottom:1px solid var(--line);text-align:left}.article-body th{font-weight:800}.article-body pre{background:var(--code)!important;color:#f8fafc;border-radius:14px;padding:18px;overflow:auto;max-height:600px}.article-body pre code{color:inherit;background:transparent}.article-body code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.article-body p code,.article-body li code{background:var(--code-inline);padding:2px 6px;border-radius:5px;color:#b4235a}.engagement{display:flex;align-items:center;gap:10px;padding:22px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:35px}.engage-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 16px;font-weight:750;color:var(--ink);cursor:pointer}.engage-btn:hover{background:var(--soft)}.engage-btn.liked{color:#e11d48;border-color:var(--danger-border);background:var(--danger-soft)}.engage-btn i{margin-right:6px}.tags{padding:22px 0;border-bottom:1px solid var(--line)}.tag{display:inline-block;background:var(--soft);color:var(--ink);text-decoration:none;border-radius:999px;padding:7px 11px;font-size:.75rem;margin:4px;border:1px solid transparent}.tag:hover{color:var(--accent);border-color:var(--line)}.side{position:sticky;top:20px}.side-card{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:15px}.side-avatar{width:72px;height:72px;border-radius:50%;object-fit:cover}.side-title{font-weight:800;color:var(--ink)}.stat{font-weight:800;color:var(--ink)}.muted{color:var(--muted);font-size:.8rem}.mini-link{display:block;padding:11px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}.mini-link:last-child{border:0}.mini-link strong{color:inherit}.mini-link:hover{color:var(--accent)}.comment-fab{position:fixed;right:24px;bottom:24px;width:58px;height:58px;border:0;border-radius:50%;background:var(--ink);color:var(--surface);box-shadow:0 10px 30px rgba(0,0,0,.2);z-index:900;cursor:pointer}.comment-fab:hover{transform:translateY(-2px)}.comment-badge{position:absolute;right:-3px;top:-3px;background:#e11d48;color:#fff;border:2px solid var(--surface);border-radius:999px;min-width:22px;height:22px;font-size:.68rem;display:grid;place-items:center}.overlay{position:fixed;inset:0;background:rgba(15,18,25,.52);backdrop-filter:blur(4px);z-index:1000;opacity:0;visibility:hidden;transition:.25s}.overlay.open{opacity:1;visibility:visible}.comment-sheet{position:fixed;z-index:1001;right:0;bottom:0;width:min(620px,100%);height:min(88vh,780px);background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;transform:translateY(100%);transition:.35s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;box-shadow:0 -20px 60px rgba(0,0,0,.18)}.comment-sheet.open{transform:translateY(0)}.sheet-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}.sheet-head h3{font-size:1rem;margin:0;font-weight:850;color:var(--ink)}.close{width:36px;height:36px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);cursor:pointer}.comments-scroll{flex:1;overflow:auto;padding:12px 18px}.comment{padding:14px 4px;border-bottom:1px solid var(--comment-line)}.comment-main{display:flex;gap:10px}.comment-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex:0 0 auto}.comment-author{font-size:.85rem;font-weight:800;color:var(--ink)}.comment-time{font-size:.7rem;color:var(--muted)}.comment-text{font-size:.88rem;line-height:1.55;margin:5px 0 7px;white-space:pre-wrap;word-break:break-word;color:var(--ink)}.comment-actions{display:flex;gap:12px}.comment-action{border:0;background:none;padding:3px 0;color:var(--muted);font-size:.75rem;cursor:pointer}.comment-action:hover{color:var(--accent)}.comment-action.liked{color:#e11d48}.replies{margin:10px 0 0 45px;padding-left:12px;border-left:2px solid var(--reply-line)}.reply-box{display:none;margin:9px 0 0 45px;gap:7px}.reply-box.open{display:flex}.reply-box textarea,.composer textarea{border:1px solid var(--line);border-radius:11px;padding:9px 11px;resize:none;outline:0;font:inherit;flex:1;background:var(--input);color:var(--ink)}.reply-box textarea::placeholder,.composer textarea::placeholder{color:var(--muted);opacity:1}.reply-box button,.composer button{border:0;border-radius:10px;background:var(--ink);color:var(--surface);padding:0 13px;cursor:pointer}.composer{border-top:1px solid var(--line);padding:13px 18px;display:flex;gap:9px;background:var(--surface);color:var(--ink)}.composer img{width:38px;height:38px;border-radius:50%;object-fit:cover}.composer textarea{min-height:42px;max-height:110px}.login-comment{text-align:center;padding:12px;color:var(--muted)}.login-comment a{color:var(--accent)}.empty-comments{text-align:center;color:var(--muted);padding:60px 10px}.empty-comments h5,.empty-comments p{color:inherit}.loading{text-align:center;padding:50px;color:var(--muted)}
-        /* Blogify dark-theme compatibility. Supports common data-theme/class based theme switches. */
-        html[data-theme="dark"],html.dark,body.dark,[data-bs-theme="dark"]{--ink:#f1f3f5;--muted:#a8adb7;--line:#343842;--surface:#181b21;--soft:#242832;--page:#101216;--input:#20242c;--code:#0b0d10;--code-inline:#2a2e37;--comment-line:#30343d;--reply-line:#3a3f49;--danger-soft:#351923;--danger-border:#70263a}
-        @media(prefers-color-scheme:dark){html:not([data-theme="light"]){--ink:#f1f3f5;--muted:#a8adb7;--line:#343842;--surface:#181b21;--soft:#242832;--page:#101216;--input:#20242c;--code:#0b0d10;--code-inline:#2a2e37;--comment-line:#30343d;--reply-line:#3a3f49;--danger-soft:#351923;--danger-border:#70263a}}
-        @media(max-width:991px){.side{position:static;margin-top:30px}}
-        @media(max-width:600px){.reader{padding:15px 13px 80px}.article-title{font-size:2.5rem}.author-row{align-items:flex-start}.hero{border-radius:13px;margin:20px 0}.article-body{font-size:1.03rem}.comment-fab{right:16px;bottom:16px}.comment-sheet{height:92vh;border-radius:18px 18px 0 0}.replies{margin-left:30px}.reply-box{margin-left:30px}}
+        :root {
+            --bg: #f7f8fa;
+            --surface: #ffffff;
+            --surface-2: #f1f3f6;
+            --text: #111318;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --accent: #635bff;
+            --accent-2: #4f46e5;
+            --danger: #e11d48;
+            --danger-bg: #fff1f2;
+            --success: #16a34a;
+            --shadow: 0 12px 40px rgba(15, 23, 42, .08);
+            --radius: 20px;
+        }
+
+        html[data-theme="dark"],
+        html.dark,
+        body.dark,
+        [data-bs-theme="dark"] {
+            --bg: #0b0d11;
+            --surface: #151820;
+            --surface-2: #1d212b;
+            --text: #f5f7fa;
+            --muted: #9ca3af;
+            --border: #2b303b;
+            --accent: #818cf8;
+            --accent-2: #6366f1;
+            --danger: #fb7185;
+            --danger-bg: #351923;
+            --shadow: 0 15px 45px rgba(0,0,0,.35);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        button,
+        textarea,
+        input {
+            font: inherit;
+        }
+
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .blog-page {
+            width: min(1250px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 30px 0 100px;
+        }
+
+        .reader-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 330px;
+            gap: 34px;
+            align-items: start;
+        }
+
+        .article {
+            min-width: 0;
+        }
+
+        .breadcrumb {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .85rem;
+            margin-bottom: 22px;
+        }
+
+        .breadcrumb:hover {
+            color: var(--accent);
+        }
+
+        .category {
+            display: inline-flex;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: var(--surface-2);
+            color: var(--accent);
+            font-weight: 800;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        .title {
+            margin: 14px 0 16px;
+            max-width: 950px;
+            font-size: clamp(2.4rem, 6vw, 5.2rem);
+            line-height: .98;
+            letter-spacing: -.055em;
+            font-weight: 900;
+            color: var(--text);
+        }
+
+        .excerpt {
+            max-width: 820px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 1.12rem;
+            line-height: 1.75;
+        }
+
+        .author-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin: 28px 0;
+            padding-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .author-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text);
+            text-decoration: none;
+            min-width: 0;
+        }
+
+        .author-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--surface-2);
+            flex: 0 0 auto;
+        }
+
+        .author-name {
+            display: block;
+            font-size: .92rem;
+            font-weight: 850;
+        }
+
+        .author-meta {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: .76rem;
+        }
+
+        .author-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-ui {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            min-height: 38px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 750;
+            transition: .18s ease;
+        }
+
+        .btn-ui:hover {
+            background: var(--surface-2);
+            transform: translateY(-1px);
+        }
+
+        .btn-ui.primary {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-ui.danger {
+            color: var(--danger);
+        }
+
+        .btn-ui:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .cover {
+            width: 100%;
+            max-height: 650px;
+            object-fit: cover;
+            display: block;
+            border-radius: 24px;
+            background: var(--surface-2);
+            box-shadow: var(--shadow);
+            margin-bottom: 34px;
+        }
+
+        .video-wrap {
+            margin-bottom: 34px;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: var(--shadow);
+        }
+
+        .video-wrap video {
+            width: 100%;
+            display: block;
+            max-height: 650px;
+        }
+
+        .article-content {
+            color: var(--text);
+            font-size: 1.14rem;
+            line-height: 1.95;
+            overflow-wrap: anywhere;
+        }
+
+        .article-content p {
+            margin: 0 0 1.5em;
+        }
+
+        .article-content h1,
+        .article-content h2,
+        .article-content h3 {
+            line-height: 1.2;
+            letter-spacing: -.03em;
+            margin: 2em 0 .8em;
+        }
+
+        .article-content h1 {
+            font-size: 2.25rem;
+        }
+
+        .article-content h2 {
+            font-size: 1.8rem;
+        }
+
+        .article-content h3 {
+            font-size: 1.45rem;
+        }
+
+        .article-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 16px;
+            margin: 1.5em 0;
+        }
+
+        .article-content a {
+            color: var(--accent);
+        }
+
+        .article-content blockquote {
+            margin: 1.7em 0;
+            padding: 18px 22px;
+            border-left: 4px solid var(--accent);
+            background: var(--surface-2);
+            border-radius: 0 14px 14px 0;
+        }
+
+        .article-content pre {
+            background: #0b0d10 !important;
+            color: #f8fafc;
+            padding: 18px;
+            border-radius: 15px;
+            overflow: auto;
+        }
+
+        .article-content code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        .article-content p code,
+        .article-content li code {
+            background: var(--surface-2);
+            padding: 3px 6px;
+            border-radius: 6px;
+        }
+
+        .tags {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        .tag {
+            text-decoration: none;
+            color: var(--text);
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: .78rem;
+        }
+
+        .tag:hover {
+            color: var(--accent);
+        }
+
+        .engagement {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 18px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .engage {
+            min-height: 44px;
+            padding: 9px 15px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            font-weight: 800;
+            transition: .18s ease;
+        }
+
+        .engage:hover {
+            background: var(--surface-2);
+        }
+
+        .engage.liked {
+            color: var(--danger);
+            border-color: rgba(225,29,72,.3);
+            background: var(--danger-bg);
+        }
+
+        .engage:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 20px;
+        }
+
+        .card {
+            padding: 20px;
+            margin-bottom: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .profile-card {
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 82px;
+            height: 82px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 12px;
+        }
+
+        .profile-name {
+            font-weight: 900;
+            font-size: 1rem;
+        }
+
+        .profile-bio {
+            color: var(--muted);
+            font-size: .82rem;
+            line-height: 1.6;
+            margin: 8px 0 18px;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 0;
+            margin-bottom: 15px;
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.05rem;
+        }
+
+        .stat span {
+            color: var(--muted);
+            font-size: .72rem;
+        }
+
+        .side-heading {
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .side-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .side-row:last-child {
+            border-bottom: 0;
+        }
+
+        .side-row span {
+            color: var(--muted);
+            font-size: .8rem;
+        }
+
+        .side-row strong {
+            font-size: .82rem;
+        }
+
+        .story-link {
+            display: block;
+            text-decoration: none;
+            color: var(--text);
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .story-link:last-child {
+            border-bottom: 0;
+        }
+
+        .story-link strong {
+            display: block;
+            line-height: 1.4;
+            font-size: .85rem;
+        }
+
+        .story-link span {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: .72rem;
+        }
+
+        .story-link:hover {
+            color: var(--accent);
+        }
+
+        /* COMMENT DRAWER */
+
+        .comments-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.58);
+            backdrop-filter: blur(5px);
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: .22s ease;
+        }
+
+        .comments-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .comments-panel {
+            position: fixed;
+            z-index: 3001;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: min(620px, 100%);
+            background: var(--surface);
+            color: var(--text);
+            border-left: 1px solid var(--border);
+            transform: translateX(100%);
+            transition: transform .32s cubic-bezier(.16,1,.3,1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .comments-panel.open {
+            transform: translateX(0);
+        }
+
+        .comments-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 17px 20px;
+            border-bottom: 1px solid var(--border);
+            flex: 0 0 auto;
+        }
+
+        .comments-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 900;
+        }
+
+        .comments-close {
+            width: 38px;
+            height: 38px;
+            border: 0;
+            border-radius: 50%;
+            background: var(--surface-2);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .comments-toolbar {
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: .75rem;
+        }
+
+        .comments-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 18px 20px;
+            overscroll-behavior: contain;
+        }
+
+        .comment {
+            padding: 16px 3px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comment-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .comment-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex: 0 0 auto;
+            background: var(--surface-2);
+        }
+
+        .comment-body {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .comment-top {
+            display: flex;
+            gap: 7px;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+
+        .comment-author {
+            font-size: .82rem;
+            font-weight: 900;
+        }
+
+        .comment-time {
+            color: var(--muted);
+            font-size: .68rem;
+        }
+
+        .comment-content {
+            margin: 6px 0 8px;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: .87rem;
+            line-height: 1.6;
+        }
+
+        .comment-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .comment-action {
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            padding: 2px 0;
+            cursor: pointer;
+            font-size: .73rem;
+        }
+
+        .comment-action:hover {
+            color: var(--accent);
+        }
+
+        .comment-action.liked {
+            color: var(--danger);
+        }
+
+        .comment-action:disabled {
+            opacity: .5;
+            cursor: wait;
+        }
+
+        .replies {
+            margin: 12px 0 0 49px;
+            padding-left: 13px;
+            border-left: 2px solid var(--border);
+        }
+
+        .reply-composer {
+            display: none;
+            gap: 7px;
+            margin: 10px 0 0 49px;
+        }
+
+        .reply-composer.open {
+            display: flex;
+        }
+
+        .reply-composer textarea,
+        .comment-composer textarea {
+            width: 100%;
+            min-height: 43px;
+            max-height: 120px;
+            resize: vertical;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .reply-composer textarea:focus,
+        .comment-composer textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+        }
+
+        .reply-send {
+            border: 0;
+            border-radius: 11px;
+            background: var(--accent);
+            color: #fff;
+            min-width: 43px;
+            cursor: pointer;
+        }
+
+        .comment-composer {
+            display: flex;
+            gap: 9px;
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+            flex: 0 0 auto;
+        }
+
+        .composer-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex: 0 0 auto;
+        }
+
+        .composer-main {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .comment-send {
+            align-self: stretch;
+            min-width: 45px;
+            border: 0;
+            border-radius: 11px;
+            background: var(--text);
+            color: var(--surface);
+            cursor: pointer;
+        }
+
+        .comment-send:disabled {
+            opacity: .5;
+            cursor: wait;
+        }
+
+        .login-box {
+            padding: 18px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: .82rem;
+        }
+
+        .login-box a {
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        .comment-empty,
+        .comment-loading,
+        .comment-error {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+        .comment-error {
+            color: var(--danger);
+        }
+
+        .retry-btn {
+            display: inline-flex;
+            margin-top: 12px;
+            padding: 8px 13px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .comment-fab {
+            position: fixed;
+            right: 22px;
+            bottom: 22px;
+            z-index: 2500;
+            width: 58px;
+            height: 58px;
+            border: 0;
+            border-radius: 50%;
+            background: var(--text);
+            color: var(--surface);
+            box-shadow: 0 12px 35px rgba(0,0,0,.25);
+            cursor: pointer;
+            transition: .18s ease;
+        }
+
+        .comment-fab:hover {
+            transform: translateY(-2px);
+        }
+
+        .comment-fab-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 5px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: var(--danger);
+            color: #fff;
+            border: 2px solid var(--surface);
+            font-size: .65rem;
+            font-weight: 900;
+        }
+
+        .toast {
+            position: fixed;
+            right: 20px;
+            bottom: 90px;
+            z-index: 5000;
+            max-width: min(380px, calc(100% - 40px));
+            padding: 12px 15px;
+            border-radius: 13px;
+            background: var(--text);
+            color: var(--surface);
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(12px);
+            pointer-events: none;
+            transition: .2s ease;
+            font-size: .82rem;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.error {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        @media (max-width: 1000px) {
+            .reader-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .sidebar-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .blog-page {
+                width: min(100% - 22px, 1250px);
+                padding-top: 18px;
+            }
+
+            .title {
+                font-size: clamp(2.35rem, 13vw, 3.8rem);
+            }
+
+            .author-bar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .cover,
+            .video-wrap {
+                border-radius: 16px;
+            }
+
+            .engagement {
+                gap: 7px;
+            }
+
+            .engage {
+                flex: 1;
+                min-width: 100px;
+                padding: 9px 10px;
+                font-size: .78rem;
+            }
+
+            .sidebar-grid {
+                display: block;
+            }
+
+            .comments-panel {
+                width: 100%;
+            }
+
+            .replies {
+                margin-left: 27px;
+            }
+
+            .reply-composer {
+                margin-left: 27px;
+            }
+
+            .comment-fab {
+                right: 15px;
+                bottom: 15px;
+            }
+        }
     </style>
 </head>
+
 <body>
-    <%- include("./partials/nave") %>
-    <main class="reader"><div class="row g-5"><div class="col-lg-8"><article class="article-shell"><a class="back" href="/"><i class="fas fa-arrow-left me-1"></i> Back to stories</a><header class="article-head"><% if (blog.category) { %><div class="eyebrow"><%= blog.category %></div><% } %><h1 class="article-title"><%= blog.title %></h1><% if (blog.excerpt) { %><p class="article-excerpt"><%= blog.excerpt %></p><% } %><div class="author-row"><a class="author" href="/user/profile/<%= blog.createdBy._id %>"><img src="<%= blog.createdBy.profileImageURL || '/imgs/default.png' %>" alt="" onerror="this.src='/imgs/default.png'"><span><span class="author-name d-block"><%= blog.createdBy.fullName %></span><span class="author-meta"><%= formatDate(blog.createdAt) %> · <%= blog.readingTime || 1 %> min read</span></span></a><% if (locals.user && locals.user._id.toString() === blog.createdBy._id.toString()) { %><div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary rounded-pill" href="/blogs/<%= blog._id %>/edit">Edit</a><button class="btn btn-sm btn-outline-danger rounded-pill" onclick="deleteBlog()">Delete</button></div><% } %></div></header><% if (blog.coverImageURL) { %><img class="hero" src="<%= blog.coverImageURL %>" alt="<%= blog.title %>" onerror="this.style.display='none'"><% } %><div class="article-body"><%- renderMarkdown(blog.body) %></div><% if (blog.tags?.length) { %><div class="tags"><strong class="small d-block mb-2">Topics</strong><% blog.tags.forEach(tag=>{ %><a class="tag" href="/blogs/tags/<%= tag %>">#<%= tag %></a><% }) %></div><% } %><div class="engagement"><button id="likeBtn" class="engage-btn <%= hasLiked ? 'liked':'' %>" onclick="toggleBlogLike()"><i class="<%= hasLiked ? 'fas':'far' %> fa-heart"></i><span id="likeCount"><%= blog.likes?.length || 0 %></span> Likes</button><button class="engage-btn" onclick="openComments()"><i class="far fa-comment"></i><span id="commentCount">0</span> Comments</button><button class="engage-btn" onclick="shareBlog()"><i class="fas fa-share-nodes"></i> Share</button></div></article></div><aside class="col-lg-4"><div class="side"><div class="side-card text-center"><img class="side-avatar mb-3" src="<%= blog.createdBy.profileImageURL || '/imgs/default.png' %>" alt="" onerror="this.src='/imgs/default.png'"><div class="side-title"><%= blog.createdBy.fullName %></div><p class="muted mt-1"><%= blog.createdBy.bio || 'Writer on Blogify' %></p><div class="row border-top border-bottom py-3 my-3"><div class="col"><div class="stat"><%= blog.createdBy.followers?.length || 0 %></div><div class="muted">Followers</div></div><div class="col"><div class="stat"><%= authorBlogs?.length || 0 %></div><div class="muted">Posts</div></div></div><% if (locals.user && locals.user._id.toString() !== blog.createdBy._id.toString()) { %><button id="followBtn" class="btn btn-dark rounded-pill w-100" onclick="toggleFollow()"><i class="fas fa-user-plus me-1"></i><span>Follow</span></button><% } %></div><div class="side-card"><div class="side-title mb-3">Article</div><div class="d-flex justify-content-between mb-2"><span class="muted">Views</span><strong><%= blog.viewCount || 0 %></strong></div><div class="d-flex justify-content-between"><span class="muted">Likes</span><strong id="sideLikes"><%= blog.likes?.length || 0 %></strong></div></div><% if (authorBlogs?.length) { %><div class="side-card"><div class="side-title mb-2">More from <%= blog.createdBy.fullName %></div><% authorBlogs.slice(0,5).forEach(b=>{ %><a class="mini-link" href="/blogs/<%= b._id %>"><strong class="small d-block"><%= truncate(b.title,55) %></strong><span class="muted"><%= formatDate(b.createdAt) %></span></a><% }) %></div><% } %><% if (relatedBlogs?.length) { %><div class="side-card"><div class="side-title mb-2">Related stories</div><% relatedBlogs.slice(0,5).forEach(b=>{ %><a class="mini-link" href="/blogs/<%= b._id %>"><strong class="small d-block"><%= truncate(b.title,55) %></strong><span class="muted"><%= formatDate(b.createdAt) %></span></a><% }) %></div><% } %></div></aside></div></main>
-    <button class="comment-fab" onclick="openComments()" aria-label="Open comments"><i class="far fa-comment"></i><span class="comment-badge" id="fabCount">0</span></button><div class="overlay" id="overlay" onclick="closeComments()"></div><section class="comment-sheet" id="commentSheet" aria-label="Comments"><header class="sheet-head"><h3><i class="fas fa-comments me-2"></i>Comments <span id="sheetCount">0</span></h3><button class="close" onclick="closeComments()"><i class="fas fa-times"></i></button></header><div class="comments-scroll" id="commentsList"><div class="loading"><i class="fas fa-spinner fa-spin fa-2x"></i></div></div><% if (locals.user) { %><div class="composer"><img src="<%= locals.user.profileImageURL || '/imgs/default.png' %>" alt=""><textarea id="commentInput" placeholder="Share your thoughts..." maxlength="5000"></textarea><button id="commentSend" onclick="postComment()"><i class="fas fa-paper-plane"></i></button></div><% } else { %><div class="login-comment"><a href="/user/signin">Sign in</a> to join the conversation.</div><% } %></section>
-    <%- include("./partials/scripts") %>
-    <script>
-        const blogId='<%= blog._id %>',userId='<%= locals.user ? locals.user._id : "" %>',authorId='<%= blog.createdBy._id %>';let comments=[];
-        const esc=v=>{const d=document.createElement('div');d.textContent=v??'';return d.innerHTML};const ago=d=>{const s=Math.max(0,(Date.now()-new Date(d).getTime())/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';if(s<2592000)return Math.floor(s/86400)+'d';return Math.floor(s/2592000)+'mo'};const findComment=id=>{let f=null;const walk=a=>{for(const c of a){if(String(c._id)===String(id)){f=c;return}walk(c.replies||[]);if(f)return}};walk(comments);return f};
-        function renderComment(c,reply=false){if(!c||c.isDeleted)return'';const liked=(c.likes||[]).some(x=>String(x)===String(userId)),own=userId&&String(c.author?._id)===String(userId),replies=(c.replies||[]).filter(x=>!x.isDeleted);return `<div class="comment" id="comment-${c._id}"><div class="comment-main"><img class="comment-avatar" src="${c.author?.profileImageURL||'/imgs/default.png'}" onerror="this.src='/imgs/default.png'" alt=""><div class="flex-grow-1"><div><span class="comment-author">${esc(c.author?.fullName||'User')}</span> <span class="comment-time">${ago(c.createdAt)}</span></div><div class="comment-text" id="comment-text-${c._id}">${esc(c.content)}</div><div class="comment-actions"><button class="comment-action ${liked?'liked':''}" onclick="likeComment('${c._id}')"><i class="${liked?'fas':'far'} fa-heart"></i> <span>${(c.likes||[]).length}</span></button>${userId?`<button class="comment-action" onclick="showReply('${c._id}')"><i class="fas fa-reply"></i> Reply</button>`:''}${own?`<button class="comment-action" onclick="editComment('${c._id}')"><i class="fas fa-pen"></i> Edit</button><button class="comment-action" onclick="deleteComment('${c._id}')"><i class="fas fa-trash"></i> Delete</button>`:''}</div></div></div>${userId?`<div class="reply-box" id="reply-box-${c._id}"><textarea id="reply-${c._id}" rows="1" maxlength="5000" placeholder="Write a reply..."></textarea><button onclick="postReply('${c._id}')"><i class="fas fa-paper-plane"></i></button></div>`:''}${replies.length?`<div class="replies">${replies.map(r=>renderComment(r,true)).join('')}</div>`:''}</div>`}
-        async function loadComments(){const list=document.getElementById('commentsList');list.innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';try{const r=await axios.get('/comments/blog/'+blogId+'?limit=50');if(!r.data.success)throw new Error(r.data.message);comments=r.data.comments||[];const count=r.data.total||0;['commentCount','fabCount','sheetCount'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=count});list.innerHTML=comments.length?comments.map(c=>renderComment(c)).join(''):'<div class="empty-comments"><i class="far fa-comments fa-3x mb-3"></i><h5>No comments yet</h5><p>Be the first to share your thoughts.</p></div>'}catch(e){console.error(e);list.innerHTML='<div class="alert alert-danger">Unable to load comments. <button class="btn btn-sm btn-link" onclick="loadComments()">Retry</button></div>'}}
-        function openComments(){document.getElementById('overlay').classList.add('open');document.getElementById('commentSheet').classList.add('open');document.body.style.overflow='hidden';loadComments()}function closeComments(){document.getElementById('overlay').classList.remove('open');document.getElementById('commentSheet').classList.remove('open');document.body.style.overflow=''}function showReply(id){document.querySelectorAll('.reply-box').forEach(x=>x.classList.remove('open'));const b=document.getElementById('reply-box-'+id);if(b){b.classList.add('open');document.getElementById('reply-'+id).focus()}}
-        async function postComment(){const i=document.getElementById('commentInput'),content=i.value.trim();if(!content)return;const b=document.getElementById('commentSend');b.disabled=true;try{const r=await axios.post('/comments/blog/'+blogId,{content});if(!r.data.success)throw new Error(r.data.message);i.value='';await loadComments();if(window.notify)notify.success('Comment posted')}catch(e){if(window.notify)notify.error(e.response?.data?.message||'Failed to post comment')}finally{b.disabled=false}}
-        async function postReply(parentCommentId){const i=document.getElementById('reply-'+parentCommentId),content=i.value.trim();if(!content)return;try{const r=await axios.post('/comments/blog/'+blogId,{content,parentCommentId});if(!r.data.success)throw new Error(r.data.message);i.value='';await loadComments();if(window.notify)notify.success('Reply posted')}catch(e){if(window.notify)notify.error(e.response?.data?.message||'Failed to post reply')}}
-        async function likeComment(id){if(!userId){location.href='/user/signin';return}try{const r=await axios.post('/comments/'+id+'/like');if(!r.data.success)throw new Error(r.data.message);const c=findComment(id);if(c){if(r.data.liked&&!c.likes.some(x=>String(x)===String(userId)))c.likes.push(userId);if(!r.data.liked)c.likes=c.likes.filter(x=>String(x)!==String(userId));const card=document.getElementById('comment-'+id),btn=card?.querySelector('.comment-action');if(btn){btn.classList.toggle('liked',r.data.liked);btn.innerHTML=`<i class="${r.data.liked?'fas':'far'} fa-heart"></i> <span>${r.data.likeCount}</span>`}}}catch(e){if(window.notify)notify.error(e.response?.data?.message||'Failed to like comment')}}
-        async function editComment(id){const c=findComment(id);if(!c)return;const next=prompt('Edit comment:',c.content);if(next===null||!next.trim())return;try{const r=await axios.put('/comments/'+id,{content:next.trim()});if(!r.data.success)throw new Error(r.data.message);c.content=next.trim();document.getElementById('comment-text-'+id).textContent=c.content;if(window.notify)notify.success('Comment updated')}catch(e){if(window.notify)notify.error(e.response?.data?.message||'Failed to edit comment')}}
-        async function deleteComment(id){if(!confirm('Delete this comment?'))return;try{const r=await axios.delete('/comments/'+id);if(!r.data.success)throw new Error(r.data.message);await loadComments();if(window.notify)notify.success('Comment deleted')}catch(e){if(window.notify)notify.error(e.response?.data?.message||'Failed to delete comment')}}
-        async function toggleBlogLike(){if(!userId){location.href='/user/signin';return}const b=document.getElementById('likeBtn');b.disabled=true;try{const r=await axios.post('/blogs/'+blogId+'/like');if(!r.data.success)throw new Error(r.data.message);b.classList.toggle('liked',r.data.liked);b.innerHTML=`<i class="${r.data.liked?'fas':'far'} fa-heart"></i><span id="likeCount">${r.data.likeCount}</span> Likes`;document.getElementById('sideLikes').textContent=r.data.likeCount}catch(e){if(window.notify)notify.error(e.response?.data?.message||'Failed to like blog')}finally{b.disabled=false}}
-        async function toggleFollow(){const b=document.getElementById('followBtn');if(!b)return;if(!userId){location.href='/user/signin';return}b.disabled=true;try{const r=await axios.post('/follow/'+authorId+'/follow');if(!r.data.success)throw new Error(r.data.message);b.querySelector('span').textContent=r.data.following?'Following':(r.data.pending?'Requested':'Follow');if(window.notify)notify.success(r.data.message||'Follow updated')}catch(e){if(window.notify)notify.error(e.response?.data?.message||'Failed to update follow')}finally{b.disabled=false}}
-        async function deleteBlog(){if(!confirm('Delete this blog?'))return;try{const r=await axios.delete('/blogs/'+blogId);if(r.data.success)location.href='/'}catch(e){if(window.notify)notify.error('Failed to delete blog')}}
-        async function shareBlog(){try{if(navigator.share){await navigator.share({title:<%- JSON.stringify(blog.title) %>,url:location.href})}else{await navigator.clipboard.writeText(location.href);if(window.notify)notify.success('Link copied')}}catch(e){if(e.name!=='AbortError'&&window.notify)notify.error('Unable to share')}}
-        document.addEventListener('keydown',e=>{if(e.key==='Escape')closeComments()});document.addEventListener('DOMContentLoaded',loadComments);
-    </script>
+
+<%- include("./partials/nave") %>
+
+<main class="blog-page">
+
+    <div class="reader-layout">
+
+        <!-- ================= ARTICLE ================= -->
+
+        <article class="article">
+
+            <a href="/" class="breadcrumb">
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to stories
+            </a>
+
+            <% if (blog.category) { %>
+                <div class="category">
+                    <%= blog.category %>
+                </div>
+            <% } %>
+
+            <h1 class="title">
+                <%= blog.title %>
+            </h1>
+
+            <% if (blog.excerpt) { %>
+                <p class="excerpt">
+                    <%= blog.excerpt %>
+                </p>
+            <% } %>
+
+            <div class="author-bar">
+
+                <a
+                    href="/user/profile/<%= blog.createdBy._id %>"
+                    class="author-link"
+                >
+                    <img
+                        class="author-avatar"
+                        src="<%= blog.createdBy.profileImageURL || '/imgs/default.png' %>"
+                        alt="<%= blog.createdBy.fullName %>"
+                        onerror="this.src='/imgs/default.png'"
+                    >
+
+                    <span>
+                        <span class="author-name">
+                            <%= blog.createdBy.fullName %>
+                        </span>
+
+                        <span class="author-meta">
+                            <%= formatDate(blog.createdAt) %>
+                            ·
+                            <%= blog.readingTime || 1 %> min read
+                        </span>
+                    </span>
+                </a>
+
+                <% if (
+                    locals.user &&
+                    blog.createdBy &&
+                    locals.user._id.toString() === blog.createdBy._id.toString()
+                ) { %>
+
+                    <div class="author-actions">
+
+                        <a
+                            href="/blogs/<%= blog._id %>/edit"
+                            class="btn-ui"
+                        >
+                            <i class="fa-solid fa-pen"></i>
+                            Edit
+                        </a>
+
+                        <button
+                            type="button"
+                            class="btn-ui danger"
+                            id="deleteBlogButton"
+                        >
+                            <i class="fa-solid fa-trash"></i>
+                            Delete
+                        </button>
+
+                    </div>
+
+                <% } %>
+
+            </div>
+
+
+            <!-- MEDIA -->
+
+            <% if (blog.mediaType === "video" && blog.videoURL) { %>
+
+                <div class="video-wrap">
+                    <video
+                        controls
+                        preload="metadata"
+                        playsinline
+                    >
+                        <source src="<%= blog.videoURL %>">
+                        Your browser does not support video playback.
+                    </video>
+                </div>
+
+            <% } else if (blog.coverImageURL) { %>
+
+                <img
+                    class="cover"
+                    src="<%= blog.coverImageURL %>"
+                    alt="<%= blog.title %>"
+                    loading="eager"
+                    onerror="this.style.display='none'"
+                >
+
+            <% } %>
+
+
+            <!-- ARTICLE BODY -->
+
+            <div class="article-content">
+                <%- renderMarkdown(blog.body) %>
+            </div>
+
+
+            <!-- TAGS -->
+
+            <% if (blog.tags && blog.tags.length) { %>
+
+                <div class="tags">
+
+                    <% blog.tags.forEach(tag => { %>
+
+                        <a
+                            class="tag"
+                            href="/blogs/tags/<%= encodeURIComponent(tag) %>"
+                        >
+                            #<%= tag %>
+                        </a>
+
+                    <% }) %>
+
+                </div>
+
+            <% } %>
+
+
+            <!-- ENGAGEMENT -->
+
+            <div class="engagement">
+
+                <button
+                    type="button"
+                    id="likeBtn"
+                    class="engage <%= hasLiked ? 'liked' : '' %>"
+                    aria-pressed="<%= hasLiked ? 'true' : 'false' %>"
+                >
+                    <i class="<%= hasLiked ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
+
+                    <span id="likeCount">
+                        <%= blog.likes ? blog.likes.length : 0 %>
+                    </span>
+
+                    <span>Likes</span>
+                </button>
+
+
+                <button
+                    type="button"
+                    class="engage"
+                    id="openCommentsButton"
+                >
+                    <i class="fa-regular fa-comment"></i>
+
+                    <span id="commentCount">
+                        0
+                    </span>
+
+                    <span>Comments</span>
+                </button>
+
+
+                <button
+                    type="button"
+                    class="engage"
+                    id="shareButton"
+                >
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                    <span>Share</span>
+                </button>
+
+            </div>
+
+        </article>
+
+
+        <!-- ================= SIDEBAR ================= -->
+
+        <aside class="sidebar">
+
+            <div class="sidebar-grid">
+
+                <!-- AUTHOR -->
+
+                <div class="card profile-card">
+
+                    <img
+                        class="profile-avatar"
+                        src="<%= blog.createdBy.profileImageURL || '/imgs/default.png' %>"
+                        alt="<%= blog.createdBy.fullName %>"
+                        onerror="this.src='/imgs/default.png'"
+                    >
+
+                    <div class="profile-name">
+                        <%= blog.createdBy.fullName %>
+                    </div>
+
+                    <div class="profile-bio">
+                        <%= blog.createdBy.bio || "Writer on Blogify" %>
+                    </div>
+
+
+                    <div class="profile-stats">
+
+                        <div class="stat">
+                            <strong>
+                                <%= blog.createdBy.followers ? blog.createdBy.followers.length : 0 %>
+                            </strong>
+                            <span>Followers</span>
+                        </div>
+
+                        <div class="stat">
+                            <strong>
+                                <%= authorBlogs ? authorBlogs.length : 0 %>
+                            </strong>
+                            <span>Posts</span>
+                        </div>
+
+                    </div>
+
+
+                    <% if (
+                        locals.user &&
+                        blog.createdBy &&
+                        locals.user._id.toString() !== blog.createdBy._id.toString()
+                    ) { %>
+
+                        <button
+                            type="button"
+                            class="btn-ui primary"
+                            id="followBtn"
+                            style="width:100%;"
+                        >
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>Follow</span>
+                        </button>
+
+                    <% } %>
+
+                </div>
+
+
+                <!-- ARTICLE STATS -->
+
+                <div class="card">
+
+                    <div class="side-heading">
+                        Article
+                    </div>
+
+                    <div class="side-row">
+                        <span>Views</span>
+                        <strong>
+                            <%= blog.viewCount || 0 %>
+                        </strong>
+                    </div>
+
+                    <div class="side-row">
+                        <span>Likes</span>
+                        <strong id="sideLikes">
+                            <%= blog.likes ? blog.likes.length : 0 %>
+                        </strong>
+                    </div>
+
+                    <div class="side-row">
+                        <span>Comments</span>
+                        <strong id="sideCommentCount">
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- MORE FROM AUTHOR -->
+
+                <% if (authorBlogs && authorBlogs.length) { %>
+
+                    <div class="card">
+
+                        <div class="side-heading">
+                            More from <%= blog.createdBy.fullName %>
+                        </div>
+
+                        <% authorBlogs.slice(0, 5).forEach(item => { %>
+
+                            <a
+                                href="/blogs/<%= item._id %>"
+                                class="story-link"
+                            >
+                                <strong>
+                                    <%= truncate(item.title, 60) %>
+                                </strong>
+
+                                <span>
+                                    <%= formatDate(item.createdAt) %>
+                                </span>
+                            </a>
+
+                        <% }) %>
+
+                    </div>
+
+                <% } %>
+
+
+                <!-- RELATED -->
+
+                <% if (relatedBlogs && relatedBlogs.length) { %>
+
+                    <div class="card">
+
+                        <div class="side-heading">
+                            Related stories
+                        </div>
+
+                        <% relatedBlogs.slice(0, 5).forEach(item => { %>
+
+                            <a
+                                href="/blogs/<%= item._id %>"
+                                class="story-link"
+                            >
+                                <strong>
+                                    <%= truncate(item.title, 60) %>
+                                </strong>
+
+                                <span>
+                                    <%= formatDate(item.createdAt) %>
+                                </span>
+                            </a>
+
+                        <% }) %>
+
+                    </div>
+
+                <% } %>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+</main>
+
+
+<!-- ================= COMMENT FAB ================= -->
+
+<button
+    type="button"
+    class="comment-fab"
+    id="commentFab"
+    aria-label="Open comments"
+>
+    <i class="fa-regular fa-comment"></i>
+
+    <span
+        class="comment-fab-count"
+        id="fabCount"
+    >
+        0
+    </span>
+</button>
+
+
+<!-- ================= COMMENT OVERLAY ================= -->
+
+<div
+    class="comments-overlay"
+    id="commentsOverlay"
+></div>
+
+
+<!-- ================= COMMENT PANEL ================= -->
+
+<section
+    class="comments-panel"
+    id="commentsPanel"
+    aria-label="Comments"
+>
+
+    <header class="comments-header">
+
+        <h2 class="comments-title">
+            <i class="fa-solid fa-comments"></i>
+
+            Comments
+
+            <span id="commentsTitleCount">
+                0
+            </span>
+        </h2>
+
+        <button
+            type="button"
+            class="comments-close"
+            id="closeCommentsButton"
+            aria-label="Close comments"
+        >
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+    </header>
+
+
+    <div class="comments-toolbar">
+
+        <span id="commentsStatus">
+            Loading comments...
+        </span>
+
+        <button
+            type="button"
+            class="retry-btn"
+            id="reloadCommentsButton"
+            style="display:none;margin:0;padding:5px 10px;"
+        >
+            Retry
+        </button>
+
+    </div>
+
+
+    <div
+        class="comments-list"
+        id="commentsList"
+    >
+
+        <div class="comment-loading">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p>Loading comments...</p>
+        </div>
+
+    </div>
+
+
+    <% if (locals.user) { %>
+
+        <div class="comment-composer">
+
+            <img
+                class="composer-avatar"
+                src="<%= locals.user.profileImageURL || '/imgs/default.png' %>"
+                alt=""
+                onerror="this.src='/imgs/default.png'"
+            >
+
+            <div class="composer-main">
+
+                <textarea
+                    id="commentInput"
+                    maxlength="5000"
+                    placeholder="Share your thoughts..."
+                ></textarea>
+
+                <button
+                    type="button"
+                    class="comment-send"
+                    id="commentSend"
+                    aria-label="Post comment"
+                >
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+
+            </div>
+
+        </div>
+
+    <% } else { %>
+
+        <div class="login-box">
+
+            <a href="/user/signin">
+                Sign in
+            </a>
+
+            to join the conversation.
+
+        </div>
+
+    <% } %>
+
+</section>
+
+
+<div
+    class="toast"
+    id="blogifyToast"
+></div>
+
+
+<%- include("./partials/scripts") %>
+
+
+<script>
+(function () {
+    "use strict";
+
+    /*
+     * ============================================================
+     * BLOGIFY VIEW PAGE
+     * ============================================================
+     *
+     * Backend routes verified against current BlogifyDemo:
+     *
+     * GET    /comments/blog/:blogId
+     * POST   /comments/blog/:blogId
+     * POST   /comments/:commentId/like
+     * PUT    /comments/:commentId
+     * DELETE /comments/:commentId
+     *
+     * POST   /blogs/:blogId/like
+     * DELETE /blogs/:blogId
+     *
+     * ============================================================
+     */
+
+    const BLOG_ID = <%- JSON.stringify(String(blog._id)) %>;
+    const USER_ID = <%- JSON.stringify(
+        locals.user ? String(locals.user._id) : ""
+    ) %>;
+    const AUTHOR_ID = <%- JSON.stringify(String(blog.createdBy._id)) %>;
+
+    let comments = [];
+    let commentsLoaded = false;
+    let commentsLoading = false;
+    let commentsOpened = false;
+
+    let likeLoading = false;
+    let commentPosting = false;
+
+    let toastTimer = null;
+
+
+    /* ============================================================
+       DOM
+    ============================================================ */
+
+    const $ = (selector) => document.querySelector(selector);
+
+    const likeButton = $("#likeBtn");
+    const likeCount = $("#likeCount");
+    const sideLikes = $("#sideLikes");
+
+    const commentsPanel = $("#commentsPanel");
+    const commentsOverlay = $("#commentsOverlay");
+    const commentsList = $("#commentsList");
+
+    const commentInput = $("#commentInput");
+    const commentSend = $("#commentSend");
+
+    const commentCount = $("#commentCount");
+    const sideCommentCount = $("#sideCommentCount");
+    const fabCount = $("#fabCount");
+    const commentsTitleCount = $("#commentsTitleCount");
+
+    const commentsStatus = $("#commentsStatus");
+    const reloadCommentsButton = $("#reloadCommentsButton");
+
+    const toast = $("#blogifyToast");
+
+
+    /* ============================================================
+       UTILITIES
+    ============================================================ */
+
+    function escapeHTML(value) {
+
+        const div = document.createElement("div");
+
+        div.textContent = value == null
+            ? ""
+            : String(value);
+
+        return div.innerHTML;
+    }
+
+
+    function escapeAttribute(value) {
+
+        return escapeHTML(value)
+            .replace(/`/g, "&#96;");
+    }
+
+
+    function timeAgo(date) {
+
+        const timestamp = new Date(date).getTime();
+
+        if (!Number.isFinite(timestamp)) {
+            return "";
+        }
+
+        const seconds = Math.max(
+            0,
+            Math.floor((Date.now() - timestamp) / 1000)
+        );
+
+        if (seconds < 60) {
+            return "Just now";
+        }
+
+        if (seconds < 3600) {
+            return Math.floor(seconds / 60) + "m";
+        }
+
+        if (seconds < 86400) {
+            return Math.floor(seconds / 3600) + "h";
+        }
+
+        if (seconds < 2592000) {
+            return Math.floor(seconds / 86400) + "d";
+        }
+
+        if (seconds < 31536000) {
+            return Math.floor(seconds / 2592000) + "mo";
+        }
+
+        return Math.floor(seconds / 31536000) + "y";
+    }
+
+
+    function showToast(message, type) {
+
+        if (!toast) {
+            return;
+        }
+
+        clearTimeout(toastTimer);
+
+        toast.textContent = message || "Something went wrong.";
+
+        toast.classList.remove("error");
+
+        if (type === "error") {
+            toast.classList.add("error");
+        }
+
+        toast.classList.add("show");
+
+        toastTimer = setTimeout(function () {
+            toast.classList.remove("show");
+        }, 3000);
+    }
+
+
+    async function apiRequest(url, options) {
+
+        const config = {
+            credentials: "same-origin",
+            ...options
+        };
+
+        config.headers = {
+            Accept: "application/json",
+            ...(options && options.headers ? options.headers : {})
+        };
+
+
+        let response;
+
+        try {
+
+            response = await fetch(url, config);
+
+        } catch (networkError) {
+
+            const error = new Error(
+                "Network error. Please check your connection."
+            );
+
+            error.network = true;
+
+            throw error;
+        }
+
+
+        let data = null;
+
+        const contentType =
+            response.headers.get("content-type") || "";
+
+
+        if (contentType.includes("application/json")) {
+
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = null;
+            }
+
+        } else {
+
+            try {
+                const text = await response.text();
+
+                data = text
+                    ? { message: text }
+                    : null;
+
+            } catch (_) {
+                data = null;
+            }
+
+        }
+
+
+        if (!response.ok) {
+
+            let message =
+                data &&
+                (
+                    data.message ||
+                    data.error ||
+                    (
+                        Array.isArray(data.errors)
+                            ? data.errors[0]
+                            : null
+                    )
+                );
+
+
+            if (!message) {
+
+                if (response.status === 401) {
+                    message = "Please sign in to continue.";
+                }
+
+                else if (response.status === 403) {
+                    message = "You are not allowed to perform this action.";
+                }
+
+                else if (response.status === 404) {
+                    message = "The requested resource was not found.";
+                }
+
+                else if (response.status === 429) {
+                    message = "Too many requests. Please try again later.";
+                }
+
+                else {
+                    message = "Server error. Please try again.";
+                }
+            }
+
+
+            const error = new Error(message);
+
+            error.status = response.status;
+            error.data = data;
+
+            throw error;
+        }
+
+
+        return data || {};
+    }
+
+
+    function setCommentCount(count) {
+
+        const safeCount =
+            Number.isFinite(Number(count))
+                ? Number(count)
+                : 0;
+
+
+        if (commentCount) {
+            commentCount.textContent = safeCount;
+        }
+
+        if (sideCommentCount) {
+            sideCommentCount.textContent = safeCount;
+        }
+
+        if (fabCount) {
+            fabCount.textContent = safeCount;
+        }
+
+        if (commentsTitleCount) {
+            commentsTitleCount.textContent = safeCount;
+        }
+    }
+
+
+    function updateCommentsStatus(text) {
+
+        if (commentsStatus) {
+            commentsStatus.textContent = text;
+        }
+    }
+
+
+    /* ============================================================
+       COMMENT TREE
+    ============================================================ */
+
+    function findComment(commentId, list) {
+
+        const source = list || comments;
+
+        for (const comment of source) {
+
+            if (
+                comment &&
+                String(comment._id) === String(commentId)
+            ) {
+                return comment;
+            }
+
+
+            if (
+                comment &&
+                Array.isArray(comment.replies)
+            ) {
+
+                const result = findComment(
+                    commentId,
+                    comment.replies
+                );
+
+                if (result) {
+                    return result;
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    function renderComment(comment) {
+
+        if (!comment) {
+            return "";
+        }
+
+        if (comment.isDeleted) {
+            return "";
+        }
+
+
+        const id = String(comment._id);
+
+        const author = comment.author || {};
+
+        const authorId =
+            author._id
+                ? String(author._id)
+                : "";
+
+
+        const authorName =
+            author.fullName ||
+            "User";
+
+
+        const avatar =
+            author.profileImageURL ||
+            "/imgs/default.png";
+
+
+        const content =
+            comment.content ||
+            "";
+
+
+        const likes =
+            Array.isArray(comment.likes)
+                ? comment.likes
+                : [];
+
+
+        const liked =
+            USER_ID &&
+            likes.some(function (idValue) {
+                return String(idValue) === String(USER_ID);
+            });
+
+
+        const ownComment =
+            USER_ID &&
+            authorId === String(USER_ID);
+
+
+        const replies =
+            Array.isArray(comment.replies)
+                ? comment.replies.filter(function (reply) {
+                    return reply && !reply.isDeleted;
+                })
+                : [];
+
+
+        const safeId =
+            escapeAttribute(id);
+
+
+        let html = "";
+
+        html += '<div class="comment" data-comment-id="' +
+            safeId +
+            '">';
+
+
+        html += '<div class="comment-row">';
+
+
+        html += '<img class="comment-avatar" src="' +
+            escapeAttribute(avatar) +
+            '" alt="" onerror="this.src=\\'/imgs/default.png\\'">';
+
+
+        html += '<div class="comment-body">';
+
+
+        html += '<div class="comment-top">';
+
+        html += '<span class="comment-author">' +
+            escapeHTML(authorName) +
+            '</span>';
+
+        html += '<span class="comment-time">' +
+            escapeHTML(timeAgo(comment.createdAt)) +
+            '</span>';
+
+        html += '</div>';
+
+
+        html += '<div class="comment-content">' +
+            escapeHTML(content) +
+            '</div>';
+
+
+        html += '<div class="comment-actions">';
+
+
+        if (USER_ID) {
+
+            html +=
+                '<button type="button" ' +
+                'class="comment-action ' +
+                (liked ? "liked" : "") +
+                '" data-action="like-comment" ' +
+                'data-id="' +
+                safeId +
+                '">' +
+
+                '<i class="' +
+                (liked ? "fa-solid" : "fa-regular") +
+                ' fa-heart"></i> ' +
+
+                '<span>' +
+                likes.length +
+                '</span>' +
+
+                '</button>';
+
+
+            html +=
+                '<button type="button" ' +
+                'class="comment-action" ' +
+                'data-action="reply" ' +
+                'data-id="' +
+                safeId +
+                '">' +
+
+                '<i class="fa-solid fa-reply"></i> Reply' +
+
+                '</button>';
+
+        } else {
+
+            html +=
+                '<a href="/user/signin" ' +
+                'class="comment-action">' +
+                '<i class="fa-regular fa-heart"></i> ' +
+                likes.length +
+                '</a>';
+
+        }
+
+
+        if (ownComment) {
+
+            html +=
+                '<button type="button" ' +
+                'class="comment-action" ' +
+                'data-action="edit-comment" ' +
+                'data-id="' +
+                safeId +
+                '">' +
+
+                '<i class="fa-solid fa-pen"></i> Edit' +
+
+                '</button>';
+
+
+            html +=
+                '<button type="button" ' +
+                'class="comment-action" ' +
+                'data-action="delete-comment" ' +
+                'data-id="' +
+                safeId +
+                '">' +
+
+                '<i class="fa-solid fa-trash"></i> Delete' +
+
+                '</button>';
+
+        }
+
+
+        html += "</div>";
+
+        html += "</div>";
+
+        html += "</div>";
+
+
+        if (USER_ID) {
+
+            html +=
+                '<div class="reply-composer" ' +
+                'id="reply-box-' +
+                safeId +
+                '">' +
+
+                '<textarea ' +
+                'id="reply-input-' +
+                safeId +
+                '" ' +
+                'maxlength="5000" ' +
+                'placeholder="Write a reply..."></textarea>' +
+
+                '<button type="button" ' +
+                'class="reply-send" ' +
+                'data-action="send-reply" ' +
+                'data-id="' +
+                safeId +
+                '">' +
+
+                '<i class="fa-solid fa-paper-plane"></i>' +
+
+                '</button>' +
+
+                '</div>';
+
+        }
+
+
+        if (replies.length) {
+
+            html += '<div class="replies">';
+
+            replies.forEach(function (reply) {
+                html += renderComment(reply);
+            });
+
+            html += "</div>";
+        }
+
+
+        html += "</div>";
+
+        return html;
+    }
+
+
+    /* ============================================================
+       LOAD COMMENTS
+    ============================================================ */
+
+    async function loadComments(force) {
+
+        if (commentsLoading) {
+            return;
+        }
+
+        if (commentsLoaded && !force) {
+            return;
+        }
+
+
+        commentsLoading = true;
+
+
+        if (commentsList) {
+
+            commentsList.innerHTML =
+                '<div class="comment-loading">' +
+                '<i class="fa-solid fa-spinner fa-spin fa-2x"></i>' +
+                '<p>Loading comments...</p>' +
+                '</div>';
+
+        }
+
+
+        updateCommentsStatus("Loading comments...");
+
+
+        if (reloadCommentsButton) {
+            reloadCommentsButton.style.display = "none";
+        }
+
+
+        try {
+
+            const data = await apiRequest(
+                "/comments/blog/" +
+                encodeURIComponent(BLOG_ID) +
+                "?page=1&limit=50",
+                {
+                    method: "GET"
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Unable to load comments."
+                );
+            }
+
+
+            comments =
+                Array.isArray(data.comments)
+                    ? data.comments
+                    : [];
+
+
+            const total =
+                Number(data.total) ||
+                0;
+
+
+            setCommentCount(total);
+
+
+            commentsLoaded = true;
+
+
+            updateCommentsStatus(
+                total === 0
+                    ? "Be the first to comment"
+                    : total + (
+                        total === 1
+                            ? " comment"
+                            : " comments"
+                    )
+            );
+
+
+            if (!commentsList) {
+                return;
+            }
+
+
+            if (!comments.length) {
+
+                commentsList.innerHTML =
+                    '<div class="comment-empty">' +
+
+                    '<i class="fa-regular fa-comments fa-3x"></i>' +
+
+                    '<h3>No comments yet</h3>' +
+
+                    '<p>Start the conversation.</p>' +
+
+                    '</div>';
+
+                return;
+            }
+
+
+            commentsList.innerHTML =
+                comments
+                    .map(renderComment)
+                    .join("");
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify comments loading error:",
+                error
+            );
+
+
+            commentsLoaded = false;
+
+
+            updateCommentsStatus(
+                error.message ||
+                "Unable to load comments."
+            );
+
+
+            if (commentsList) {
+
+                commentsList.innerHTML =
+                    '<div class="comment-error">' +
+
+                    '<i class="fa-solid fa-triangle-exclamation fa-2x"></i>' +
+
+                    '<p>' +
+                    escapeHTML(
+                        error.message ||
+                        "Unable to load comments."
+                    ) +
+                    '</p>' +
+
+                    '<button type="button" ' +
+                    'class="retry-btn" ' +
+                    'id="inlineRetryComments">' +
+                    'Try again' +
+                    '</button>' +
+
+                    '</div>';
+
+
+                const retry =
+                    document.getElementById(
+                        "inlineRetryComments"
+                    );
+
+
+                if (retry) {
+
+                    retry.addEventListener(
+                        "click",
+                        function () {
+                            loadComments(true);
+                        }
+                    );
+
+                }
+
+            }
+
+
+            if (reloadCommentsButton) {
+                reloadCommentsButton.style.display =
+                    "inline-flex";
+            }
+
+        } finally {
+
+            commentsLoading = false;
+
+        }
+    }
+
+
+    /* ============================================================
+       OPEN / CLOSE COMMENTS
+    ============================================================ */
+
+    function openComments() {
+
+        if (!commentsPanel || !commentsOverlay) {
+            return;
+        }
+
+
+        commentsOpened = true;
+
+        commentsPanel.classList.add("open");
+        commentsOverlay.classList.add("open");
+
+        document.body.style.overflow = "hidden";
+
+
+        loadComments(false);
+    }
+
+
+    function closeComments() {
+
+        if (!commentsPanel || !commentsOverlay) {
+            return;
+        }
+
+
+        commentsOpened = false;
+
+        commentsPanel.classList.remove("open");
+        commentsOverlay.classList.remove("open");
+
+        document.body.style.overflow = "";
+    }
+
+
+    /* ============================================================
+       POST COMMENT
+    ============================================================ */
+
+    async function postComment() {
+
+        if (!USER_ID) {
+
+            window.location.href =
+                "/user/signin";
+
+            return;
+        }
+
+
+        if (commentPosting) {
+            return;
+        }
+
+
+        const content =
+            commentInput
+                ? commentInput.value.trim()
+                : "";
+
+
+        if (!content) {
+
+            showToast(
+                "Write a comment first.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        if (content.length > 5000) {
+
+            showToast(
+                "Comment is too long.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        commentPosting = true;
+
+
+        if (commentSend) {
+            commentSend.disabled = true;
+        }
+
+
+        try {
+
+            const data = await apiRequest(
+                "/comments/blog/" +
+                encodeURIComponent(BLOG_ID),
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        content: content
+                    })
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to post comment."
+                );
+            }
+
+
+            if (commentInput) {
+                commentInput.value = "";
+            }
+
+
+            commentsLoaded = false;
+
+            await loadComments(true);
+
+
+            showToast(
+                data.message ||
+                "Comment posted successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify post comment error:",
+                error
+            );
+
+
+            if (error.status === 401) {
+
+                window.location.href =
+                    "/user/signin";
+
+                return;
+            }
+
+
+            showToast(
+                error.message ||
+                "Failed to post comment.",
+                "error"
+            );
+
+
+        } finally {
+
+            commentPosting = false;
+
+            if (commentSend) {
+                commentSend.disabled = false;
+            }
+
+        }
+    }
+
+
+    /* ============================================================
+       POST REPLY
+    ============================================================ */
+
+    async function postReply(parentCommentId) {
+
+        if (!USER_ID) {
+
+            window.location.href =
+                "/user/signin";
+
+            return;
+        }
+
+
+        const input =
+            document.getElementById(
+                "reply-input-" +
+                parentCommentId
+            );
+
+
+        if (!input) {
+            return;
+        }
+
+
+        const content =
+            input.value.trim();
+
+
+        if (!content) {
+
+            showToast(
+                "Write a reply first.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        try {
+
+            const data = await apiRequest(
+                "/comments/blog/" +
+                encodeURIComponent(BLOG_ID),
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        parentCommentId:
+                            parentCommentId
+                    })
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to post reply."
+                );
+            }
+
+
+            input.value = "";
+
+            commentsLoaded = false;
+
+            await loadComments(true);
+
+
+            showToast(
+                data.message ||
+                "Reply posted successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify reply error:",
+                error
+            );
+
+
+            if (error.status === 401) {
+
+                window.location.href =
+                    "/user/signin";
+
+                return;
+            }
+
+
+            showToast(
+                error.message ||
+                "Failed to post reply.",
+                "error"
+            );
+        }
+    }
+
+
+    /* ============================================================
+       COMMENT LIKE
+    ============================================================ */
+
+    async function likeComment(commentId, button) {
+
+        if (!USER_ID) {
+
+            window.location.href =
+                "/user/signin";
+
+            return;
+        }
+
+
+        if (!button || button.disabled) {
+            return;
+        }
+
+
+        button.disabled = true;
+
+
+        try {
+
+            const data = await apiRequest(
+                "/comments/" +
+                encodeURIComponent(commentId) +
+                "/like",
+                {
+                    method: "POST"
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to like comment."
+                );
+            }
+
+
+            const comment =
+                findComment(commentId);
+
+
+            if (comment) {
+
+                let likes =
+                    Array.isArray(comment.likes)
+                        ? comment.likes
+                        : [];
+
+
+                if (data.liked) {
+
+                    if (
+                        !likes.some(function (id) {
+                            return String(id) ===
+                                String(USER_ID);
+                        })
+                    ) {
+                        likes.push(USER_ID);
+                    }
+
+                } else {
+
+                    likes =
+                        likes.filter(function (id) {
+                            return String(id) !==
+                                String(USER_ID);
+                        });
+
+                }
+
+
+                comment.likes = likes;
+            }
+
+
+            button.classList.toggle(
+                "liked",
+                !!data.liked
+            );
+
+
+            const icon =
+                button.querySelector("i");
+
+
+            if (icon) {
+
+                icon.className =
+                    (
+                        data.liked
+                            ? "fa-solid"
+                            : "fa-regular"
+                    ) +
+                    " fa-heart";
+
+            }
+
+
+            const count =
+                button.querySelector("span");
+
+
+            if (count) {
+
+                count.textContent =
+                    Number(data.likeCount) || 0;
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify comment like error:",
+                error
+            );
+
+
+            if (error.status === 401) {
+
+                window.location.href =
+                    "/user/signin";
+
+                return;
+            }
+
+
+            showToast(
+                error.message ||
+                "Failed to like comment.",
+                "error"
+            );
+
+
+        } finally {
+
+            button.disabled = false;
+
+        }
+    }
+
+
+    /* ============================================================
+       EDIT COMMENT
+    ============================================================ */
+
+    async function editComment(commentId) {
+
+        if (!USER_ID) {
+            window.location.href =
+                "/user/signin";
+            return;
+        }
+
+
+        const comment =
+            findComment(commentId);
+
+
+        if (!comment) {
+            return;
+        }
+
+
+        const next =
+            window.prompt(
+                "Edit your comment:",
+                comment.content || ""
+            );
+
+
+        if (next === null) {
+            return;
+        }
+
+
+        const content =
+            next.trim();
+
+
+        if (!content) {
+
+            showToast(
+                "Comment cannot be empty.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        try {
+
+            const data = await apiRequest(
+                "/comments/" +
+                encodeURIComponent(commentId),
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        content: content
+                    })
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to update comment."
+                );
+            }
+
+
+            comment.content = content;
+
+
+            const card =
+                commentsList.querySelector(
+                    '[data-comment-id="' +
+                    CSS.escape(commentId) +
+                    '"]'
+                );
+
+
+            if (card) {
+
+                const contentNode =
+                    card.querySelector(
+                        ".comment-content"
+                    );
+
+
+                if (contentNode) {
+                    contentNode.textContent =
+                        content;
+                }
+
+            }
+
+
+            showToast(
+                "Comment updated successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify edit comment error:",
+                error
+            );
+
+
+            showToast(
+                error.message ||
+                "Failed to update comment.",
+                "error"
+            );
+        }
+    }
+
+
+    /* ============================================================
+       DELETE COMMENT
+    ============================================================ */
+
+    async function deleteComment(commentId) {
+
+        if (!USER_ID) {
+            window.location.href =
+                "/user/signin";
+            return;
+        }
+
+
+        if (
+            !window.confirm(
+                "Delete this comment?"
+            )
+        ) {
+            return;
+        }
+
+
+        try {
+
+            const data = await apiRequest(
+                "/comments/" +
+                encodeURIComponent(commentId),
+                {
+                    method: "DELETE"
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to delete comment."
+                );
+            }
+
+
+            commentsLoaded = false;
+
+            await loadComments(true);
+
+
+            showToast(
+                data.message ||
+                "Comment deleted."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify delete comment error:",
+                error
+            );
+
+
+            showToast(
+                error.message ||
+                "Failed to delete comment.",
+                "error"
+            );
+        }
+    }
+
+
+    /* ============================================================
+       BLOG LIKE
+    ============================================================ */
+
+    async function toggleBlogLike() {
+
+        if (!USER_ID) {
+
+            window.location.href =
+                "/user/signin";
+
+            return;
+        }
+
+
+        if (likeLoading || !likeButton) {
+            return;
+        }
+
+
+        likeLoading = true;
+
+        likeButton.disabled = true;
+
+
+        try {
+
+            const data = await apiRequest(
+                "/blogs/" +
+                encodeURIComponent(BLOG_ID) +
+                "/like",
+                {
+                    method: "POST"
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to like blog."
+                );
+            }
+
+
+            const liked =
+                !!data.liked;
+
+
+            const count =
+                Number(data.likeCount) || 0;
+
+
+            likeButton.classList.toggle(
+                "liked",
+                liked
+            );
+
+
+            likeButton.setAttribute(
+                "aria-pressed",
+                liked ? "true" : "false"
+            );
+
+
+            if (likeCount) {
+                likeCount.textContent = count;
+            }
+
+
+            if (sideLikes) {
+                sideLikes.textContent = count;
+            }
+
+
+            const icon =
+                likeButton.querySelector("i");
+
+
+            if (icon) {
+
+                icon.className =
+                    (
+                        liked
+                            ? "fa-solid"
+                            : "fa-regular"
+                    ) +
+                    " fa-heart";
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify blog like error:",
+                error
+            );
+
+
+            if (error.status === 401) {
+
+                window.location.href =
+                    "/user/signin";
+
+                return;
+            }
+
+
+            showToast(
+                error.message ||
+                "Failed to like blog.",
+                "error"
+            );
+
+
+        } finally {
+
+            likeLoading = false;
+
+            likeButton.disabled = false;
+
+        }
+    }
+
+
+    /* ============================================================
+       FOLLOW
+    ============================================================ */
+
+    async function toggleFollow() {
+
+        const button =
+            $("#followBtn");
+
+
+        if (!button) {
+            return;
+        }
+
+
+        if (!USER_ID) {
+
+            window.location.href =
+                "/user/signin";
+
+            return;
+        }
+
+
+        button.disabled = true;
+
+
+        try {
+
+            const data = await apiRequest(
+                "/follow/" +
+                encodeURIComponent(AUTHOR_ID) +
+                "/follow",
+                {
+                    method: "POST"
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to update follow."
+                );
+            }
+
+
+            const label =
+                button.querySelector("span");
+
+
+            if (label) {
+
+                if (data.following) {
+
+                    label.textContent =
+                        "Following";
+
+                } else if (data.pending) {
+
+                    label.textContent =
+                        "Requested";
+
+                } else {
+
+                    label.textContent =
+                        "Follow";
+
+                }
+
+            }
+
+
+            showToast(
+                data.message ||
+                "Follow status updated."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify follow error:",
+                error
+            );
+
+
+            if (error.status === 401) {
+
+                window.location.href =
+                    "/user/signin";
+
+                return;
+            }
+
+
+            showToast(
+                error.message ||
+                "Failed to update follow.",
+                "error"
+            );
+
+
+        } finally {
+
+            button.disabled = false;
+
+        }
+    }
+
+
+    /* ============================================================
+       DELETE BLOG
+    ============================================================ */
+
+    async function deleteBlog() {
+
+        if (!USER_ID) {
+
+            window.location.href =
+                "/user/signin";
+
+            return;
+        }
+
+
+        if (
+            !window.confirm(
+                "Delete this blog permanently?"
+            )
+        ) {
+            return;
+        }
+
+
+        const button =
+            $("#deleteBlogButton");
+
+
+        if (button) {
+            button.disabled = true;
+        }
+
+
+        try {
+
+            const data = await apiRequest(
+                "/blogs/" +
+                encodeURIComponent(BLOG_ID),
+                {
+                    method: "DELETE"
+                }
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Failed to delete blog."
+                );
+            }
+
+
+            window.location.href = "/";
+
+
+        } catch (error) {
+
+            console.error(
+                "Blogify delete blog error:",
+                error
+            );
+
+
+            showToast(
+                error.message ||
+                "Failed to delete blog.",
+                "error"
+            );
+
+
+            if (button) {
+                button.disabled = false;
+            }
+        }
+    }
+
+
+    /* ============================================================
+       SHARE
+    ============================================================ */
+
+    async function shareBlog() {
+
+        const url =
+            window.location.href;
+
+
+        const title =
+            <%- JSON.stringify(blog.title) %>;
+
+
+        try {
+
+            if (
+                navigator.share &&
+                typeof navigator.share === "function"
+            ) {
+
+                await navigator.share({
+                    title: title,
+                    text: title,
+                    url: url
+                });
+
+                return;
+            }
+
+
+            if (
+                navigator.clipboard &&
+                navigator.clipboard.writeText
+            ) {
+
+                await navigator.clipboard.writeText(
+                    url
+                );
+
+                showToast(
+                    "Blog link copied."
+                );
+
+                return;
+            }
+
+
+            window.prompt(
+                "Copy this link:",
+                url
+            );
+
+
+        } catch (error) {
+
+            if (
+                error &&
+                error.name === "AbortError"
+            ) {
+                return;
+            }
+
+
+            showToast(
+                "Unable to share this blog.",
+                "error"
+            );
+        }
+    }
+
+
+    /* ============================================================
+       EVENT DELEGATION
+    ============================================================ */
+
+    if (commentsList) {
+
+        commentsList.addEventListener(
+            "click",
+            function (event) {
+
+                const button =
+                    event.target.closest(
+                        "[data-action]"
+                    );
+
+
+                if (!button) {
+                    return;
+                }
+
+
+                const action =
+                    button.dataset.action;
+
+
+                const id =
+                    button.dataset.id;
+
+
+                if (!id) {
+                    return;
+                }
+
+
+                if (action === "like-comment") {
+
+                    likeComment(
+                        id,
+                        button
+                    );
+
+                }
+
+
+                else if (action === "reply") {
+
+                    document
+                        .querySelectorAll(
+                            ".reply-composer"
+                        )
+                        .forEach(function (box) {
+                            box.classList.remove(
+                                "open"
+                            );
+                        });
+
+
+                    const box =
+                        document.getElementById(
+                            "reply-box-" + id
+                        );
+
+
+                    if (box) {
+
+                        box.classList.add(
+                            "open"
+                        );
+
+
+                        const input =
+                            document.getElementById(
+                                "reply-input-" + id
+                            );
+
+
+                        if (input) {
+                            input.focus();
+                        }
+
+                    }
+
+                }
+
+
+                else if (
+                    action === "send-reply"
+                ) {
+
+                    postReply(id);
+
+                }
+
+
+                else if (
+                    action === "edit-comment"
+                ) {
+
+                    editComment(id);
+
+                }
+
+
+                else if (
+                    action === "delete-comment"
+                ) {
+
+                    deleteComment(id);
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* ============================================================
+       BUTTON EVENTS
+    ============================================================ */
+
+    if (likeButton) {
+
+        likeButton.addEventListener(
+            "click",
+            toggleBlogLike
+        );
+
+    }
+
+
+    const openCommentsButton =
+        $("#openCommentsButton");
+
+
+    const commentFab =
+        $("#commentFab");
+
+
+    const closeCommentsButton =
+        $("#closeCommentsButton");
+
+
+    if (openCommentsButton) {
+
+        openCommentsButton.addEventListener(
+            "click",
+            openComments
+        );
+
+    }
+
+
+    if (commentFab) {
+
+        commentFab.addEventListener(
+            "click",
+            openComments
+        );
+
+    }
+
+
+    if (closeCommentsButton) {
+
+        closeCommentsButton.addEventListener(
+            "click",
+            closeComments
+        );
+
+    }
+
+
+    if (commentsOverlay) {
+
+        commentsOverlay.addEventListener(
+            "click",
+            closeComments
+        );
+
+    }
+
+
+    if (reloadCommentsButton) {
+
+        reloadCommentsButton.addEventListener(
+            "click",
+            function () {
+                loadComments(true);
+            }
+        );
+
+    }
+
+
+    if (commentSend) {
+
+        commentSend.addEventListener(
+            "click",
+            postComment
+        );
+
+    }
+
+
+    if (commentInput) {
+
+        commentInput.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key === "Enter" &&
+                    (event.ctrlKey || event.metaKey)
+                ) {
+
+                    event.preventDefault();
+
+                    postComment();
+                }
+
+            }
+        );
+
+    }
+
+
+    const followButton =
+        $("#followBtn");
+
+
+    if (followButton) {
+
+        followButton.addEventListener(
+            "click",
+            toggleFollow
+        );
+
+    }
+
+
+    const deleteButton =
+        $("#deleteBlogButton");
+
+
+    if (deleteButton) {
+
+        deleteButton.addEventListener(
+            "click",
+            deleteBlog
+        );
+
+    }
+
+
+    const shareButton =
+        $("#shareButton");
+
+
+    if (shareButton) {
+
+        shareButton.addEventListener(
+            "click",
+            shareBlog
+        );
+
+    }
+
+
+    /* ============================================================
+       KEYBOARD
+    ============================================================ */
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Escape") {
+
+                closeComments();
+
+            }
+
+        }
+    );
+
+
+    /* ============================================================
+       INITIALIZATION
+    ============================================================ */
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            /*
+             * We deliberately do NOT fetch comments immediately.
+             *
+             * Comments are loaded when the user opens the drawer.
+             * This prevents an unnecessary API call on every blog
+             * page visit and makes the page resilient if comments
+             * temporarily fail.
+             */
+
+            setCommentCount(0);
+
+        }
+    );
+
+
+    /* ============================================================
+       EXPOSE ONLY WHAT OTHER BLOGIFY CODE MAY NEED
+    ============================================================ */
+
+    window.BlogifyView = {
+        openComments: openComments,
+        closeComments: closeComments,
+        loadComments: loadComments,
+        toggleBlogLike: toggleBlogLike
+    };
+
+})();
+</script>
+
 </body>
 </html>
