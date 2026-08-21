@@ -26,7 +26,17 @@ for (const file of files) {
     }
 }
 
-const required = ['app.js', 'models/user.js', 'models/SignupOtp.js', 'routes/User.js', 'middlewares/rateLimiting.js'];
+const required = [
+    'app.js',
+    'models/user.js',
+    'models/SignupOtp.js',
+    'routes/User.js',
+    'routes/Message.js',
+    'sockets/messageSocket.js',
+    'middlewares/rateLimiting.js',
+    'public/js/messageEnhancements.js',
+    'public/js/messageRuntimeFix.js'
+];
 for (const file of required) {
     if (!fs.existsSync(path.join(root, file))) {
         failed = true;
@@ -34,5 +44,24 @@ for (const file of required) {
     }
 }
 
+function mustContain(file, text) {
+    const full = path.join(root, file);
+    const source = fs.readFileSync(full, 'utf8');
+    if (!source.includes(text)) {
+        failed = true;
+        console.error(`Messaging security check failed: ${file} does not contain ${text}`);
+    }
+}
+
+mustContain('routes/Message.js', 'messageMediaLimiter');
+mustContain('routes/Message.js', 'canMessage');
+mustContain('routes/Message.js', 'private profile');
+mustContain('sockets/messageSocket.js', 'isSafeMediaUrl');
+mustContain('sockets/messageSocket.js', 'canMessage');
+mustContain('sockets/messageSocket.js', 'readReceipts');
+mustContain('public/js/messageEnhancements.js', 'HOLD_MS=2000');
+mustContain('public/js/messageRuntimeFix.js', '__BLOGIFY_CANCEL_RECORDING');
+mustContain('app.js', '/js/messageRuntimeFix.js');
+
 if (failed) process.exit(1);
-console.log(`Smoke test passed: ${files.length} JavaScript files checked.`);
+console.log(`Smoke test passed: ${files.length} JavaScript files checked and messaging security checks passed.`);
