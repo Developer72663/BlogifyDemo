@@ -1,10 +1,24 @@
 (function(){
 'use strict';
 const DEFAULT_AVATAR='/imgs/default.png';
-const HOLD_MS=2000;
+const HOLD_MS=1000;
 const profileUrl=id=>id?'/profile/'+encodeURIComponent(String(id)):'';
 
-function profileId(card){return card.getAttribute('data-profile-id')||card.getAttribute('data-user-id')||card.dataset.profileShareId||'';}
+function profileId(card){
+  return card.getAttribute('data-profile-id')||
+    card.getAttribute('data-user-id')||
+    card.getAttribute('data-profile-share-id')||
+    card.dataset.profileShareId||
+    card.querySelector('a[href]')?.getAttribute('href')||'';
+}
+
+function normalizeProfileUrl(value){
+  if(!value)return '';
+  const raw=String(value).trim();
+  if(raw.startsWith('/'))return raw;
+  if(/^https?:\\/\\//i.test(raw))return raw;
+  return profileUrl(raw);
+}
 
 function styles(){
  if(document.getElementById('blogify-message-enhancement-style'))return;
@@ -28,9 +42,16 @@ function profiles(root){
    if(username){const h=document.createElement('span');h.className='blogify-profile-username';h.textContent=username.startsWith('@')?username:'@'+username;meta.appendChild(h);}
    const st=document.createElement('span');st.className='blogify-follow-status';st.innerHTML=mutual||(following&&followedBy)?'<i class="fas fa-user-group"></i> Mutual':following?'<i class="fas fa-check"></i> Following':followedBy?'<i class="fas fa-user-plus"></i> Follows you':'<i class="fas fa-user"></i> Profile';meta.appendChild(st);body.appendChild(meta);
   }
-  const id=profileId(card);if(!id)return;const href=profileUrl(id);card.dataset.profileUrl=href;card.setAttribute('role','link');card.setAttribute('tabindex','0');
+  const rawId=profileId(card);
+  const href=normalizeProfileUrl(rawId);
+  if(!href)return;
+  card.dataset.profileUrl=href;card.setAttribute('role','link');card.setAttribute('tabindex','0');
   if(!body.querySelector('.blogify-profile-action')){const a=document.createElement('a');a.className='blogify-profile-action';a.href=href;a.innerHTML='<span>View profile</span><i class="fas fa-chevron-right"></i>';body.appendChild(a);}
-  if(!card.dataset.profileNavigationBound){card.dataset.profileNavigationBound='1';card.addEventListener('click',e=>{if(e.target.closest('a,button'))return;location.href=href});card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();location.href=href}})}
+  if(!card.dataset.profileNavigationBound){
+    card.dataset.profileNavigationBound='1';
+    card.addEventListener('click',e=>{if(e.target.closest('a,button'))return;window.location.assign(href)});
+    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();window.location.assign(href)}});
+  }
  });
 }
 
@@ -38,7 +59,7 @@ function longPress(){
  document.querySelectorAll('.message-bubble[data-message-id]:not([data-blogify-hold])').forEach(b=>{
   b.dataset.blogifyHold='1';let timer=null,fired=false,x=0,y=0;
   const clear=()=>{if(timer)clearTimeout(timer);timer=null};
-  b.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;fired=false;x=e.clientX;y=e.clientY;clear();timer=setTimeout(()=>{timer=null;fired=true;b.classList.add('blogify-longpress');setTimeout(()=>b.classList.remove('blogify-longpress'),220);b.click()},HOLD_MS)},{passive:true});
+  b.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;fired=false;x=e.clientX;y=e.clientY;clear();timer=setTimeout(()=>{timer=null;fired=true;b.classList.add('blogify-longpress');setTimeout(()=>b.classList.remove('blogify-longpress'),220);b.click()},HOLD_MS);},{passive:true});
   b.addEventListener('pointermove',e=>{if(Math.hypot(e.clientX-x,e.clientY-y)>12)clear()},{passive:true});
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,clear,{passive:true}));
   b.addEventListener('click',e=>{if(!fired){e.preventDefault();e.stopImmediatePropagation()}fired=false},true);
@@ -47,8 +68,6 @@ function longPress(){
 
 function voiceGuard(){
  const b=document.getElementById('voiceButton');if(!b||b.dataset.blogifyVoiceGuard)return;b.dataset.blogifyVoiceGuard='1';
- // Do not create another MediaRecorder or Socket.IO connection here. message.ejs
- // owns the recording/upload/send pipeline. This guard only adds visual feedback.
  ['pointerdown'].forEach(ev=>b.addEventListener(ev,()=>b.classList.add('blogify-recording-pulse'),{passive:true}));
  ['pointerup','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>b.classList.remove('blogify-recording-pulse'),{passive:true}));
 }
