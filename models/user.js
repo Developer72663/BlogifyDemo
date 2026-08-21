@@ -16,7 +16,8 @@ const UserSchema = new Schema({
     commentSettings: { allowComments: { type: Boolean, default: true }, moderateComments: { type: Boolean, default: false }, notifyReplies: { type: Boolean, default: true } }, interfaceSettings: { compactLayout: { type: Boolean, default: false }, reduceAnimations: { type: Boolean, default: false } }
 }, { timestamps: true });
 
-UserSchema.index({ email: 1 }); UserSchema.index({ followers: 1 }); UserSchema.index({ following: 1 });
+// email: { unique: true } already creates the required unique index; do not declare a second index.
+UserSchema.index({ followers: 1 }); UserSchema.index({ following: 1 });
 UserSchema.virtual("followerCount").get(function() { return this.followers ? this.followers.length : 0; });
 UserSchema.virtual("followingCount").get(function() { return this.following ? this.following.length : 0; });
 UserSchema.pre("save", async function (next) { if (this.googleId || !this.password || !this.isModified("password")) return next(); try { this.password = await bcrypt.hash(this.password, BCRYPT_ROUNDS); this.passwordHashVersion = "bcrypt"; this.salt = undefined; next(); } catch (error) { next(error); } });
