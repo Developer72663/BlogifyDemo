@@ -1,13 +1,21 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-// Never fall back to a predictable JWT secret. A fallback secret would allow
-// anyone who knows the default value to forge authentication tokens.
-const JWT_SECRET = process.env.JWT_SECRET;
+// Read the secret lazily instead of throwing while the Vercel function module
+// is being loaded. A missing secret must still make JWT operations fail, but
+// it should not crash the entire serverless function before Express can
+// handle the request and return a useful error.
+const getJwtSecret = () => {
+    const secret = typeof process.env.JWT_SECRET === "string"
+        ? process.env.JWT_SECRET.trim()
+        : "";
 
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-    throw new Error("JWT_SECRET must be configured and contain at least 32 characters.");
-}
+    if (!secret || secret.length < 32) {
+        throw new Error("JWT_SECRET must be configured in the deployment environment and contain at least 32 characters.");
+    }
+
+    return secret;
+};
 
 // Create Token
 const creatTokenForUser = (user) => {
@@ -20,7 +28,7 @@ const creatTokenForUser = (user) => {
         googleId: user.googleId
     };
 
-    return jwt.sign(payload, JWT_SECRET, {
+    return jwt.sign(payload, getJwtSecret(), {
         expiresIn: "7d",
         algorithm: "HS256"
     });
@@ -29,7 +37,7 @@ const creatTokenForUser = (user) => {
 // Verify Token. Explicitly restrict the accepted algorithm so a token using
 // an unexpected JWT algorithm cannot be accepted accidentally.
 const verifyToken = (token) => {
-    return jwt.verify(token, JWT_SECRET, {
+    return jwt.verify(token, getJwtSecret(), {
         algorithms: ["HS256"]
     });
 };
