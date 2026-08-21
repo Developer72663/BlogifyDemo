@@ -32,6 +32,7 @@ const required = [
     'models/SignupOtp.js',
     'routes/User.js',
     'routes/Message.js',
+    'routes/MessageProfileMeta.js',
     'sockets/messageSocket.js',
     'middlewares/rateLimiting.js',
     'public/js/messageEnhancements.js',
@@ -56,12 +57,14 @@ function mustContain(file, text) {
 mustContain('routes/Message.js', 'messageMediaLimiter');
 mustContain('routes/Message.js', 'canMessage');
 mustContain('routes/Message.js', 'private profile');
+mustContain('routes/MessageProfileMeta.js', 'isMutual');
 mustContain('sockets/messageSocket.js', 'isSafeMediaUrl');
 mustContain('sockets/messageSocket.js', 'canMessage');
 mustContain('sockets/messageSocket.js', 'readReceipts');
 mustContain('public/js/messageEnhancements.js', 'HOLD_MS=2000');
 mustContain('public/js/messageRuntimeFix.js', '__BLOGIFY_CANCEL_RECORDING');
 mustContain('app.js', '/js/messageRuntimeFix.js');
+mustContain('app.js', '/messages/profile-meta');
 
 if (failed) process.exit(1);
 console.log(`Smoke test passed: ${files.length} JavaScript files checked and messaging security checks passed.`);
