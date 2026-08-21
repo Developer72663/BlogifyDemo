@@ -101,6 +101,41 @@
 
 ---
 
+## 🔐 Vercel Production Environment Setup
+
+The application intentionally **does not contain a fallback JWT secret**. Authentication requires a strong `JWT_SECRET` at runtime. This secret must never be committed to GitHub.
+
+Before deploying to Vercel, configure these variables under **Vercel → Project → Settings → Environment Variables → Production**:
+
+```text
+NODE_ENV=production
+APP_URL=https://YOUR-DOMAIN
+FRONTEND_URL=https://YOUR-DOMAIN
+MONGODB_URI=your-mongodb-uri
+JWT_SECRET=<random-secret-at-least-32-characters>
+RESET_PASSWORD_SECRET=<different-random-secret>
+OTP_SECRET=<different-random-secret>
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=https://YOUR-DOMAIN/auth/google/callback
+```
+
+Generate a strong JWT secret locally with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+**Never paste the generated secret into source code, `.env.example`, GitHub, or chat.**
+
+After adding or changing Production environment variables, create a new Vercel Production deployment so the new values are available to serverless functions.
+
+For Google OAuth, the `GOOGLE_CALLBACK_URL` value must exactly match an authorized redirect URI configured in Google Cloud Console, including protocol, hostname, path, and trailing-slash behavior.
+
+The repository's `.env.example` contains placeholders only and is safe to commit.
+
+---
+
 ## 🆕 Recent Change: Unified Profile View (Breaking / Important)
 To simplify maintenance and improve consistency the public and private profile templates have been unified.
 
@@ -113,7 +148,7 @@ What changed
 - Route: `routes/publicProfile.js` now renders `profile.ejs` and passes the profile as `user`. The route remains mounted at `/profile/:userId`.
 
 Why
-- Single source of truth for profile UI reduces duplication and makes it easier to apply future UX/behavior improvements.
+- Single source of truth for public profile UI reduces duplication and makes it easier to apply future UX/behavior improvements.
 - Privacy rules (followers/following visibility) are enforced server-side and reflected correctly in the unified template.
 
 Developer notes / migration steps
