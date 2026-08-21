@@ -14,15 +14,19 @@ function isValidObjectId(value) {
 }
 
 async function canAccessBlog(blog, viewerId) {
-    if (!blog || !viewerId) return false;
+    if (!blog) return false;
 
     const author = await User.findById(blog.createdBy)
         .select("_id isPrivate followers")
         .lean();
 
     if (!author) return false;
+
+    // Public blogs can be read, including their approved comments, without login.
     if (!author.isPrivate) return true;
 
+    // Private blogs require the author or a follower.
+    if (!viewerId) return false;
     const viewer = viewerId.toString();
     return author._id.toString() === viewer ||
         (Array.isArray(author.followers) && author.followers.some(id => id.toString() === viewer));
@@ -79,7 +83,7 @@ async function getComments(req, res) {
             return res.status(404).json({ success: false, message: "Blog not found", comments: [], total: 0 });
         }
 
-        if (req.user?._id && !(await canAccessBlog(blog, req.user._id))) {
+        if (!(await canAccessBlog(blog, req.user?._id))) {
             return res.status(403).json({
                 success: false,
                 message: "This blog is private. Follow the author to view comments.",
@@ -191,8 +195,6 @@ async function createComment(req, res) {
             }
         }
 
-        // Store a normalized value. Mongoose validation still protects the
-        // database if another route tries to create an invalid Comment.
         const comment = await Comment.create({
             content,
             blog: blog._id,
@@ -202,8 +204,6 @@ async function createComment(req, res) {
 
         await comment.populate("author", "fullName profileImageURL");
 
-        // Persistence is the critical operation. Notifications are best-effort
-        // and must never turn a successfully-created comment into an HTTP 500.
         if (blog.createdBy.toString() !== req.user._id.toString()) {
             try {
                 await NotificationService.createNotification(
@@ -234,7 +234,6 @@ async function createComment(req, res) {
     }
 }
 
-// Public reading; authenticated and rate-limited creation.
 router.get("/blog/:blogId", getComments);
 router.get("/:blogId", getComments);
 router.post("/blog/:blogId", restrictToLoggedInUserOnly, commentCreationLimiter, createComment);
