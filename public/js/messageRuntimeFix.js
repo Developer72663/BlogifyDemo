@@ -2,6 +2,7 @@
   'use strict';
 
   const profileMap = new Map();
+  const metaLoaded = new Set();
   window.__BLOGIFY_PROFILE_MAP = profileMap;
 
   function rememberMessage(message){
@@ -24,7 +25,7 @@
       const response = await nativeFetch.apply(this, arguments);
       try{
         const url = String(arguments[0]?.url || arguments[0] || '');
-        if(url.includes('/messages/')){
+        if(url.includes('/messages/') && !url.includes('/profile-meta/')){
           const clone = response.clone();
           clone.json().then(rememberPayload).catch(()=>{});
         }
@@ -60,7 +61,6 @@
       const recorder = options ? new NativeRecorder(stream, options) : new NativeRecorder(stream);
       let userDataHandler = null;
       const originalStop = recorder.stop.bind(recorder);
-
       const proxy = new Proxy(recorder, {
         get(target, prop){
           if(prop === 'stop'){
@@ -89,43 +89,56 @@
           return true;
         }
       });
-
       window.__BLOGIFY_ACTIVE_RECORDER = proxy;
-      const autoStop = setTimeout(()=>{
-        try{
-          if(proxy.state === 'recording') proxy.stop();
-        }catch(_){ }
-      }, 120000);
-      proxy.addEventListener('stop', ()=>{
+      const autoStop = setTimeout(()=>{ try{ if(proxy.state === 'recording') proxy.stop(); }catch(_){} },120000);
+      proxy.addEventListener('stop',()=>{
         clearTimeout(autoStop);
         if(window.__BLOGIFY_ACTIVE_RECORDER === proxy) window.__BLOGIFY_ACTIVE_RECORDER = null;
         window.__BLOGIFY_CANCEL_RECORDING = false;
-      }, {once:true});
+      },{once:true});
       return proxy;
     };
     Recorder.isTypeSupported = NativeRecorder.isTypeSupported.bind(NativeRecorder);
     Recorder.prototype = NativeRecorder.prototype;
-    try{ Object.setPrototypeOf(Recorder, NativeRecorder); }catch(_){}
+    try{ Object.setPrototypeOf(Recorder,NativeRecorder); }catch(_){}
     window.MediaRecorder = Recorder;
   }
 
-  document.addEventListener('click', function(event){
+  document.addEventListener('click',function(event){
     const cancel = event.target.closest && event.target.closest('#cancelRecord');
     if(cancel){
       window.__BLOGIFY_CANCEL_RECORDING = true;
-      setTimeout(()=>{ window.__BLOGIFY_CANCEL_RECORDING = false; }, 1600);
+      setTimeout(()=>{ window.__BLOGIFY_CANCEL_RECORDING = false; },1600);
     }
-  }, true);
+  },true);
+
+  async function loadMeta(card, profile){
+    const id=String(profile?._id||'');
+    if(!id || metaLoaded.has(id)) return;
+    metaLoaded.add(id);
+    try{
+      const r=await nativeFetch('/messages/profile-meta/'+encodeURIComponent(id),{credentials:'same-origin'});
+      if(!r.ok) return;
+      const d=await r.json();
+      if(!d.success) return;
+      card.dataset.following=String(Boolean(d.profile.isFollowing));
+      card.dataset.followedBy=String(Boolean(d.profile.followsYou));
+      card.dataset.mutual=String(Boolean(d.profile.isMutual));
+      card.dispatchEvent(new CustomEvent('blogify:profile-meta',{bubbles:true}));
+    }catch(_){ }
+  }
 
   function enrichProfileCards(){
     document.querySelectorAll('.profile-card').forEach(card=>{
-      if(card.dataset.profileId) return;
-      const name = card.querySelector('.profile-card-name')?.textContent?.trim().toLowerCase();
-      if(!name) return;
-      const profile = profileMap.get(name);
-      if(!profile?._id) return;
-      card.dataset.profileId = String(profile._id);
-      if(profile.fullName) card.dataset.username = profile.username || '';
+      if(!card.dataset.profileId){
+        const name=card.querySelector('.profile-card-name')?.textContent?.trim().toLowerCase();
+        const profile=name?profileMap.get(name):null;
+        if(!profile?._id) return;
+        card.dataset.profileId=String(profile._id);
+        card.__blogifyProfile=profile;
+      }
+      const profile=card.__blogifyProfile||profileMap.get(card.querySelector('.profile-card-name')?.textContent?.trim().toLowerCase());
+      if(profile) loadMeta(card,profile);
     });
   }
 
@@ -133,6 +146,6 @@
     enrichProfileCards();
     new MutationObserver(enrichProfileCards).observe(document.body,{childList:true,subtree:true});
   }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
 })();
