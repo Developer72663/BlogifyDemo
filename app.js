@@ -11,6 +11,8 @@ const socketUrl=normalizeOrigin(process.env.SOCKET_URL||process.env.RENDER_EXTER
 const io=new Server(server,{cors:{origin:(origin,callback)=>isAllowedOrigin(origin)?callback(null,true):callback(new Error("Origin not allowed")),credentials:true,methods:["GET","POST"]}});
 const PORT=process.env.PORT||8000;
 const marked=new Marked(markedHighlight({emptyLangClass:"hljs",langPrefix:"hljs language-",highlight(code,lang){const language=hljs.getLanguage(lang)?lang:"plaintext";return hljs.highlight(code,{language}).value;}}));
+// MongoDB is connected lazily and cached for Vercel serverless invocations.
+// Every request waits for a usable database connection before reaching routes.
 app.use(async(req,res,next)=>{try{await connectDB();next();}catch(error){console.error("Database unavailable:",error.message);res.status(503).json({error:"Database unavailable"});}});
 app.set("view engine","ejs");app.set("views",path.resolve("./views"));app.disable("x-powered-by");app.use(cookieParser());app.use(express.json({limit:"1mb"}));app.use(express.urlencoded({extended:true,limit:"1mb"}));app.use(express.static(path.resolve("./public")));
 app.get("/healthz",(req,res)=>{const mongoReady=mongoose.connection.readyState===1;res.status(mongoReady?200:503).json({ok:mongoReady,service:"blogify",database:mongoReady?"connected":"unavailable",timestamp:new Date().toISOString()});});
