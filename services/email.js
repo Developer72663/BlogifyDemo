@@ -23,20 +23,26 @@ function getEmailConfig() {
     const user = (process.env.EMAIL_USER || '').trim();
     const password = (process.env.EMAIL_PASSWORD || '').replace(/\s+/g, '');
     const from = (process.env.EMAIL_FROM || user).trim();
+    const smtpConfigured = Boolean(user && password);
+
+    // Nodemailer/SMTP is the primary provider when SMTP credentials exist.
+    // This prevents an unrelated RESEND_API_KEY from silently bypassing Nodemailer.
+    if (smtpConfigured) {
+        const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+        const port = Number(process.env.SMTP_PORT || (host === 'smtp.gmail.com' ? 465 : 587));
+        if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid SMTP_PORT configuration');
+        const secure = process.env.SMTP_SECURE != null
+            ? String(process.env.SMTP_SECURE).toLowerCase() === 'true'
+            : port === 465;
+        return { provider: 'smtp', user, password, from, host, port, secure, resendApiKey };
+    }
 
     if (resendApiKey) {
         if (!from) throw new Error('EMAIL_FROM is required when RESEND_API_KEY is configured');
         return { provider: 'resend', apiKey: resendApiKey, from };
     }
 
-    if (!user || !password) throw new Error('Email service is not configured');
-    const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
-    const port = Number(process.env.SMTP_PORT || (host === 'smtp.gmail.com' ? 465 : 587));
-    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid SMTP_PORT configuration');
-    const secure = process.env.SMTP_SECURE != null
-        ? String(process.env.SMTP_SECURE).toLowerCase() === 'true'
-        : port === 465;
-    return { provider: 'smtp', user, password, from, host, port, secure };
+    throw new Error('Email service is not configured. Set EMAIL_USER and EMAIL_PASSWORD for SMTP/Nodemailer, or RESEND_API_KEY and EMAIL_FROM for Resend.');
 }
 
 function createTransporter(config) {
@@ -58,10 +64,34 @@ function createTransporter(config) {
     });
 }
 
-let smtpTransporter;
+let smtpTransporter = null;
+let smtpTransporterKey = null;
+
 function getSmtpTransporter(config) {
-    if (!smtpTransporter) smtpTransporter = createTransporter(config);
+    const key = `${config.host}:${config.port}:${config.secure}:${config.user}`;
+    if (!smtpTransporter || smtpTransporterKey !== key) {
+        if (smtpTransporter) smtpTransporter.close();
+        smtpTransporter = createTransporter(config);
+        smtpTransporterKey = key;
+    }
     return smtpTransporter;
+}
+
+async function verifyEmailService() {
+    try {
+        const config = getEmailConfig();
+        if (config.provider === 'resend') {
+            console.log('[email] provider=resend configured');
+            return { ok: true, provider: 'resend' };
+        }
+        const transporter = getSmtpTransporter(config);
+        await transporter.verify();
+        console.log(`[email] provider=smtp host=${config.host} port=${config.port} secure=${config.secure} verified=true`);
+        return { ok: true, provider: 'smtp' };
+    } catch (error) {
+        console.error(`[email] verification failed: ${error.code || 'EMAIL_ERROR'} ${error.message}`);
+        return { ok: false, error: error.message };
+    }
 }
 
 async function sendWithResend(mailOptions, config) {
@@ -102,7 +132,7 @@ async function send(mailOptions) {
         }
         return await getSmtpTransporter(config).sendMail({ ...mailOptions, from: mailOptions.from || config.from });
     } catch (error) {
-        console.error(`Email send failed: ${error.code || 'EMAIL_ERROR'} ${error.message}`);
+        console.error(`[email] send failed provider=${config.provider} code=${error.code || 'EMAIL_ERROR'} message=${error.message}`);
         throw error;
     }
 }
@@ -166,4 +196,4 @@ const sendEmail = async (to, subject, htmlContent) => {
     return { success: true, message: 'Email sent successfully' };
 };
 
-module.exports = { sendOTPEmail, sendResetPasswordEmail, sendCommentNotificationEmail, sendFollowNotificationEmail, sendEmail };
+module.exports = { sendOTPEmail, sendResetPasswordEmail, sendCommentNotificationEmail, sendFollowNotificationEmail, sendEmail, verifyEmailService };
