@@ -7,6 +7,45 @@
     return id ? '/profile/' + encodeURIComponent(String(id)) : '';
   }
 
+  function getProfileId(card) {
+    return card.getAttribute('data-profile-id') || card.getAttribute('data-user-id') || card.dataset.profileShareId || '';
+  }
+
+  function addRelationshipInfo(card, body) {
+    if (body.querySelector('.blogify-profile-meta')) return;
+
+    const meta = document.createElement('div');
+    meta.className = 'blogify-profile-meta';
+
+    const username = card.getAttribute('data-username') || card.dataset.username || '';
+    const following = card.getAttribute('data-following') === 'true' || card.dataset.following === 'true';
+    const followedBy = card.getAttribute('data-followed-by') === 'true' || card.dataset.followedBy === 'true';
+    const mutual = card.getAttribute('data-mutual') === 'true' || card.dataset.mutual === 'true';
+
+    if (username) {
+      const handle = document.createElement('span');
+      handle.className = 'blogify-profile-username';
+      handle.textContent = username.startsWith('@') ? username : '@' + username;
+      meta.appendChild(handle);
+    }
+
+    const status = document.createElement('span');
+    status.className = 'blogify-follow-status';
+    if (mutual) {
+      status.innerHTML = '<i class="fas fa-user-group"></i> Mutual';
+    } else if (following && followedBy) {
+      status.innerHTML = '<i class="fas fa-user-group"></i> Mutual';
+    } else if (following) {
+      status.innerHTML = '<i class="fas fa-check"></i> Following';
+    } else if (followedBy) {
+      status.innerHTML = '<i class="fas fa-user-plus"></i> Follows you';
+    } else {
+      status.innerHTML = '<i class="fas fa-user"></i> Profile';
+    }
+    meta.appendChild(status);
+    body.appendChild(meta);
+  }
+
   function enhanceProfileCards(root) {
     const cards = (root || document).querySelectorAll('.profile-card:not([data-blogify-enhanced])');
 
@@ -18,23 +57,25 @@
       if (image) {
         image.loading = 'lazy';
         image.decoding = 'async';
-        image.alt = 'Shared profile';
+        image.alt = 'Shared profile avatar';
         image.onerror = () => { image.src = defaultAvatar; };
       }
 
       const body = card.querySelector('.profile-card-body') || card;
+      const name = body.querySelector('.profile-card-name');
       const bio = body.querySelector('.profile-card-bio');
 
       if (!body.querySelector('.blogify-profile-label')) {
         const label = document.createElement('div');
         label.className = 'blogify-profile-label';
-        label.innerHTML = '<span class="blogify-profile-dot"></span><span>PROFILE SHARED</span>';
+        label.innerHTML = '<span class="blogify-profile-dot"></span><span>SHARED PROFILE</span>';
         body.insertBefore(label, body.firstChild);
       }
 
-      if (bio && !bio.textContent.trim()) bio.textContent = 'View profile on Blogify';
+      if (bio && !bio.textContent.trim()) bio.textContent = 'View this profile';
+      addRelationshipInfo(card, body);
 
-      const id = card.getAttribute('data-profile-id') || card.getAttribute('data-user-id') || card.dataset.profileShareId || '';
+      const id = getProfileId(card);
       if (id) {
         const href = profileUrl(id);
         card.dataset.profileUrl = href;
@@ -54,9 +95,10 @@
       }
 
       if (!body.querySelector('.blogify-profile-action')) {
-        const action = document.createElement('div');
+        const action = document.createElement('a');
         action.className = 'blogify-profile-action';
-        action.innerHTML = '<span>View profile</span><i class="fas fa-arrow-up-right-from-square"></i>';
+        action.href = profileUrl(id) || '#';
+        action.innerHTML = '<span>View profile</span><i class="fas fa-chevron-right"></i>';
         body.appendChild(action);
       }
     });
@@ -68,133 +110,57 @@
     const style = document.createElement('style');
     style.id = 'blogify-message-enhancement-style';
     style.textContent = `
-      /* Premium DM profile share card: compact, clean and profile-first. */
       .profile-card.blogify-shared-profile{
         position:relative!important;
         display:grid!important;
-        grid-template-columns:64px minmax(0,1fr)!important;
+        grid-template-columns:56px minmax(0,1fr)!important;
         column-gap:12px!important;
         align-items:center!important;
-        width:min(340px,82vw)!important;
-        min-height:92px!important;
-        padding:12px!important;
-        margin:3px 0!important;
-        border:1px solid color-mix(in srgb,var(--line) 78%,#3797f0 22%)!important;
-        border-radius:20px!important;
+        width:min(350px,84vw)!important;
+        min-height:82px!important;
+        padding:12px 12px 12px 13px!important;
+        margin:4px 0!important;
+        border:1px solid rgba(120,130,150,.22)!important;
+        border-radius:18px!important;
         overflow:hidden!important;
-        background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 90%,#3797f0 10%))!important;
-        box-shadow:0 8px 24px rgba(0,0,0,.09)!important;
+        background:var(--surface,#fff)!important;
+        box-shadow:0 5px 18px rgba(0,0,0,.08)!important;
         cursor:pointer!important;
-        transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important;
+        transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease!important;
       }
       .profile-card.blogify-shared-profile::before{
-        content:"";
-        position:absolute;
-        left:0;
-        top:0;
-        bottom:0;
-        width:3px;
+        content:"";position:absolute;inset:0 auto 0 0;width:3px;
         background:linear-gradient(180deg,#3797f0,#8b5cf6);
       }
-      .profile-card.blogify-shared-profile:hover{
-        transform:translateY(-2px)!important;
-        box-shadow:0 14px 32px rgba(0,0,0,.14)!important;
-        border-color:rgba(55,151,240,.5)!important;
-      }
+      .profile-card.blogify-shared-profile:hover{transform:translateY(-1px)!important;box-shadow:0 9px 25px rgba(0,0,0,.12)!important;border-color:rgba(55,151,240,.35)!important}
       .profile-card.blogify-shared-profile:active{transform:scale(.985)!important}
       .profile-card.blogify-shared-profile > img,
       .profile-card.blogify-shared-profile .profile-card-image,
       .profile-card.blogify-shared-profile .profile-image{
-        grid-column:1!important;
-        grid-row:1!important;
-        width:64px!important;
-        height:64px!important;
-        min-width:64px!important;
-        border-radius:50%!important;
-        object-fit:cover!important;
-        border:2px solid var(--surface)!important;
-        outline:2px solid rgba(55,151,240,.28)!important;
-        background:var(--input)!important;
+        grid-column:1!important;grid-row:1!important;width:56px!important;height:56px!important;min-width:56px!important;
+        border-radius:50%!important;object-fit:cover!important;background:var(--input,#f1f3f5)!important;
+        border:2px solid var(--surface,#fff)!important;box-shadow:0 0 0 1.5px rgba(55,151,240,.35)!important;
       }
-      .profile-card.blogify-shared-profile .profile-card-body{
-        grid-column:2!important;
-        grid-row:1!important;
-        min-width:0!important;
-        padding:0 22px 0 0!important;
-      }
-      .blogify-profile-label{
-        display:flex!important;
-        align-items:center!important;
-        gap:5px!important;
-        margin:0 0 4px!important;
-        color:#3797f0!important;
-        font-size:9px!important;
-        line-height:1!important;
-        font-weight:800!important;
-        letter-spacing:.65px!important;
-      }
-      .blogify-profile-dot{
-        width:5px!important;
-        height:5px!important;
-        flex:0 0 5px!important;
-        border-radius:50%!important;
-        background:#3797f0!important;
-        box-shadow:0 0 0 3px rgba(55,151,240,.12)!important;
-      }
-      .profile-card.blogify-shared-profile .profile-card-name{
-        display:block!important;
-        margin:0!important;
-        max-width:100%!important;
-        overflow:hidden!important;
-        text-overflow:ellipsis!important;
-        white-space:nowrap!important;
-        color:var(--text)!important;
-        font-size:14px!important;
-        line-height:1.25!important;
-        font-weight:750!important;
-      }
-      .profile-card.blogify-shared-profile .profile-card-bio{
-        margin:4px 0 0!important;
-        color:var(--muted)!important;
-        font-size:10.5px!important;
-        line-height:1.35!important;
-        display:-webkit-box!important;
-        -webkit-line-clamp:1!important;
-        -webkit-box-orient:vertical!important;
-        overflow:hidden!important;
-      }
-      .blogify-profile-action{
-        position:absolute!important;
-        right:11px!important;
-        top:50%!important;
-        transform:translateY(-50%)!important;
-        display:flex!important;
-        align-items:center!important;
-        justify-content:center!important;
-        width:27px!important;
-        height:27px!important;
-        margin:0!important;
-        padding:0!important;
-        border:1px solid var(--line)!important;
-        border-radius:50%!important;
-        background:var(--surface)!important;
-        color:#3797f0!important;
-        font-size:10px!important;
-      }
-      .blogify-profile-action span{display:none!important}
-      .blogify-profile-action i{font-size:10px!important}
-      @media(max-width:380px){
-        .profile-card.blogify-shared-profile{width:min(315px,86vw)!important;grid-template-columns:58px minmax(0,1fr)!important;min-height:84px!important;padding:10px!important}
-        .profile-card.blogify-shared-profile > img,.profile-card.blogify-shared-profile .profile-card-image,.profile-card.blogify-shared-profile .profile-image{width:58px!important;height:58px!important;min-width:58px!important}
-      }
+      .profile-card.blogify-shared-profile .profile-card-body{grid-column:2!important;grid-row:1!important;min-width:0!important;padding:0 82px 0 0!important}
+      .blogify-profile-label{display:flex!important;align-items:center!important;gap:5px!important;margin:0 0 4px!important;color:#7b8794!important;font-size:8.5px!important;line-height:1!important;font-weight:800!important;letter-spacing:.65px!important}
+      .blogify-profile-dot{width:5px!important;height:5px!important;flex:0 0 5px!important;border-radius:50%!important;background:#3797f0!important}
+      .profile-card.blogify-shared-profile .profile-card-name{display:block!important;margin:0!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:var(--text,#111)!important;font-size:14px!important;line-height:1.2!important;font-weight:750!important}
+      .profile-card.blogify-shared-profile .profile-card-bio{margin:3px 0 0!important;color:var(--muted,#737b87)!important;font-size:10.5px!important;line-height:1.25!important;display:-webkit-box!important;-webkit-line-clamp:1!important;-webkit-box-orient:vertical!important;overflow:hidden!important}
+      .blogify-profile-meta{display:flex!important;align-items:center!important;gap:7px!important;margin-top:5px!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important}
+      .blogify-profile-username{overflow:hidden!important;text-overflow:ellipsis!important;color:var(--muted,#737b87)!important;font-size:10px!important;max-width:105px!important}
+      .blogify-follow-status{display:inline-flex!important;align-items:center!important;gap:4px!important;color:#3797f0!important;font-size:9.5px!important;font-weight:700!important}
+      .blogify-follow-status i{font-size:8px!important}
+      .blogify-profile-action{position:absolute!important;right:11px!important;bottom:11px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;height:27px!important;padding:0 10px!important;border:1px solid rgba(55,151,240,.22)!important;border-radius:999px!important;background:rgba(55,151,240,.08)!important;color:#3797f0!important;text-decoration:none!important;font-size:10px!important;font-weight:750!important;transition:background .15s ease,transform .15s ease!important}
+      .blogify-profile-action:hover{background:rgba(55,151,240,.15)!important;transform:translateY(-1px)!important}
+      .blogify-profile-action i{font-size:8px!important}
+      @media(max-width:380px){.profile-card.blogify-shared-profile{width:min(320px,87vw)!important;grid-template-columns:50px minmax(0,1fr)!important;padding:10px 10px 10px 11px!important}.profile-card.blogify-shared-profile > img,.profile-card.blogify-shared-profile .profile-card-image,.profile-card.blogify-shared-profile .profile-image{width:50px!important;height:50px!important;min-width:50px!important}.profile-card.blogify-shared-profile .profile-card-body{padding-right:76px!important}}
     `;
     document.head.appendChild(style);
   }
 
   function preferredAudioMime() {
     if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
-    return ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/aac']
-      .find((type) => MediaRecorder.isTypeSupported(type)) || '';
+    return ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/aac'].find((type) => MediaRecorder.isTypeSupported(type)) || '';
   }
 
   function extensionForMime(mime) {
