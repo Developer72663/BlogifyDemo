@@ -461,6 +461,7 @@
       background:var(--surface);
       border-radius:16px;
       overflow:hidden;
+      cursor:pointer;
     }
 
     .profile-card img{
@@ -2128,6 +2129,22 @@
         bubble.addEventListener(
           "click",
           () => {
+
+            if(
+              m.mediaType === "profile" &&
+              m.profileShareId &&
+              m.profileShareId._id
+            ){
+
+              location.href =
+                "/profile/" +
+                encodeURIComponent(
+                  m.profileShareId._id
+                );
+
+              return;
+
+            }
 
             if(!m.deleted)
               openSheet(m);
