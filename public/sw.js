@@ -14,7 +14,7 @@ self.addEventListener("push", event => {
         tag: data.tag || "blogify-notification",
         renotify: Boolean(data.renotify),
         data: {
-            url: data.url || "/notifications"
+            url: data.url || data.data?.url || "/notifications"
         }
     };
 
