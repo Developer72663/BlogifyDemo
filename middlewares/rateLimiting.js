@@ -46,5 +46,6 @@ const apiLimiter = createDistributedLimiter('api', 100, 15 * 60 * 1000, ipKey);
 const actionLimiter = createDistributedLimiter('action', 300, 15 * 60 * 1000, identityKey);
 const blogCreationLimiter = createDistributedLimiter('blog-create', 20, 60 * 60 * 1000, identityKey);
 const commentCreationLimiter = createDistributedLimiter('comment-create', 30, 10 * 60 * 1000, identityKey);
+const messageMediaLimiter = createDistributedLimiter('message-media', 30, 15 * 60 * 1000, identityKey);
 
-module.exports = { loginLimiter, otpLimiter, apiLimiter, actionLimiter, blogCreationLimiter, commentCreationLimiter };
+module.exports = { loginLimiter, otpLimiter, apiLimiter, actionLimiter, blogCreationLimiter, commentCreationLimiter, messageMediaLimiter };
