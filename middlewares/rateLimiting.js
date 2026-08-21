@@ -31,8 +31,6 @@ function createDistributedLimiter(name, limit, duration, keyFn) {
             if (!result.success) return res.status(429).json({ success: false, message: limiterMessage });
             return next();
         } catch (error) {
-            // Availability is preferable to taking the entire application down
-            // when Redis is temporarily unavailable. Monitoring should alert on this.
             console.error(`[rate-limit] ${name} failed:`, error.message);
             return next();
         }
@@ -47,5 +45,6 @@ const otpLimiter = createDistributedLimiter('otp', 3, 10 * 60 * 1000, ipKey);
 const apiLimiter = createDistributedLimiter('api', 100, 15 * 60 * 1000, ipKey);
 const actionLimiter = createDistributedLimiter('action', 300, 15 * 60 * 1000, identityKey);
 const blogCreationLimiter = createDistributedLimiter('blog-create', 20, 60 * 60 * 1000, identityKey);
+const commentCreationLimiter = createDistributedLimiter('comment-create', 30, 10 * 60 * 1000, identityKey);
 
-module.exports = { loginLimiter, otpLimiter, apiLimiter, actionLimiter, blogCreationLimiter };
+module.exports = { loginLimiter, otpLimiter, apiLimiter, actionLimiter, blogCreationLimiter, commentCreationLimiter };
