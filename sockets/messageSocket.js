@@ -136,17 +136,26 @@ function setupMessageSocket(io) {
 
         c.lastMessage = m._id;
         c.lastMessageAt = new Date();
-        await c.save();
 
-        const payload = await Message.findById(m._id)
-          .populate("senderId", "fullName profileImageURL")
-          .populate("profileShareId", "fullName profileImageURL bio isPrivate")
-          .populate("replyTo", "text senderId")
-          .lean();
+        // Keep the realtime path short: persist the conversation marker and build
+        // the display payload in parallel instead of waiting for each DB round-trip.
+        const [payload] = await Promise.all([
+          Message.findById(m._id)
+            .populate("senderId", "fullName profileImageURL")
+            .populate("profileShareId", "fullName profileImageURL bio isPrivate")
+            .populate("replyTo", "text senderId")
+            .lean(),
+          c.save()
+        ]);
 
-        await Message.updateOne({ _id: m._id }, { $set: { status: "delivered" } });
+        // Do not block delivery on a second database write. The message is already
+        // persisted; status is only metadata and can be updated after the realtime emit.
         io.to(`conversation:${conversationId}`).emit("message:new", { ...payload, status: "delivered" });
         io.to(`user:${receiverId}`).emit("message:new", { ...payload, status: "delivered" });
+
+        void Message.updateOne({ _id: m._id }, { $set: { status: "delivered" } }).catch(error => {
+          console.error("message delivery status:", error.message);
+        });
 
         const notificationText = cleanText
           ? cleanText.substring(0, 120)
@@ -158,21 +167,25 @@ function setupMessageSocket(io) {
                 ? "Sent a video"
                 : "Sent a photo";
 
-        try {
-          await Notification.create({
-            recipient: receiverId,
-            type: "message",
-            title: `New message from ${socket.userName || "a user"}`,
-            message: notificationText,
-            actor: userId,
-            messageRef: m._id,
-            conversationId: c._id,
-            isRead: false
-          });
-          io.to(`user:${receiverId}`).emit("notification:message", { conversationId, senderId: userId, messageId: m._id });
-        } catch (notificationError) {
-          console.error("message notification:", notificationError.message);
-        }
+        // Notification creation is deliberately after the realtime emit so a slow
+        // notification/push database operation cannot delay the chat message.
+        void (async () => {
+          try {
+            await Notification.create({
+              recipient: receiverId,
+              type: "message",
+              title: `New message from ${socket.userName || "a user"}`,
+              message: notificationText,
+              actor: userId,
+              messageRef: m._id,
+              conversationId: c._id,
+              isRead: false
+            });
+            io.to(`user:${receiverId}`).emit("notification:message", { conversationId, senderId: userId, messageId: m._id });
+          } catch (notificationError) {
+            console.error("message notification:", notificationError.message);
+          }
+        })();
       } catch (e) {
         console.error("message socket:", e.message);
         socket.emit("message:error", { message: "Unable to send message" });
