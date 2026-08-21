@@ -6,4 +6,32 @@ NotificationSchema.index({recipient:1,isRead:1});
 // MongoDB TTL cleanup runs automatically in the background (normally within about a minute).
 NotificationSchema.index({createdAt:1},{expireAfterSeconds:14*24*60*60});
 NotificationSchema.index({recipient:1,type:1,messageRef:1});
+
+// Message notifications can also be created directly by the realtime Socket.IO
+// layer. Keep Web Push delivery attached to the notification document so those
+// notifications cannot bypass the push channel.
+NotificationSchema.post("save",function(notification){
+    if(notification.type!=="message")return;
+    setImmediate(async()=>{
+        try{
+            const {sendToUser}=require("../services/webPush");
+            const User=require("./user");
+            const user=await User.findById(notification.recipient)
+                .select("notificationSettings.pushEnabled notificationSettings.pushOnMessage")
+                .lean();
+            if(!user?.notificationSettings?.pushEnabled||user.notificationSettings.pushOnMessage===false)return;
+            await sendToUser(notification.recipient,{
+                title:notification.title||"New message from Blogify",
+                body:notification.message||"You have a new message",
+                icon:"/imgs/default.png",
+                badge:"/imgs/default.png",
+                tag:`blogify-message-${notification.messageRef||notification._id}`,
+                data:{url:notification.conversationId?`/messages?conversation=${notification.conversationId}`:"/notifications",type:"message"}
+            },{urgency:"high",ttl:300});
+        }catch(error){
+            console.error("Message Web Push delivery error:",error.message);
+        }
+    });
+});
+
 const Notification=mongoose.models.Notification||model("Notification",NotificationSchema);module.exports=Notification;
