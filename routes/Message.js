@@ -20,10 +20,7 @@ function uploadToCloudinary(file){cloudinaryConfig();const mime=String(file.mime
 
 async function getUnreadCounts(conversationIds,userId){
   if(!conversationIds.length)return new Map();
-  const rows=await Message.aggregate([
-    {$match:{conversationId:{$in:conversationIds},receiverId:userId,isRead:false}},
-    {$group:{_id:"$conversationId",count:{$sum:1}}}
-  ]);
+  const rows=await Message.aggregate([{$match:{conversationId:{$in:conversationIds},receiverId:userId,isRead:false}},{$group:{_id:"$conversationId",count:{$sum:1}}}]);
   return new Map(rows.map(x=>[String(x._id),x.count]));
 }
 
@@ -40,15 +37,21 @@ async function loadConversationList(userId){
   });
   const ids=visible.map(c=>c._id);
   const unread=await getUnreadCounts(ids,userId);
-  const result=[];
-  for(const c of visible){
-    let last=c.lastMessage;
-    if(!last){
-      last=await Message.findOne({conversationId:c._id}).sort({createdAt:-1}).select("_id text mediaUrl mediaType profileShareId senderId receiverId status isRead createdAt").lean();
-    }
-    if(!last)continue;
-    result.push({...c,participants:c.participants.map(({blockedUsers,...p})=>p),lastMessage:last,lastMessageAt:last.createdAt,unreadCount:unread.get(String(c._id))||0});
+  const missingIds=visible.filter(c=>!c.lastMessage).map(c=>c._id);
+  const fallback=new Map();
+  if(missingIds.length){
+    const rows=await Message.aggregate([
+      {$match:{conversationId:{$in:missingIds}}},
+      {$sort:{createdAt:-1}},
+      {$group:{_id:"$conversationId",message:{$first:{_id:"$_id",text:"$text",mediaUrl:"$mediaUrl",mediaType:"$mediaType",profileShareId:"$profileShareId",senderId:"$senderId",receiverId:"$receiverId",status:"$status",isRead:"$isRead",createdAt:"$createdAt"}}}}
+    ]);
+    rows.forEach(x=>fallback.set(String(x._id),x.message));
   }
+  const result=visible.map(c=>{
+    const last=c.lastMessage||fallback.get(String(c._id));
+    if(!last)return null;
+    return {...c,participants:c.participants.map(({blockedUsers,...p})=>p),lastMessage:last,lastMessageAt:last.createdAt,unreadCount:unread.get(String(c._id))||0};
+  }).filter(Boolean);
   result.sort((a,b)=>new Date(b.lastMessageAt)-new Date(a.lastMessageAt));
   return result;
 }
@@ -66,7 +69,29 @@ router.get("/settings",auth,(req,res)=>res.render("message-settings",{title:"Mes
 router.get("/settings/api",auth,async(req,res)=>{try{const user=await User.findById(req.user._id).select("messageSettings").lean();res.json({success:true,messageSettings:user?.messageSettings||{}});}catch(e){res.status(500).json({success:false,message:"Unable to load message settings"});}});
 router.patch("/settings/api",auth,async(req,res)=>{try{const allowed=["whoCanMessage","messageRequests","readReceipts","typingIndicator","onlineStatus","messageNotifications","messagePreview","notificationSound","mediaAutoDownload","allowPhotoMessages","allowVideoMessages","messageLikes","groupInvites","hiddenWords","autoDelete"];const updates={};for(const key of allowed)if(Object.prototype.hasOwnProperty.call(req.body,key))updates[`messageSettings.${key}`]=req.body[key];const user=await User.findByIdAndUpdate(req.user._id,{$set:updates},{new:true,runValidators:true}).select("messageSettings").lean();res.json({success:true,messageSettings:user.messageSettings});}catch(e){res.status(400).json({success:false,message:e.message||"Unable to save message settings"});}});
 router.delete("/conversation/:conversationId",auth,async(req,res)=>{try{if(!id(req.params.conversationId))return res.status(400).json({success:false,message:"Invalid conversation"});const conversation=await Conversation.findOne({_id:req.params.conversationId,participants:req.user._id}).select("_id participants");if(!conversation)return res.status(404).json({success:false,message:"Conversation not found"});await Message.deleteMany({conversationId:conversation._id});await Conversation.deleteOne({_id:conversation._id});res.json({success:true,message:"Conversation deleted"});}catch(e){console.error("delete conversation:",e);res.status(500).json({success:false,message:"Unable to delete conversation"});}});
-router.get("/:conversationId",auth,async(req,res)=>{try{if(!id(req.params.conversationId))return res.status(400).json({success:false,message:"Invalid conversation"});const c=await Conversation.findOne({_id:req.params.conversationId,participants:req.user._id}).populate("participants","fullName profileImageURL isPrivate blockedUsers");if(!c)return res.status(403).json({success:false,message:"Conversation unavailable"});const other=c.participants.find(p=>String(p._id)!==String(req.user._id));const me=c.participants.find(p=>String(p._id)===String(req.user._id));if(!other||isBlocked(other,req.user._id)||isBlocked(me,other._id))return res.status(403).json({success:false,message:"Conversation unavailable"});const messages=await Message.find({conversationId:c._id}).sort({createdAt:1}).populate("senderId","fullName profileImageURL").populate("replyTo","text senderId").populate("profileShareId","fullName profileImageURL bio isPrivate").lean();if(messages.length){const last=messages[messages.length-1];c.lastMessage=last._id;c.lastMessageAt=last.createdAt;await c.save().catch(()=>{});}await Message.updateMany({conversationId:c._id,receiverId:req.user._id,isRead:false},{$set:{isRead:true,status:"read"}});res.json({success:true,messages,conversation:c});}catch(e){console.error("conversation history:",e);res.status(500).json({success:false,message:"Unable to load messages"});}});
+
+// Fast initial chat load: only fetch the newest messages. Older messages can be requested with ?before=<ISO date>&limit=<n>.
+router.get("/:conversationId",auth,async(req,res)=>{try{
+  if(!id(req.params.conversationId))return res.status(400).json({success:false,message:"Invalid conversation"});
+  const c=await Conversation.findOne({_id:req.params.conversationId,participants:req.user._id}).populate("participants","fullName profileImageURL isPrivate blockedUsers").lean();
+  if(!c)return res.status(403).json({success:false,message:"Conversation unavailable"});
+  const other=c.participants.find(p=>String(p._id)!==String(req.user._id));
+  const me=c.participants.find(p=>String(p._id)===String(req.user._id));
+  if(!other||isBlocked(other,req.user._id)||isBlocked(me,other._id))return res.status(403).json({success:false,message:"Conversation unavailable"});
+  const requested=Math.min(Math.max(parseInt(req.query.limit,10)||50,10),100);
+  const before=req.query.before&& !Number.isNaN(Date.parse(req.query.before))?new Date(req.query.before):null;
+  const filter={conversationId:c._id};
+  if(before)filter.createdAt={$lt:before};
+  let messages=await Message.find(filter).sort({createdAt:-1}).limit(requested).populate("senderId","fullName profileImageURL").populate("replyTo","text senderId").populate("profileShareId","fullName profileImageURL bio isPrivate").lean();
+  messages.reverse();
+  const hasMore=messages.length===requested;
+  const newest=messages[messages.length-1];
+  if(!before&&newest){
+    await Conversation.updateOne({_id:c._id},{$set:{lastMessage:newest._id,lastMessageAt:newest.createdAt}});
+  }
+  await Message.updateMany({conversationId:c._id,receiverId:req.user._id,isRead:false},{$set:{isRead:true,status:"read"}});
+  res.json({success:true,messages,hasMore,conversation:{...c,participants:c.participants.map(({blockedUsers,...p})=>p)}});
+}catch(e){console.error("conversation history:",e);res.status(500).json({success:false,message:"Unable to load messages"});}});
 router.post("/:messageId/like",auth,async(req,res)=>{try{if(!id(req.params.messageId))return res.status(400).json({success:false,message:"Invalid message"});const m=await Message.findOne({_id:req.params.messageId,$or:[{senderId:req.user._id},{receiverId:req.user._id}]});if(!m)return res.status(404).json({success:false,message:"Message not found"});const uid=req.user._id.toString();const liked=m.likes.some(x=>x.toString()===uid);if(liked)m.likes.pull(req.user._id);else m.likes.push(req.user._id);await m.save();res.json({success:true,liked:!liked,likes:m.likes.length});}catch(e){res.status(500).json({success:false,message:"Unable to like message"});}});
 router.delete("/:messageId",auth,async(req,res)=>{try{if(!id(req.params.messageId))return res.status(400).json({success:false,message:"Invalid message"});const m=await Message.findOne({_id:req.params.messageId,senderId:req.user._id});if(!m)return res.status(404).json({success:false,message:"Message not found"});m.text="Message deleted";m.mediaUrl="";m.mediaType="";m.profileShareId=null;m.deleted=true;await m.save();res.json({success:true});}catch(e){res.status(500).json({success:false,message:"Unable to delete message"});}});
 module.exports=router;
