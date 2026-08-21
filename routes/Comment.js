@@ -6,25 +6,26 @@ const Blog = require("../models/Blog");
 const User = require("../models/user");
 const { restrictToLoggedInUserOnly } = require("../middlewares/authentication");
 const { validateComment } = require("../middlewares/validation");
+const { commentCreationLimiter } = require("../middlewares/rateLimiting");
 const NotificationService = require("../services/notificationService");
 
 function isValidObjectId(value) {
-    return mongoose.Types.ObjectId.isValid(value);
+    return typeof value === "string" && mongoose.Types.ObjectId.isValid(value);
 }
 
 async function canAccessBlog(blog, viewerId) {
-    if (!blog) return false;
+    if (!blog || !viewerId) return false;
+
     const author = await User.findById(blog.createdBy)
         .select("_id isPrivate followers")
         .lean();
 
     if (!author) return false;
     if (!author.isPrivate) return true;
-    if (!viewerId) return false;
 
-    const id = viewerId.toString();
-    return author._id.toString() === id ||
-        (Array.isArray(author.followers) && author.followers.some(followerId => followerId.toString() === id));
+    const viewer = viewerId.toString();
+    return author._id.toString() === viewer ||
+        (Array.isArray(author.followers) && author.followers.some(id => id.toString() === viewer));
 }
 
 function commentsAllowed(author) {
@@ -54,33 +55,31 @@ function buildCommentTree(comments) {
     return roots;
 }
 
+async function loadBlogForComments(blogId) {
+    if (!isValidObjectId(blogId)) return null;
+
+    return Blog.findOne({
+        _id: blogId,
+        isDeleted: false,
+        status: "published"
+    })
+        .select("_id createdBy isDeleted status")
+        .lean();
+}
+
 async function getComments(req, res) {
     try {
         const { blogId } = req.params;
-
         if (!isValidObjectId(blogId)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid blog ID",
-                comments: [],
-                total: 0
-            });
+            return res.status(400).json({ success: false, message: "Invalid blog ID", comments: [], total: 0 });
         }
 
-        const blog = await Blog.findById(blogId)
-            .select("_id createdBy isDeleted")
-            .lean();
-
-        if (!blog || blog.isDeleted) {
-            return res.status(404).json({
-                success: false,
-                message: "Blog not found",
-                comments: [],
-                total: 0
-            });
+        const blog = await loadBlogForComments(blogId);
+        if (!blog) {
+            return res.status(404).json({ success: false, message: "Blog not found", comments: [], total: 0 });
         }
 
-        if (!(await canAccessBlog(blog, req.user?._id))) {
+        if (req.user?._id && !(await canAccessBlog(blog, req.user._id))) {
             return res.status(403).json({
                 success: false,
                 message: "This blog is private. Follow the author to view comments.",
@@ -90,7 +89,7 @@ async function getComments(req, res) {
         }
 
         const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
-        const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 50);
+        const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), 50);
 
         const allComments = await Comment.find({
             blog: blog._id,
@@ -116,31 +115,26 @@ async function getComments(req, res) {
         });
     } catch (error) {
         console.error("Fetch comments error:", error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch comments",
-            comments: [],
-            total: 0
-        });
+        return res.status(500).json({ success: false, message: "Failed to fetch comments", comments: [], total: 0 });
     }
 }
 
 async function createComment(req, res) {
     try {
         if (!req.user?._id) {
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please sign in again."
-            });
+            return res.status(401).json({ success: false, message: "Authentication required. Please sign in again." });
         }
 
         const { blogId } = req.params;
-        const content = typeof req.body?.content === "string"
+        const rawContent = typeof req.body?.content === "string"
             ? req.body.content
             : typeof req.body?.comment === "string"
                 ? req.body.comment
                 : "";
-        const parentCommentId = req.body?.parentCommentId || null;
+        const content = rawContent.trim();
+        const parentCommentId = typeof req.body?.parentCommentId === "string"
+            ? req.body.parentCommentId.trim()
+            : null;
 
         if (!isValidObjectId(blogId)) {
             return res.status(400).json({ success: false, message: "Invalid blog ID" });
@@ -150,16 +144,13 @@ async function createComment(req, res) {
         if (!validation.isValid) {
             return res.status(400).json({
                 success: false,
-                message: validation.errors[0],
+                message: validation.errors[0] || "Invalid comment",
                 errors: validation.errors
             });
         }
 
-        const blog = await Blog.findById(blogId)
-            .select("_id createdBy isDeleted")
-            .lean();
-
-        if (!blog || blog.isDeleted) {
+        const blog = await loadBlogForComments(blogId);
+        if (!blog) {
             return res.status(404).json({ success: false, message: "Blog not found" });
         }
 
@@ -170,15 +161,15 @@ async function createComment(req, res) {
             });
         }
 
-        const author = await User.findById(blog.createdBy)
+        const blogAuthor = await User.findById(blog.createdBy)
             .select("_id fullName isPrivate followers blogSettings commentSettings")
             .lean();
 
-        if (!author) {
+        if (!blogAuthor) {
             return res.status(404).json({ success: false, message: "Blog author not found" });
         }
 
-        if (!commentsAllowed(author)) {
+        if (!commentsAllowed(blogAuthor)) {
             return res.status(403).json({ success: false, message: "Comments are disabled for this blog" });
         }
 
@@ -191,16 +182,19 @@ async function createComment(req, res) {
             parent = await Comment.findOne({
                 _id: parentCommentId,
                 blog: blog._id,
-                isDeleted: false
-            }).select("_id").lean();
+                isDeleted: false,
+                isApproved: true
+            }).select("_id blog parentComment").lean();
 
             if (!parent) {
                 return res.status(400).json({ success: false, message: "Invalid reply target" });
             }
         }
 
+        // Store a normalized value. Mongoose validation still protects the
+        // database if another route tries to create an invalid Comment.
         const comment = await Comment.create({
-            content: content.trim(),
+            content,
             blog: blog._id,
             author: req.user._id,
             parentComment: parent?._id || null
@@ -208,8 +202,8 @@ async function createComment(req, res) {
 
         await comment.populate("author", "fullName profileImageURL");
 
-        // Comment creation must not fail just because an email/notification
-        // provider is temporarily unavailable.
+        // Persistence is the critical operation. Notifications are best-effort
+        // and must never turn a successfully-created comment into an HTTP 500.
         if (blog.createdBy.toString() !== req.user._id.toString()) {
             try {
                 await NotificationService.createNotification(
@@ -236,42 +230,29 @@ async function createComment(req, res) {
         });
     } catch (error) {
         console.error("Create comment error:", error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to post comment"
-        });
+        return res.status(500).json({ success: false, message: "Failed to post comment" });
     }
 }
 
-// Public comment reading, authenticated comment creation.
+// Public reading; authenticated and rate-limited creation.
 router.get("/blog/:blogId", getComments);
 router.get("/:blogId", getComments);
-router.post("/blog/:blogId", restrictToLoggedInUserOnly, createComment);
-router.post("/:blogId", restrictToLoggedInUserOnly, createComment);
+router.post("/blog/:blogId", restrictToLoggedInUserOnly, commentCreationLimiter, createComment);
+router.post("/:blogId", restrictToLoggedInUserOnly, commentCreationLimiter, createComment);
 
 router.put("/:commentId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
-        if (!isValidObjectId(req.params.commentId)) {
-            return res.status(400).json({ success: false, message: "Invalid comment ID" });
-        }
-
+        if (!isValidObjectId(req.params.commentId)) return res.status(400).json({ success: false, message: "Invalid comment ID" });
         const validation = validateComment(req.body?.content);
-        if (!validation.isValid) {
-            return res.status(400).json({ success: false, errors: validation.errors });
-        }
+        if (!validation.isValid) return res.status(400).json({ success: false, errors: validation.errors });
 
-        const comment = await Comment.findById(req.params.commentId);
-        if (!comment || comment.isDeleted) {
-            return res.status(404).json({ success: false, message: "Comment not found" });
-        }
-
-        if (comment.author.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ success: false, message: "Not authorized" });
-        }
+        const comment = await Comment.findOne({ _id: req.params.commentId, isDeleted: false });
+        if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
+        if (comment.author.toString() !== req.user._id.toString()) return res.status(403).json({ success: false, message: "Not authorized" });
 
         comment.content = req.body.content.trim();
         await comment.save();
-
+        await comment.populate("author", "fullName profileImageURL");
         return res.json({ success: true, comment });
     } catch (error) {
         console.error("Update comment error:", error.message);
@@ -281,23 +262,15 @@ router.put("/:commentId", restrictToLoggedInUserOnly, async (req, res) => {
 
 router.delete("/:commentId", restrictToLoggedInUserOnly, async (req, res) => {
     try {
-        if (!isValidObjectId(req.params.commentId)) {
-            return res.status(400).json({ success: false, message: "Invalid comment ID" });
-        }
+        if (!isValidObjectId(req.params.commentId)) return res.status(400).json({ success: false, message: "Invalid comment ID" });
 
-        const comment = await Comment.findById(req.params.commentId);
-        if (!comment || comment.isDeleted) {
-            return res.status(404).json({ success: false, message: "Comment not found" });
-        }
-
-        if (comment.author.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ success: false, message: "Not authorized" });
-        }
+        const comment = await Comment.findOne({ _id: req.params.commentId, isDeleted: false });
+        if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
+        if (comment.author.toString() !== req.user._id.toString()) return res.status(403).json({ success: false, message: "Not authorized" });
 
         comment.isDeleted = true;
         comment.content = "This comment was deleted.";
         await comment.save();
-
         return res.json({ success: true, message: "Comment deleted" });
     } catch (error) {
         console.error("Delete comment error:", error.message);
@@ -307,40 +280,25 @@ router.delete("/:commentId", restrictToLoggedInUserOnly, async (req, res) => {
 
 router.post("/:commentId/like", restrictToLoggedInUserOnly, async (req, res) => {
     try {
-        if (!isValidObjectId(req.params.commentId)) {
-            return res.status(400).json({ success: false, message: "Invalid comment ID" });
-        }
+        if (!isValidObjectId(req.params.commentId)) return res.status(400).json({ success: false, message: "Invalid comment ID" });
 
-        const comment = await Comment.findById(req.params.commentId);
-        if (!comment || comment.isDeleted) {
-            return res.status(404).json({ success: false, message: "Comment not found" });
-        }
+        const comment = await Comment.findOne({ _id: req.params.commentId, isDeleted: false });
+        if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
 
-        const blog = await Blog.findById(comment.blog).select("_id createdBy isDeleted").lean();
-        if (!blog || blog.isDeleted || !(await canAccessBlog(blog, req.user._id))) {
-            return res.status(403).json({
-                success: false,
-                message: "You cannot like this comment"
-            });
+        const blog = await Blog.findOne({ _id: comment.blog, isDeleted: false, status: "published" })
+            .select("_id createdBy isDeleted status")
+            .lean();
+        if (!blog || !(await canAccessBlog(blog, req.user._id))) {
+            return res.status(403).json({ success: false, message: "You cannot like this comment" });
         }
 
         const userId = req.user._id.toString();
         const hasLiked = comment.likes.some(id => id.toString() === userId);
-
-        if (hasLiked) {
-            comment.likes = comment.likes.filter(id => id.toString() !== userId);
-        } else {
-            comment.likes.push(req.user._id);
-        }
+        if (hasLiked) comment.likes = comment.likes.filter(id => id.toString() !== userId);
+        else comment.likes.push(req.user._id);
 
         await comment.save();
-
-        return res.json({
-            success: true,
-            liked: !hasLiked,
-            likeCount: comment.likes.length,
-            commentId: comment._id
-        });
+        return res.json({ success: true, liked: !hasLiked, likeCount: comment.likes.length, commentId: comment._id });
     } catch (error) {
         console.error("Comment like error:", error.message);
         return res.status(500).json({ success: false, message: "Failed to like comment" });
