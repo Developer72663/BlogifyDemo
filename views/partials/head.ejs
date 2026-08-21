@@ -38,6 +38,26 @@ html[data-theme="dark"] .navbar{background:rgba(15,17,23,.96)!important}.navbar 
 html[data-theme="dark"] .chat-page{background:radial-gradient(circle at 15% 10%,rgba(99,102,241,.16),transparent 32%),radial-gradient(circle at 90% 90%,rgba(118,75,162,.13),transparent 34%)}
 html[data-theme="dark"] .chat-page .head{background:color-mix(in srgb,var(--surface) 90%,#6366f1 10%)}
 @media(max-width:600px){.chat-page{padding:0!important}.chat-page .chat{border-radius:0!important;box-shadow:none!important}.chat-page .head{padding:11px 12px!important}.chat-page .messages{padding:20px 10px!important}.chat-page .composer{padding:9px!important}.chat-page .avatar{width:44px!important;height:44px!important}.chat-page .bubble{max-width:88%!important}.chat-page .media{max-width:78vw!important}.chat-page .back,.chat-page .profile,.chat-page .attach{width:40px!important;height:40px!important}.chat-page .send{width:46px!important;height:46px!important}}
+
+/* Profile three-dot popup: follow the global Light/Dark theme. */
+html[data-theme="dark"] .profile-page .profile-menu-overlay{background:rgba(0,0,0,.72)!important}
+html[data-theme="dark"] .profile-page .profile-menu-sheet{background:#111!important;color:#f5f5f5!important;border-color:#2b2b2b!important;box-shadow:0 -20px 70px rgba(0,0,0,.65)!important}
+html[data-theme="dark"] .profile-page .profile-sheet-grip{background:#555!important}
+html[data-theme="dark"] .profile-page .profile-sheet-header{border-color:#2b2b2b!important}
+html[data-theme="dark"] .profile-page .profile-sheet-title{color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .profile-sheet-title i{color:#a9a3ff!important}
+html[data-theme="dark"] .profile-page .profile-sheet-close{background:#202020!important;color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .profile-sheet-close:hover{background:#303030!important}
+html[data-theme="dark"] .profile-page .profile-sheet-user{background:#181818!important;border-color:#303030!important;color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .profile-sheet-user-info strong{color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .profile-menu-option{color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .profile-menu-option:hover{background:#202020!important}
+html[data-theme="dark"] .profile-page .profile-menu-option-icon{background:#211f43!important;color:#a9a3ff!important}
+html[data-theme="dark"] .profile-page .profile-menu-option-content strong{color:#f5f5f5!important}
+html[data-theme="dark"] .profile-page .profile-menu-option-content span{color:#a3a3a3!important}
+html[data-theme="dark"] .profile-page .profile-menu-option-arrow{color:#777!important}
+html[data-theme="dark"] .profile-page .profile-menu-option.danger{color:#ff6b70!important}
+html[data-theme="dark"] .profile-page .profile-menu-option.danger .profile-menu-option-icon{background:rgba(229,72,77,.16)!important;color:#ff6b70!important}
 </style>
 <script>(function(){try{const t=localStorage.getItem('blogify-theme')||'system';const d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}})();</script>
 
