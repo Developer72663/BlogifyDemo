@@ -60,15 +60,13 @@ function setupMessageSocket(io) {
     };
 
     socket.on("conversation:join", async (conversationId) => {
-      try {
-        await setActiveConversation(conversationId);
-      } catch (e) { console.error("conversation join:", e.message); }
+      try { await setActiveConversation(conversationId); }
+      catch (e) { console.error("conversation join:", e.message); }
     });
 
     socket.on("conversation:active", async (conversationId) => {
-      try {
-        await setActiveConversation(conversationId);
-      } catch (e) { console.error("conversation active:", e.message); }
+      try { await setActiveConversation(conversationId); }
+      catch (e) { console.error("conversation active:", e.message); }
     });
 
     socket.on("conversation:leave", (conversationId) => {
@@ -124,7 +122,7 @@ function setupMessageSocket(io) {
 
         const [target, sender] = await Promise.all([
           User.findById(receiverId).select("_id fullName isPrivate followers blockedUsers"),
-          User.findById(userId).select("_id fullName blockedUsers")
+          User.findById(userId).select("_id fullName blockedUsers profileImageURL")
         ]);
         if (!target || !sender) return socket.emit("message:error", { message: "User not found." });
         if (target.blockedUsers?.some(x => x.toString() === userId) || sender.blockedUsers?.some(x => x.toString() === receiverId.toString())) return socket.emit("message:error", { message: "You cannot message this user." });
@@ -138,22 +136,34 @@ function setupMessageSocket(io) {
         c.lastMessage = m._id;
         c.lastMessageAt = new Date();
 
-        const [payload] = await Promise.all([
-          Message.findById(m._id).populate("senderId", "fullName profileImageURL").populate("profileShareId", "fullName profileImageURL bio isPrivate").populate("replyTo", "text senderId").lean(),
-          c.save()
-        ]);
+        // Emit the canonical message as soon as the durable message exists.
+        // Do not make realtime delivery wait for notification creation or expensive
+        // populate queries. The sender data was already authorized above.
+        const livePayload = {
+          _id: m._id,
+          conversationId: m.conversationId,
+          senderId: { _id: sender._id, fullName: sender.fullName, profileImageURL: sender.profileImageURL },
+          receiverId: m.receiverId,
+          text: m.text,
+          mediaUrl: m.mediaUrl,
+          mediaType: m.mediaType,
+          profileShareId: m.profileShareId,
+          replyTo: m.replyTo,
+          createdAt: m.createdAt,
+          updatedAt: m.updatedAt,
+          status: "delivered"
+        };
+        io.to(`conversation:${conversationId}`).emit("message:new", livePayload);
+        io.to(`user:${receiverId}`).emit("message:new", livePayload);
+        io.to(`user:${userId}`).emit("message:new", livePayload);
 
-        io.to(`conversation:${conversationId}`).emit("message:new", { ...payload, status: "delivered" });
-        io.to(`user:${receiverId}`).emit("message:new", { ...payload, status: "delivered" });
+        // Conversation metadata persistence and rich population are deliberately
+        // outside the realtime critical path.
+        void c.save().catch(error => console.error("conversation save:", error.message));
         void Message.updateOne({ _id: m._id }, { $set: { status: "delivered" } }).catch(error => console.error("message delivery status:", error.message));
 
         const notificationText = cleanText ? cleanText.substring(0, 120) : profileShareId ? "Shared a profile" : mediaType === "audio" ? "Sent a voice message" : mediaType === "video" ? "Sent a video" : "Sent a photo";
-
-        // Web Push is sent only when the recipient is not actively viewing this conversation.
-        // The in-app notification is still created in both cases.
-        const recipientIsInThisChat = [...activeChatBySocket.values()].some(state =>
-          state?.userId === receiverId.toString() && state?.conversationId === conversationId.toString()
-        );
+        const recipientIsInThisChat = [...activeChatBySocket.values()].some(state => state?.userId === receiverId.toString() && state?.conversationId === conversationId.toString());
         if (!recipientIsInThisChat) {
           void (async () => {
             try {
