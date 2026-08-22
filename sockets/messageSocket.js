@@ -27,13 +27,16 @@ const c=await Conversation.findOne({_id:conversationId,participants:userId});if(
 const [target,sender]=await Promise.all([User.findById(receiverId).select("_id fullName isPrivate followers blockedUsers profileImageURL"),User.findById(userId).select("_id fullName blockedUsers profileImageURL")]);if(!target||!sender)return socket.emit("message:error",{message:"User not found."});if(target.blockedUsers?.some(x=>x.toString()===userId)||sender.blockedUsers?.some(x=>x.toString()===receiverId.toString()))return socket.emit("message:error",{message:"You cannot message this user."});if(target.isPrivate&&!target.followers.some(x=>x.toString()===userId))return socket.emit("message:error",{message:"This account is private. Follow the user before messaging."});
 if(profileShareId){const sharedProfile=await User.findById(profileShareId).select("_id fullName profileImageURL bio isPrivate");if(!sharedProfile)return socket.emit("message:error",{message:"Profile not found."});}
 const m=await Message.create({conversationId,senderId:userId,receiverId,text:cleanText,mediaUrl:validMedia?cleanMediaUrl:"",mediaType:profileShareId?"profile":validMedia?mediaType:"",profileShareId:profileShareId||null,replyTo:replyMessage?._id||null});
-c.lastMessage=m._id;c.lastMessageAt=m.createdAt||new Date();
-// Critical latency fix: save and build the client payload without an extra Message.findById().populate() round trip.
-await c.save();
+c.lastMessage=m._id;c.lastMessageAt=m.createdAt||new Date();await c.save();
 const payload={_id:m._id,conversationId:m.conversationId,senderId:{_id:sender._id,fullName:sender.fullName,profileImageURL:sender.profileImageURL},receiverId:m.receiverId,text:m.text,mediaUrl:m.mediaUrl,mediaType:m.mediaType,profileShareId:null,replyTo:null,status:"delivered",isRead:false,edited:false,deleted:false,likes:[],reactions:[],createdAt:m.createdAt,updatedAt:m.updatedAt};
 if(profileShareId){const sharedProfile=await User.findById(profileShareId).select("_id fullName profileImageURL bio isPrivate").lean();payload.profileShareId=sharedProfile||null;}
 if(replyMessage){const reply=await Message.findById(replyMessage._id).select("text senderId").populate("senderId","fullName profileImageURL").lean();payload.replyTo=reply||null;}
-io.to(`conversation:${conversationId}`).emit("message:new",payload);io.to(`user:${receiverId}`).emit("message:new",payload);void Message.updateOne({_id:m._id},{$set:{status:"delivered"}}).catch(error=>console.error("message delivery status:",error.message));
+// Deliver directly to both users' personal rooms. This makes live delivery independent
+// of whether the browser joined the conversation room before the message was sent.
+// The client filters by conversationId, so other open tabs do not render it.
+io.to(`user:${userId}`).emit("message:new",payload);
+io.to(`user:${receiverId}`).emit("message:new",payload);
+void Message.updateOne({_id:m._id},{$set:{status:"delivered"}}).catch(error=>console.error("message delivery status:",error.message));
 const notificationText=cleanText?cleanText.substring(0,120):profileShareId?"Shared a profile":mediaType==="audio"?"Sent a voice message":mediaType==="video"?"Sent a video":"Sent a photo";const recipientIsInThisChat=[...activeChatBySocket.values()].some(state=>state?.userId===receiverId.toString()&&state?.conversationId===conversationId.toString());
 if(!recipientIsInThisChat){void NotificationService.createNotification(receiverId,"message",{title:`New message from ${socket.userName||"a user"}`,message:notificationText,actor:userId,messageRef:m._id,conversationId:c._id}).then(()=>io.to(`user:${receiverId}`).emit("notification:message",{conversationId,senderId:userId,messageId:m._id})).catch(e=>console.error("message notification:",e.message));}else io.to(`user:${receiverId}`).emit("notification:message",{conversationId,senderId:userId,messageId:m._id,pushSuppressed:true});
 }catch(e){console.error("message socket:",e.message);socket.emit("message:error",{message:"Unable to send message"});}});
