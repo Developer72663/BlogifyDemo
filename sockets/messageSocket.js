@@ -5,6 +5,8 @@ const Notification = require("../models/Notification");
 const User = require("../models/user");
 const mongoose = require("mongoose");
 const onlineUsers = new Map();
+const activeChatBySocket = global.__BLOGIFY_ACTIVE_CHAT_BY_SOCKET || new Map();
+global.__BLOGIFY_ACTIVE_CHAT_BY_SOCKET = activeChatBySocket;
 const EDIT_WINDOW_MS = 60 * 1000;
 const MAX_MESSAGE_LENGTH = 5000;
 const MAX_MEDIA_URL_LENGTH = 2048;
@@ -42,15 +44,41 @@ function setupMessageSocket(io) {
     const current = onlineUsers.get(userId) || new Set();
     current.add(socket.id);
     onlineUsers.set(userId, current);
+    activeChatBySocket.set(socket.id, { userId, conversationId: null });
     socket.join(`user:${userId}`);
     io.emit("user:online", { userId });
 
+    const setActiveConversation = async (conversationId) => {
+      if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) return false;
+      const c = await Conversation.findOne({ _id: conversationId, participants: userId }).select("_id");
+      if (!c) return false;
+      const previous = activeChatBySocket.get(socket.id)?.conversationId;
+      if (previous && previous !== String(conversationId)) socket.leave(`conversation:${previous}`);
+      socket.join(`conversation:${conversationId}`);
+      activeChatBySocket.set(socket.id, { userId, conversationId: String(conversationId) });
+      return true;
+    };
+
     socket.on("conversation:join", async (conversationId) => {
       try {
-        if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
-        const c = await Conversation.findOne({ _id: conversationId, participants: userId }).select("_id");
-        if (c) socket.join(`conversation:${conversationId}`);
+        await setActiveConversation(conversationId);
       } catch (e) { console.error("conversation join:", e.message); }
+    });
+
+    socket.on("conversation:active", async (conversationId) => {
+      try {
+        await setActiveConversation(conversationId);
+      } catch (e) { console.error("conversation active:", e.message); }
+    });
+
+    socket.on("conversation:leave", (conversationId) => {
+      const state = activeChatBySocket.get(socket.id);
+      if (!state) return;
+      const target = conversationId ? String(conversationId) : state.conversationId;
+      if (target) socket.leave(`conversation:${target}`);
+      if (!conversationId || target === state.conversationId) {
+        activeChatBySocket.set(socket.id, { userId, conversationId: null });
+      }
     });
 
     socket.on("typing:start", async ({ conversationId } = {}) => {
@@ -121,22 +149,29 @@ function setupMessageSocket(io) {
 
         const notificationText = cleanText ? cleanText.substring(0, 120) : profileShareId ? "Shared a profile" : mediaType === "audio" ? "Sent a voice message" : mediaType === "video" ? "Sent a video" : "Sent a photo";
 
-        // Use the same notification service as comments/follows/etc. This creates
-        // the in-app notification and sends exactly one Web Push notification.
-        void (async () => {
-          try {
-            await NotificationService.createNotification(receiverId, "message", {
-              title: `New message from ${socket.userName || "a user"}`,
-              message: notificationText,
-              actor: userId,
-              messageRef: m._id,
-              conversationId: c._id
-            });
-            io.to(`user:${receiverId}`).emit("notification:message", { conversationId, senderId: userId, messageId: m._id });
-          } catch (notificationError) {
-            console.error("message notification:", notificationError.message);
-          }
-        })();
+        // Web Push is sent only when the recipient is not actively viewing this conversation.
+        // The in-app notification is still created in both cases.
+        const recipientIsInThisChat = [...activeChatBySocket.values()].some(state =>
+          state?.userId === receiverId.toString() && state?.conversationId === conversationId.toString()
+        );
+        if (!recipientIsInThisChat) {
+          void (async () => {
+            try {
+              await NotificationService.createNotification(receiverId, "message", {
+                title: `New message from ${socket.userName || "a user"}`,
+                message: notificationText,
+                actor: userId,
+                messageRef: m._id,
+                conversationId: c._id
+              });
+              io.to(`user:${receiverId}`).emit("notification:message", { conversationId, senderId: userId, messageId: m._id });
+            } catch (notificationError) {
+              console.error("message notification:", notificationError.message);
+            }
+          })();
+        } else {
+          io.to(`user:${receiverId}`).emit("notification:message", { conversationId, senderId: userId, messageId: m._id, pushSuppressed: true });
+        }
       } catch (e) {
         console.error("message socket:", e.message);
         socket.emit("message:error", { message: "Unable to send message" });
@@ -201,6 +236,7 @@ function setupMessageSocket(io) {
     });
 
     socket.on("disconnect", () => {
+      activeChatBySocket.delete(socket.id);
       const set = onlineUsers.get(userId);
       if (!set) return;
       set.delete(socket.id);
@@ -210,4 +246,4 @@ function setupMessageSocket(io) {
   return onlineUsers;
 }
 
-module.exports = { setupMessageSocket, onlineUsers };
+module.exports = { setupMessageSocket, onlineUsers, activeChatBySocket };
