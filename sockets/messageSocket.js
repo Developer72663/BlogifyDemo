@@ -1,5 +1,6 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
+const NotificationService = require("../services/notificationService");
 const Notification = require("../models/Notification");
 const User = require("../models/user");
 const mongoose = require("mongoose");
@@ -49,45 +50,33 @@ function setupMessageSocket(io) {
         if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
         const c = await Conversation.findOne({ _id: conversationId, participants: userId }).select("_id");
         if (c) socket.join(`conversation:${conversationId}`);
-      } catch (e) {
-        console.error("conversation join:", e.message);
-      }
+      } catch (e) { console.error("conversation join:", e.message); }
     });
 
     socket.on("typing:start", async ({ conversationId } = {}) => {
       if (!typingLimiter()) return socket.emit("message:error", { message: "Too many realtime actions. Please slow down." });
       try {
         if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
-        if (await Conversation.exists({ _id: conversationId, participants: userId })) {
-          socket.to(`conversation:${conversationId}`).emit("typing:start", { userId });
-        }
-      } catch (e) {
-        console.error("typing:start:", e.message);
-      }
+        if (await Conversation.exists({ _id: conversationId, participants: userId })) socket.to(`conversation:${conversationId}`).emit("typing:start", { userId });
+      } catch (e) { console.error("typing:start:", e.message); }
     });
 
     socket.on("typing:stop", async ({ conversationId } = {}) => {
       if (!typingLimiter()) return;
       try {
         if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
-        if (await Conversation.exists({ _id: conversationId, participants: userId })) {
-          socket.to(`conversation:${conversationId}`).emit("typing:stop", { userId });
-        }
-      } catch (e) {
-        console.error("typing:stop:", e.message);
-      }
+        if (await Conversation.exists({ _id: conversationId, participants: userId })) socket.to(`conversation:${conversationId}`).emit("typing:stop", { userId });
+      } catch (e) { console.error("typing:stop:", e.message); }
     });
 
     socket.on("message:send", async ({ conversationId, text = "", replyTo = null, mediaUrl = "", mediaType = "", profileShareId = null } = {}) => {
       if (!messageLimiter()) return socket.emit("message:error", { message: "You are sending messages too quickly. Please slow down." });
       try {
         if (!mongoose.Types.ObjectId.isValid(conversationId)) return socket.emit("message:error", { message: "Invalid conversation." });
-
         const cleanText = typeof text === "string" ? text.trim() : "";
         const validTypes = ["image", "video", "audio", "profile"];
         const cleanMediaUrl = typeof mediaUrl === "string" ? mediaUrl.trim() : "";
         const validMedia = validTypes.includes(mediaType) && mediaType !== "profile" && isSafeMediaUrl(cleanMediaUrl);
-
         if (!cleanText && !validMedia && !profileShareId) return;
         if (cleanText.length > MAX_MESSAGE_LENGTH) return socket.emit("message:error", { message: "Message is too long." });
         if (mediaUrl && !validMedia && !profileShareId) return socket.emit("message:error", { message: "Invalid media URL." });
@@ -102,7 +91,6 @@ function setupMessageSocket(io) {
 
         const c = await Conversation.findOne({ _id: conversationId, participants: userId });
         if (!c) return socket.emit("message:error", { message: "Conversation not found." });
-
         const receiverId = c.participants.find(x => x.toString() !== userId);
         if (!receiverId) return socket.emit("message:error", { message: "Conversation recipient not found." });
 
@@ -111,75 +99,38 @@ function setupMessageSocket(io) {
           User.findById(userId).select("_id fullName blockedUsers")
         ]);
         if (!target || !sender) return socket.emit("message:error", { message: "User not found." });
-        if (target.blockedUsers?.some(x => x.toString() === userId) || sender.blockedUsers?.some(x => x.toString() === receiverId.toString())) {
-          return socket.emit("message:error", { message: "You cannot message this user." });
-        }
-        if (target.isPrivate && !target.followers.some(x => x.toString() === userId)) {
-          return socket.emit("message:error", { message: "This account is private. Follow the user before messaging." });
-        }
-
+        if (target.blockedUsers?.some(x => x.toString() === userId) || sender.blockedUsers?.some(x => x.toString() === receiverId.toString())) return socket.emit("message:error", { message: "You cannot message this user." });
+        if (target.isPrivate && !target.followers.some(x => x.toString() === userId)) return socket.emit("message:error", { message: "This account is private. Follow the user before messaging." });
         if (profileShareId) {
           const sharedProfile = await User.findById(profileShareId).select("_id");
           if (!sharedProfile) return socket.emit("message:error", { message: "Profile not found." });
         }
 
-        const m = await Message.create({
-          conversationId,
-          senderId: userId,
-          receiverId,
-          text: cleanText,
-          mediaUrl: validMedia ? cleanMediaUrl : "",
-          mediaType: profileShareId ? "profile" : validMedia ? mediaType : "",
-          profileShareId: profileShareId || null,
-          replyTo: replyMessage?._id || null
-        });
-
+        const m = await Message.create({ conversationId, senderId: userId, receiverId, text: cleanText, mediaUrl: validMedia ? cleanMediaUrl : "", mediaType: profileShareId ? "profile" : validMedia ? mediaType : "", profileShareId: profileShareId || null, replyTo: replyMessage?._id || null });
         c.lastMessage = m._id;
         c.lastMessageAt = new Date();
 
-        // Keep the realtime path short: persist the conversation marker and build
-        // the display payload in parallel instead of waiting for each DB round-trip.
         const [payload] = await Promise.all([
-          Message.findById(m._id)
-            .populate("senderId", "fullName profileImageURL")
-            .populate("profileShareId", "fullName profileImageURL bio isPrivate")
-            .populate("replyTo", "text senderId")
-            .lean(),
+          Message.findById(m._id).populate("senderId", "fullName profileImageURL").populate("profileShareId", "fullName profileImageURL bio isPrivate").populate("replyTo", "text senderId").lean(),
           c.save()
         ]);
 
-        // Do not block delivery on a second database write. The message is already
-        // persisted; status is only metadata and can be updated after the realtime emit.
         io.to(`conversation:${conversationId}`).emit("message:new", { ...payload, status: "delivered" });
         io.to(`user:${receiverId}`).emit("message:new", { ...payload, status: "delivered" });
+        void Message.updateOne({ _id: m._id }, { $set: { status: "delivered" } }).catch(error => console.error("message delivery status:", error.message));
 
-        void Message.updateOne({ _id: m._id }, { $set: { status: "delivered" } }).catch(error => {
-          console.error("message delivery status:", error.message);
-        });
+        const notificationText = cleanText ? cleanText.substring(0, 120) : profileShareId ? "Shared a profile" : mediaType === "audio" ? "Sent a voice message" : mediaType === "video" ? "Sent a video" : "Sent a photo";
 
-        const notificationText = cleanText
-          ? cleanText.substring(0, 120)
-          : profileShareId
-            ? "Shared a profile"
-            : mediaType === "audio"
-              ? "Sent a voice message"
-              : mediaType === "video"
-                ? "Sent a video"
-                : "Sent a photo";
-
-        // Notification creation is deliberately after the realtime emit so a slow
-        // notification/push database operation cannot delay the chat message.
+        // Use the same notification service as comments/follows/etc. This creates
+        // the in-app notification and sends exactly one Web Push notification.
         void (async () => {
           try {
-            await Notification.create({
-              recipient: receiverId,
-              type: "message",
+            await NotificationService.createNotification(receiverId, "message", {
               title: `New message from ${socket.userName || "a user"}`,
               message: notificationText,
               actor: userId,
               messageRef: m._id,
-              conversationId: c._id,
-              isRead: false
+              conversationId: c._id
             });
             io.to(`user:${receiverId}`).emit("notification:message", { conversationId, senderId: userId, messageId: m._id });
           } catch (notificationError) {
@@ -201,15 +152,10 @@ function setupMessageSocket(io) {
         const message = await Message.findOne({ _id: messageId, conversationId, senderId: userId });
         if (!message || message.deleted) return socket.emit("message:action:error", { message: "Message is no longer available." });
         if (Date.now() - new Date(message.createdAt).getTime() > EDIT_WINDOW_MS) return socket.emit("message:action:error", { message: "Edit is available for only 1 minute." });
-        message.text = cleanText;
-        message.edited = true;
-        await message.save();
+        message.text = cleanText; message.edited = true; await message.save();
         const payload = await Message.findById(message._id).populate("senderId", "fullName profileImageURL").populate("profileShareId", "fullName profileImageURL bio isPrivate").populate("replyTo", "text senderId").lean();
         io.to(`conversation:${conversationId}`).emit("message:edited", payload);
-      } catch (e) {
-        console.error("message edit:", e.message);
-        socket.emit("message:action:error", { message: "Unable to edit message." });
-      }
+      } catch (e) { console.error("message edit:", e.message); socket.emit("message:action:error", { message: "Unable to edit message." }); }
     });
 
     socket.on("message:unsend", async ({ conversationId, messageId } = {}) => {
@@ -218,18 +164,9 @@ function setupMessageSocket(io) {
         if (!mongoose.Types.ObjectId.isValid(conversationId) || !mongoose.Types.ObjectId.isValid(messageId)) return socket.emit("message:action:error", { message: "Invalid message." });
         const message = await Message.findOne({ _id: messageId, conversationId, senderId: userId });
         if (!message) return socket.emit("message:action:error", { message: "Message not found." });
-        message.text = "";
-        message.mediaUrl = "";
-        message.mediaType = "";
-        message.profileShareId = null;
-        message.deleted = true;
-        message.edited = false;
-        await message.save();
+        message.text = ""; message.mediaUrl = ""; message.mediaType = ""; message.profileShareId = null; message.deleted = true; message.edited = false; await message.save();
         io.to(`conversation:${conversationId}`).emit("message:unsent", { messageId: message._id.toString(), conversationId: conversationId.toString() });
-      } catch (e) {
-        console.error("message unsend:", e.message);
-        socket.emit("message:action:error", { message: "Unable to unsend message." });
-      }
+      } catch (e) { console.error("message unsend:", e.message); socket.emit("message:action:error", { message: "Unable to unsend message." }); }
     });
 
     socket.on("message:react", async ({ conversationId, messageId, emoji } = {}) => {
@@ -246,10 +183,7 @@ function setupMessageSocket(io) {
         else message.reactions.push({ userId, emoji });
         await message.save();
         io.to(`conversation:${conversationId}`).emit("message:reactions", { messageId: message._id.toString(), conversationId: conversationId.toString(), reactions: message.reactions.map(r => ({ userId: r.userId.toString(), emoji: r.emoji })) });
-      } catch (e) {
-        console.error("message reaction:", e.message);
-        socket.emit("message:action:error", { message: "Unable to update reaction." });
-      }
+      } catch (e) { console.error("message reaction:", e.message); socket.emit("message:action:error", { message: "Unable to update reaction." }); }
     });
 
     socket.on("message:read", async ({ conversationId } = {}) => {
@@ -263,19 +197,14 @@ function setupMessageSocket(io) {
         await Notification.updateMany({ recipient: userId, type: "message", actor: otherId, isRead: false }, { $set: { isRead: true } });
         io.to(`conversation:${conversationId}`).emit("message:read", { conversationId, userId });
         io.to(`user:${userId}`).emit("message:read", { conversationId, userId });
-      } catch (e) {
-        console.error("message read:", e.message);
-      }
+      } catch (e) { console.error("message read:", e.message); }
     });
 
     socket.on("disconnect", () => {
       const set = onlineUsers.get(userId);
       if (!set) return;
       set.delete(socket.id);
-      if (!set.size) {
-        onlineUsers.delete(userId);
-        io.emit("user:offline", { userId });
-      }
+      if (!set.size) { onlineUsers.delete(userId); io.emit("user:offline", { userId }); }
     });
   });
   return onlineUsers;
