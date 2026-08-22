@@ -27,36 +27,28 @@ function appendCallbackPath(value) {
     return base.endsWith(GOOGLE_CALLBACK_PATH) ? base : `${base}${GOOGLE_CALLBACK_PATH}`;
 }
 
-// Vercel's production URL is authoritative when running on Vercel. This avoids
-// a stale GOOGLE_CALLBACK_URL pointing at an old preview deployment.
+// Prefer the explicitly configured callback URL. This keeps the callback URL
+// stable and guarantees it matches the URI registered in Google Cloud.
 function getGoogleCallbackURL() {
-    if (process.env.VERCEL) {
-        const vercelProduction = appendCallbackPath(process.env.VERCEL_PROJECT_PRODUCTION_URL);
-        if (vercelProduction) return vercelProduction;
-
-        const explicit = appendCallbackPath(process.env.GOOGLE_CALLBACK_URL);
-        if (explicit) return explicit;
-
-        const appUrl = appendCallbackPath(process.env.APP_URL);
-        if (appUrl) return appUrl;
-
-        const vercel = appendCallbackPath(process.env.VERCEL_URL);
-        if (vercel) return vercel;
-    }
-
     const explicit = appendCallbackPath(process.env.GOOGLE_CALLBACK_URL);
     if (explicit) return explicit;
 
     const appUrl = appendCallbackPath(process.env.APP_URL);
     if (appUrl) return appUrl;
 
+    if (process.env.VERCEL) {
+        const vercelProduction = appendCallbackPath(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+        if (vercelProduction) return vercelProduction;
+    }
+
     if (process.env.RENDER) {
         const render = appendCallbackPath(process.env.RENDER_EXTERNAL_URL);
         if (render) return render;
     }
 
-    if (process.env.NODE_ENV === "production") {
-        return appendCallbackPath("https://blogify-demo-five.vercel.app");
+    if (process.env.VERCEL_URL) {
+        const vercel = appendCallbackPath(process.env.VERCEL_URL);
+        if (vercel) return vercel;
     }
 
     return `http://localhost:${process.env.PORT || 8000}${GOOGLE_CALLBACK_PATH}`;
@@ -69,12 +61,11 @@ console.log("Google OAuth configuration:", {
     clientSecretConfigured: Boolean(GOOGLE_CLIENT_SECRET),
     callbackURL: GOOGLE_CALLBACK_URL,
     deployment: process.env.VERCEL ? "vercel" : process.env.RENDER ? "render" : "other",
-    vercelProductionURL: process.env.VERCEL_PROJECT_PRODUCTION_URL || null,
     explicitCallbackConfigured: Boolean(process.env.GOOGLE_CALLBACK_URL),
 });
 
 function isProduction() {
-    return process.env.NODE_ENV === "production";
+    return process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL) || Boolean(process.env.RENDER);
 }
 
 function cookieOptions() {
@@ -131,8 +122,10 @@ passport.deserializeUser(async (id, done) => {
 
 router.get("/auth/google", (req, res, next) => {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) return redirectToSignin(res, "google_not_configured");
+
     const state = generateOAuthState();
     res.cookie(GOOGLE_STATE_COOKIE, state, cookieOptions());
+
     return passport.authenticate("google", {
         scope: ["profile", "email"],
         session: false,
@@ -144,36 +137,51 @@ router.get("/auth/google", (req, res, next) => {
 router.get("/auth/google/callback", (req, res, next) => {
     if (req.query?.error) {
         res.clearCookie(GOOGLE_STATE_COOKIE, cookieOptions());
-        return redirectToSignin(res);
+        return redirectToSignin(res, "google_auth_cancelled");
     }
 
     const returnedState = typeof req.query?.state === "string" ? req.query.state : "";
     let storedState = req.cookies?.[GOOGLE_STATE_COOKIE] || "";
+
+    // Fallback for deployments where cookie-parser has not populated req.cookies.
     if (!storedState) {
-        const match = (req.headers.cookie || "").split(";").map((part) => part.trim())
+        const match = (req.headers.cookie || "")
+            .split(";")
+            .map((part) => part.trim())
             .find((part) => part.startsWith(`${GOOGLE_STATE_COOKIE}=`));
-        if (match) storedState = decodeURIComponent(match.substring(`${GOOGLE_STATE_COOKIE}=`.length));
+        if (match) {
+            storedState = decodeURIComponent(match.substring(`${GOOGLE_STATE_COOKIE}=`.length));
+        }
     }
+
     res.clearCookie(GOOGLE_STATE_COOKIE, cookieOptions());
 
     if (!returnedState || !storedState || returnedState.length !== storedState.length) {
-        console.error("Google OAuth state validation failed");
-        return redirectToSignin(res);
+        console.error("Google OAuth state validation failed: missing or malformed state cookie.");
+        return redirectToSignin(res, "google_state_invalid");
     }
 
     let stateValid = false;
     try {
-        stateValid = crypto.timingSafeEqual(Buffer.from(returnedState, "utf8"), Buffer.from(storedState, "utf8"));
+        stateValid = crypto.timingSafeEqual(
+            Buffer.from(returnedState, "utf8"),
+            Buffer.from(storedState, "utf8")
+        );
     } catch (error) {
         console.error("Google OAuth state comparison failed:", error.message);
     }
-    if (!stateValid) return redirectToSignin(res);
+
+    if (!stateValid) {
+        console.error("Google OAuth state validation failed: state mismatch.");
+        return redirectToSignin(res, "google_state_invalid");
+    }
 
     return passport.authenticate("google", { session: false }, (err, user, info) => {
         if (err || !user) {
             console.error("Google callback authentication failed:", err || info);
-            return redirectToSignin(res);
+            return redirectToSignin(res, "google_auth_failed");
         }
+
         try {
             const token = creatTokenForUser(user);
             res.cookie("token", token, {
@@ -186,7 +194,7 @@ router.get("/auth/google/callback", (req, res, next) => {
             return res.redirect("/?auth=success");
         } catch (error) {
             console.error("Google JWT creation failed:", error);
-            return redirectToSignin(res);
+            return redirectToSignin(res, "google_auth_failed");
         }
     })(req, res, next);
 });
