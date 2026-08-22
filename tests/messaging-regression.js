@@ -1,0 +1,25 @@
+const fs=require('fs');
+const assert=require('assert');
+const read=file=>fs.readFileSync(file,'utf8');
+const socket=read('sockets/messageSocket.js');
+const manager=read('public/js/socketManager.js');
+const push=read('services/webPush.js');
+const notification=read('services/notificationService.js');
+const sw=read('public/sw.js');
+const enhancements=read('public/js/messageEnhancements.js');
+const messageRoute=read('routes/Message.js');
+
+assert(socket.includes('io.to(`user:${receiverId}`).emit("message:new",payload)'),'recipient must receive message:new');
+assert(socket.includes('Conversation.findOne({_id:conversationId,participants:userId})'),'socket joins must verify conversation membership');
+assert(socket.includes('debug("MESSAGE_SAVED"'),'message save diagnostics must exist');
+assert(socket.includes('debug("MESSAGE_EMITTED"'),'message emit diagnostics must exist');
+assert(manager.includes("transports: ['websocket', 'polling']"),'socket manager must support websocket and polling');
+assert(manager.includes('/messages/socket-token'),'socket manager must support auth refresh');
+assert(manager.includes('MISSED_MESSAGES_SYNCED'),'socket manager must synchronize missed messages');
+assert(messageRoute.includes('router.get("/socket-token",auth'),'renewable socket token endpoint must exist');
+assert(push.includes('error.statusCode === 404 || error.statusCode === 410'),'expired push subscriptions must be removed');
+assert(notification.includes('/messages?user=${encodeURIComponent(String(senderId))}'),'message push must open the actual message route');
+assert(sw.includes('conversationId')&&sw.includes('senderId')&&sw.includes('messageId'),'push payload must retain conversation routing data');
+assert(enhancements.includes('window.BlogifySocket?.getSocket'),'voice messaging must reuse the chat socket');
+assert(!enhancements.includes('socket.disconnect();'),'voice messaging must not disconnect the shared chat socket');
+console.log('Messaging regression test passed.');
