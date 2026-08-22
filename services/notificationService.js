@@ -149,12 +149,12 @@ class NotificationService {
             conversationId: data.conversationId || null
         });
 
-        // This is the single delivery entry point. Notification.js intentionally
-        // has no push hook, so one in-app notification produces at most one push.
-        await Promise.allSettled([
-            sendPushForNotification(recipientId, type, data),
-            sendEmailForNotification(recipientId, type, data)
-        ]);
+        // skipPush is used by the message socket when the recipient is already
+        // viewing this exact conversation. The in-app notification is preserved,
+        // but no OS-level Web Push popup is generated.
+        const deliveryTasks = [sendEmailForNotification(recipientId, type, data)];
+        if (!data.skipPush) deliveryTasks.push(sendPushForNotification(recipientId, type, data));
+        await Promise.allSettled(deliveryTasks);
 
         return notification;
     }
