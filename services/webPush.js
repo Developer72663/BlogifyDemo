@@ -3,26 +3,50 @@ const PushSubscription = require("../models/PushSubscription");
 const User = require("../models/user");
 
 let configured = false;
+let configurationError = null;
+
+function normalizeVapidSubject(value) {
+    const subject = String(value || "").trim();
+    if (!subject) return "";
+    // web-push requires a mailto: URI or an https URL. Accept a plain
+    // email in the environment too, so VAPID_SUBJECT=vshntvelip@gmail.com
+    // works safely in existing Blogify deployments.
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(subject)) return `mailto:${subject}`;
+    return subject;
+}
 
 function configureWebPush() {
     if (configured) return true;
 
-    const publicKey = process.env.VAPID_PUBLIC_KEY;
-    const privateKey = process.env.VAPID_PRIVATE_KEY;
-    const subject = process.env.VAPID_SUBJECT;
+    const publicKey = String(process.env.VAPID_PUBLIC_KEY || "").trim();
+    const privateKey = String(process.env.VAPID_PRIVATE_KEY || "").trim();
+    const subject = normalizeVapidSubject(process.env.VAPID_SUBJECT);
 
     if (!publicKey || !privateKey || !subject) {
-        console.warn("Web Push is not configured. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT.");
+        configurationError = "Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT.";
+        console.warn(`Web Push is not configured. ${configurationError}`);
         return false;
     }
 
-    webpush.setVapidDetails(subject, publicKey, privateKey);
-    configured = true;
-    return true;
+    try {
+        webpush.setVapidDetails(subject, publicKey, privateKey);
+        configured = true;
+        configurationError = null;
+        return true;
+    } catch (error) {
+        configurationError = error.message;
+        console.error("Web Push VAPID configuration error:", error.message);
+        return false;
+    }
 }
 
 function getPublicKey() {
-    return process.env.VAPID_PUBLIC_KEY || null;
+    const key = String(process.env.VAPID_PUBLIC_KEY || "").trim();
+    return key || null;
+}
+
+function getConfigurationError() {
+    return configurationError;
 }
 
 function normalizeSubscription(subscription) {
@@ -56,7 +80,6 @@ async function saveSubscription(userId, subscription, metadata = {}) {
         { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // A successful browser subscription means the user has explicitly opted in.
     await User.updateOne(
         { _id: userId },
         { $set: { "notificationSettings.pushEnabled": true } }
@@ -82,7 +105,7 @@ async function removeAllSubscriptions(userId) {
 }
 
 async function sendToSubscription(subscriptionDoc, payload, options = {}) {
-    if (!configureWebPush()) return { sent: false, skipped: true };
+    if (!configureWebPush()) return { sent: false, skipped: true, error: configurationError };
 
     const subscription = {
         endpoint: subscriptionDoc.endpoint,
@@ -91,7 +114,7 @@ async function sendToSubscription(subscriptionDoc, payload, options = {}) {
 
     try {
         await webpush.sendNotification(subscription, JSON.stringify(payload), {
-            TTL: options.ttl || 60 * 60 * 24,
+            TTL: Number.isFinite(Number(options.ttl)) ? Number(options.ttl) : 60 * 60 * 24,
             urgency: options.urgency || "normal"
         });
         await PushSubscription.updateOne(
@@ -100,22 +123,21 @@ async function sendToSubscription(subscriptionDoc, payload, options = {}) {
         );
         return { sent: true };
     } catch (error) {
-        // Browsers return 404/410 when a subscription is no longer valid.
         if (error.statusCode === 404 || error.statusCode === 410) {
             await PushSubscription.deleteOne({ _id: subscriptionDoc._id });
             return { sent: false, removed: true };
         }
 
-        console.error("Web Push send error:", error.message);
-        return { sent: false, error: error.message };
+        console.error("Web Push send error:", error.statusCode || "", error.message);
+        return { sent: false, error: error.message, statusCode: error.statusCode || null };
     }
 }
 
 async function sendToUser(userId, payload, options = {}) {
-    if (!configureWebPush()) return { sent: 0, skipped: true };
+    if (!configureWebPush()) return { sent: 0, failed: 1, skipped: true, error: configurationError };
 
     const subscriptions = await PushSubscription.find({ user: userId }).lean();
-    if (!subscriptions.length) return { sent: 0 };
+    if (!subscriptions.length) return { sent: 0, failed: 0, removed: 0 };
 
     const results = await Promise.all(
         subscriptions.map(subscription => sendToSubscription(subscription, payload, options))
@@ -124,7 +146,8 @@ async function sendToUser(userId, payload, options = {}) {
     return {
         sent: results.filter(result => result.sent).length,
         removed: results.filter(result => result.removed).length,
-        failed: results.filter(result => result.error).length
+        failed: results.filter(result => result.error && !result.skipped).length,
+        skipped: results.some(result => result.skipped) || undefined
     };
 }
 
@@ -134,13 +157,16 @@ async function sendTestNotification(userId) {
         body: "Web push notifications are working!",
         icon: "/imgs/default.png",
         badge: "/imgs/default.png",
-        url: "/notifications"
+        tag: "blogify-test",
+        renotify: true,
+        data: { url: "/notifications", type: "test" }
     }, { urgency: "high", ttl: 300 });
 }
 
 module.exports = {
     configureWebPush,
     getPublicKey,
+    getConfigurationError,
     saveSubscription,
     removeSubscription,
     removeAllSubscriptions,
