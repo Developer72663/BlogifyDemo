@@ -29,17 +29,43 @@ function absoluteUrl(pathOrUrl) {
     return `${getAppUrl()}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
 }
 
+function normalizePushImage(imageUrl) {
+    const value = String(imageUrl || "").trim();
+    if (!value) return absoluteUrl("/imgs/default.png");
+    if (/^https?:\/\//i.test(value)) return value;
+    if (value.startsWith("//")) return `https:${value}`;
+    return absoluteUrl(value);
+}
+
+async function getPushActorImage(actorId) {
+    if (!actorId) return normalizePushImage("/imgs/default.png");
+    try {
+        const actor = await User.findById(actorId).select("profileImageURL").lean();
+        return normalizePushImage(actor?.profileImageURL);
+    } catch (_) {
+        return normalizePushImage("/imgs/default.png");
+    }
+}
+
 async function sendPushForNotification(recipientId, type, data = {}) {
     try {
         const setting = pushSettingForType[type];
         if (!setting) return { sent: 0, skipped: true };
         const user = await User.findById(recipientId).select(`notificationSettings.${setting} notificationSettings.pushEnabled`).lean();
         if (!user?.notificationSettings?.pushEnabled || user.notificationSettings[setting] === false) return { sent: 0, skipped: true };
+
+        // Web Push icons must be reachable by the browser. Use the actor's actual
+        // profile image and convert relative/Cloudinary URLs to an absolute URL.
+        // Fall back to the Blogify default avatar when no profile image exists.
+        const actorImage = await getPushActorImage(data.actor);
+        const icon = normalizePushImage(data.pushIcon || actorImage);
+
         return await sendToUser(recipientId, {
             title: data.pushTitle || data.title || "Blogify",
             body: data.pushMessage || data.message || "You have a new notification",
-            icon: "/imgs/default.png",
-            badge: "/imgs/default.png",
+            icon,
+            badge: normalizePushImage(data.pushBadge || "/imgs/default.png"),
+            image: data.pushImage ? normalizePushImage(data.pushImage) : undefined,
             tag: `blogify-${type}-${data.blog || data.messageRef || data.actor || Date.now()}`,
             renotify: true,
             data: { url: getNotificationUrl(type, data), type }
@@ -101,9 +127,9 @@ class NotificationService {
 
     static async createBlogPostNotifications(authorId, blogId, blogTitle) {
         try {
-            const author = await User.findById(authorId).select("fullName followers").lean();
+            const author = await User.findById(authorId).select("fullName followers profileImageURL").lean();
             if (!author?.followers?.length) return;
-            const data = { title: "New blog post", message: `${author.fullName} published a new blog: "${blogTitle}"`, blog: blogId, actor: authorId };
+            const data = { title: "New blog post", message: `${author.fullName} published a new blog: "${blogTitle}"`, blog: blogId, actor: authorId, pushIcon: author.profileImageURL };
             await Notification.insertMany(author.followers.map(recipientId => ({ recipient: recipientId, type: "blog_post", title: data.title, message: data.message, blog: blogId, actor: authorId })));
             await Promise.allSettled(author.followers.map(recipientId => sendPushForNotification(recipientId, "blog_post", data)));
         } catch (error) {
