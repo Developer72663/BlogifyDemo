@@ -167,7 +167,7 @@
 
   function installEditSubmit(){
     const form=$('composer'),input=$('messageInput');if(!form||form.dataset.blogifyEditSubmit)return;form.dataset.blogifyEditSubmit='1';
-    form.addEventListener('submit',e=>{if(!editingMessageId)return;e.preventDefault();e.stopImmediatePropagation();const text=input.value.trim();if(!text)return toast('Enter a message');if(emit('message:edit',{conversationId:window.__BLOGIFY_CONVERSATION_ID,messageId:editingMessageId,text})){editingMessageId=null;input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));toast('Message updated')}},true);
+    form.addEventListener('submit',e=>{if(!editingMessageId)return;e.preventDefault();e.stopImmediatePropagation();const text=input.value.trim();if(!text)return toast('Enter a message');if(!window.__BLOGIFY_CONVERSATION_ID){toast('Chat connection is unavailable');return;}if(emit('message:edit',{conversationId:window.__BLOGIFY_CONVERSATION_ID,messageId:editingMessageId,text})){editingMessageId=null;input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));toast('Message updated')}},true);
     window.__BLOGIFY_RESIZE_INPUT=()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,110)+'px'};
   }
 
@@ -191,11 +191,42 @@
     });
   }
 
+  function removeMessageRow(messageId){
+    const id=String(messageId||'');
+    if(!id)return false;
+    let removed=false;
+    document.querySelectorAll('.message-row[data-id]').forEach(row=>{if(String(row.dataset.id)===id){row.remove();removed=true}});
+    document.querySelectorAll('.message-bubble[data-message-id]').forEach(b=>{if(String(b.dataset.messageId)===id){b.closest('.message-row')?.remove();removed=true}});
+    if(window.__BLOGIFY_SELECTED_MESSAGE&&sameId(window.__BLOGIFY_SELECTED_MESSAGE._id,id))closeSheet();
+    return removed;
+  }
+
+  function applyEditedMessage(m){
+    if(!m?._id)return;
+    const row=document.querySelector('.message-row[data-id="'+CSS.escape(String(m._id))+'"]');
+    if(!row)return;
+    const bubble=row.querySelector('.message-bubble');
+    if(!bubble)return;
+    bubble.classList.remove('deleted');
+    bubble.innerHTML='';
+    bubble.textContent=m.text||'';
+    const meta=row.querySelector('.message-meta');
+    if(meta){
+      const time=meta.querySelector('span:first-child');
+      if(time)time.textContent=new Date(m.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      let edited=meta.querySelector('.edited');
+      if(!edited){edited=document.createElement('span');edited.className='edited';meta.insertBefore(edited,meta.querySelector('.read-status')||null)}
+      edited.textContent='· edited';
+    }
+  }
+
   function installRealtime(){
     const managers=window.io?.managers;if(!managers||window.__BLOGIFY_MESSAGE_ACTION_EVENTS)return;window.__BLOGIFY_MESSAGE_ACTION_EVENTS=true;
     for(const key of Object.keys(managers)){
       const s=managers[key]?.nsps?.['/'];if(!s)continue;
-      s.on('message:deletedForMe',d=>{document.querySelector('[data-id="'+CSS.escape(String(d.messageId||''))+'"]')?.remove();closeSheet()});
+      s.on('message:deletedForMe',d=>removeMessageRow(d?.messageId));
+      s.on('message:edited',m=>applyEditedMessage(m));
+      s.on('message:unsent',d=>removeMessageRow(d?.messageId));
       s.on('message:saved',d=>toast(d?.saved?'Message saved':'Removed from saved messages'));
       s.on('message:action:error',d=>toast(d?.message||'Action failed'));
     }
