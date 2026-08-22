@@ -1,6 +1,7 @@
 const express=require("express");
 const mongoose=require("mongoose");
 const multer=require("multer");
+const jwt=require("jsonwebtoken");
 const cloudinary=require("cloudinary").v2;
 const Conversation=require("../models/Conversation");
 const Message=require("../models/Message");
@@ -17,45 +18,10 @@ const VIDEO_MIMETYPES=/^video\/(mp4|webm|quicktime|x-msvideo)$/;
 const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:60*1024*1024},fileFilter:(req,file,cb)=>{const mime=String(file.mimetype||"").toLowerCase().split(";")[0].trim();if(IMAGE_MIMETYPES.test(mime)||VIDEO_MIMETYPES.test(mime)||AUDIO_MIMETYPES.has(mime))return cb(null,true);cb(new Error("Only images, videos and audio recordings are allowed"));}});
 function cloudinaryConfig(){const cloudName=process.env.CLOUDINARY_CLOUD_NAME||process.env.CLOUD_NAME,apiKey=process.env.CLOUDINARY_API_KEY||process.env.API_KEY,apiSecret=process.env.CLOUDINARY_API_SECRET||process.env.API_SECRET;if(!cloudName||!apiKey||!apiSecret)throw new Error("Cloudinary upload service is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET on Render.");cloudinary.config({cloud_name:cloudName,api_key:apiKey,api_secret:apiSecret});}
 function uploadToCloudinary(file){cloudinaryConfig();const mime=String(file.mimetype||"").toLowerCase().split(";")[0].trim();const isAudio=mime.startsWith("audio/");const resourceType=(mime.startsWith("video/")||isAudio)?"video":"image";return new Promise((resolve,reject)=>{let settled=false;const finish=(fn,value)=>{if(settled)return;settled=true;clearTimeout(timer);fn(value);};const stream=cloudinary.uploader.upload_stream({folder:"blogify/messages",resource_type:resourceType,use_filename:false,unique_filename:true},(err,result)=>{if(err)return finish(reject,err);if(!result?.secure_url)return finish(reject,new Error("Media upload did not return a URL"));finish(resolve,{url:result.secure_url,type:isAudio?"audio":resourceType});});stream.on("error",err=>finish(reject,err));const timer=setTimeout(()=>{try{stream.destroy(new Error("Cloudinary upload timed out"));}catch(_){}finish(reject,new Error("Cloudinary upload timed out. Please try again."));},120000);stream.end(file.buffer);});}
+async function getUnreadCounts(conversationIds,userId){if(!conversationIds.length)return new Map();const rows=await Message.aggregate([{$match:{conversationId:{$in:conversationIds},receiverId:userId,isRead:false}},{$group:{_id:"$conversationId",count:{$sum:1}}}]);return new Map(rows.map(x=>[String(x._id),x.count]));}
+async function loadConversationList(userId){const conversations=await Conversation.find({participants:userId}).sort({lastMessageAt:-1,updatedAt:-1}).populate("participants","fullName profileImageURL isPrivate blockedUsers").populate("lastMessage","text mediaUrl mediaType profileShareId senderId receiverId status isRead createdAt").lean();const visible=conversations.filter(c=>{const other=c.participants.find(p=>String(p._id)!==String(userId));const me=c.participants.find(p=>String(p._id)===String(userId));return other&&!isBlocked(other,userId)&&!isBlocked(me,other._id);});const ids=visible.map(c=>c._id);const unread=await getUnreadCounts(ids,userId);const missingIds=visible.filter(c=>!c.lastMessage).map(c=>c._id);const fallback=new Map();if(missingIds.length){const rows=await Message.aggregate([{$match:{conversationId:{$in:missingIds}}},{$sort:{createdAt:-1}},{$group:{_id:"$conversationId",message:{$first:{_id:"$_id",text:"$text",mediaUrl:"$mediaUrl",mediaType:"$mediaType",profileShareId:"$profileShareId",senderId:"$senderId",receiverId:"$receiverId",status:"$status",isRead:"$isRead",createdAt:"$createdAt"}}}}]);rows.forEach(x=>fallback.set(String(x._id),x.message));}const result=visible.map(c=>{const last=c.lastMessage||fallback.get(String(c._id));if(!last)return null;return {...c,participants:c.participants.map(({blockedUsers,...p})=>p),lastMessage:last,lastMessageAt:last.createdAt,unreadCount:unread.get(String(c._id))||0};}).filter(Boolean);result.sort((a,b)=>new Date(b.lastMessageAt)-new Date(a.lastMessageAt));return result;}
 
-async function getUnreadCounts(conversationIds,userId){
-  if(!conversationIds.length)return new Map();
-  const rows=await Message.aggregate([{$match:{conversationId:{$in:conversationIds},receiverId:userId,isRead:false}},{$group:{_id:"$conversationId",count:{$sum:1}}}]);
-  return new Map(rows.map(x=>[String(x._id),x.count]));
-}
-
-async function loadConversationList(userId){
-  const conversations=await Conversation.find({participants:userId})
-    .sort({lastMessageAt:-1,updatedAt:-1})
-    .populate("participants","fullName profileImageURL isPrivate blockedUsers")
-    .populate("lastMessage","text mediaUrl mediaType profileShareId senderId receiverId status isRead createdAt")
-    .lean();
-  const visible=conversations.filter(c=>{
-    const other=c.participants.find(p=>String(p._id)!==String(userId));
-    const me=c.participants.find(p=>String(p._id)===String(userId));
-    return other&&!isBlocked(other,userId)&&!isBlocked(me,other._id);
-  });
-  const ids=visible.map(c=>c._id);
-  const unread=await getUnreadCounts(ids,userId);
-  const missingIds=visible.filter(c=>!c.lastMessage).map(c=>c._id);
-  const fallback=new Map();
-  if(missingIds.length){
-    const rows=await Message.aggregate([
-      {$match:{conversationId:{$in:missingIds}}},
-      {$sort:{createdAt:-1}},
-      {$group:{_id:"$conversationId",message:{$first:{_id:"$_id",text:"$text",mediaUrl:"$mediaUrl",mediaType:"$mediaType",profileShareId:"$profileShareId",senderId:"$senderId",receiverId:"$receiverId",status:"$status",isRead:"$isRead",createdAt:"$createdAt"}}}}
-    ]);
-    rows.forEach(x=>fallback.set(String(x._id),x.message));
-  }
-  const result=visible.map(c=>{
-    const last=c.lastMessage||fallback.get(String(c._id));
-    if(!last)return null;
-    return {...c,participants:c.participants.map(({blockedUsers,...p})=>p),lastMessage:last,lastMessageAt:last.createdAt,unreadCount:unread.get(String(c._id))||0};
-  }).filter(Boolean);
-  result.sort((a,b)=>new Date(b.lastMessageAt)-new Date(a.lastMessageAt));
-  return result;
-}
-
+router.get("/socket-token",auth,(req,res)=>{try{if(!process.env.JWT_SECRET)return res.status(503).json({success:false,message:"Socket authentication is not configured"});const token=jwt.sign({_id:req.user._id,purpose:"blogify-socket"},process.env.JWT_SECRET,{expiresIn:"15m",algorithm:"HS256"});res.json({success:true,token});}catch(e){console.error("Socket token refresh error:",e.message);res.status(500).json({success:false,message:"Unable to refresh chat authentication"});}});
 router.get("/unread/count",auth,async(req,res)=>{try{const count=await Message.countDocuments({receiverId:req.user._id,isRead:false});res.json({success:true,unreadCount:count});}catch(e){res.status(500).json({success:false,message:"Unable to get message count"});}});
 router.get("/history",auth,async(req,res)=>{try{const result=await loadConversationList(req.user._id);res.json({success:true,conversations:result});}catch(e){console.error("chat history:",e);res.status(500).json({success:false,message:"Unable to load chat history"});}});
 router.get("/",auth,async(req,res)=>{try{const result=await loadConversationList(req.user._id);res.json({success:true,conversations:result});}catch(e){console.error("conversation list:",e);res.status(500).json({success:false,message:"Unable to load conversations"});}});
@@ -69,28 +35,7 @@ router.get("/settings",auth,(req,res)=>res.render("message-settings",{title:"Mes
 router.get("/settings/api",auth,async(req,res)=>{try{const user=await User.findById(req.user._id).select("messageSettings").lean();res.json({success:true,messageSettings:user?.messageSettings||{}});}catch(e){res.status(500).json({success:false,message:"Unable to load message settings"});}});
 router.patch("/settings/api",auth,async(req,res)=>{try{const allowed=["whoCanMessage","messageRequests","readReceipts","typingIndicator","onlineStatus","messageNotifications","messagePreview","notificationSound","mediaAutoDownload","allowPhotoMessages","allowVideoMessages","messageLikes","groupInvites","hiddenWords","autoDelete"];const updates={};for(const key of allowed)if(Object.prototype.hasOwnProperty.call(req.body,key))updates[`messageSettings.${key}`]=req.body[key];const user=await User.findByIdAndUpdate(req.user._id,{$set:updates},{new:true,runValidators:true}).select("messageSettings").lean();res.json({success:true,messageSettings:user.messageSettings});}catch(e){res.status(400).json({success:false,message:e.message||"Unable to save message settings"});}});
 router.delete("/conversation/:conversationId",auth,async(req,res)=>{try{if(!id(req.params.conversationId))return res.status(400).json({success:false,message:"Invalid conversation"});const conversation=await Conversation.findOne({_id:req.params.conversationId,participants:req.user._id}).select("_id participants");if(!conversation)return res.status(404).json({success:false,message:"Conversation not found"});await Message.deleteMany({conversationId:conversation._id});await Conversation.deleteOne({_id:conversation._id});res.json({success:true,message:"Conversation deleted"});}catch(e){console.error("delete conversation:",e);res.status(500).json({success:false,message:"Unable to delete conversation"});}});
-
-router.get("/:conversationId",auth,async(req,res)=>{try{
-  if(!id(req.params.conversationId))return res.status(400).json({success:false,message:"Invalid conversation"});
-  const c=await Conversation.findOne({_id:req.params.conversationId,participants:req.user._id}).populate("participants","fullName profileImageURL isPrivate blockedUsers").lean();
-  if(!c)return res.status(403).json({success:false,message:"Conversation unavailable"});
-  const other=c.participants.find(p=>String(p._id)!==String(req.user._id));
-  const me=c.participants.find(p=>String(p._id)===String(req.user._id));
-  if(!other||isBlocked(other,req.user._id)||isBlocked(me,other._id))return res.status(403).json({success:false,message:"Conversation unavailable"});
-  const requested=Math.min(Math.max(parseInt(req.query.limit,10)||50,10),100);
-  const before=req.query.before&& !Number.isNaN(Date.parse(req.query.before))?new Date(req.query.before):null;
-  const filter={conversationId:c._id};
-  if(before)filter.createdAt={$lt:before};
-  let messages=await Message.find(filter).sort({createdAt:-1}).limit(requested).populate("senderId","fullName profileImageURL").populate("replyTo","text senderId").populate("profileShareId","fullName profileImageURL bio isPrivate").lean();
-  messages.reverse();
-  const hasMore=messages.length===requested;
-  const newest=messages[messages.length-1];
-  if(!before&&newest){
-    await Conversation.updateOne({_id:c._id},{$set:{lastMessage:newest._id,lastMessageAt:newest.createdAt}});
-  }
-  await Message.updateMany({conversationId:c._id,receiverId:req.user._id,isRead:false},{$set:{isRead:true,status:"read"}});
-  res.json({success:true,messages,hasMore,conversation:{...c,participants:c.participants.map(({blockedUsers,...p})=>p)}});
-}catch(e){console.error("conversation history:",e);res.status(500).json({success:false,message:"Unable to load messages"});}});
+router.get("/:conversationId",auth,async(req,res)=>{try{if(!id(req.params.conversationId))return res.status(400).json({success:false,message:"Invalid conversation"});const c=await Conversation.findOne({_id:req.params.conversationId,participants:req.user._id}).populate("participants","fullName profileImageURL isPrivate blockedUsers").lean();if(!c)return res.status(403).json({success:false,message:"Conversation unavailable"});const other=c.participants.find(p=>String(p._id)!==String(req.user._id));const me=c.participants.find(p=>String(p._id)===String(req.user._id));if(!other||isBlocked(other,req.user._id)||isBlocked(me,other._id))return res.status(403).json({success:false,message:"Conversation unavailable"});const requested=Math.min(Math.max(parseInt(req.query.limit,10)||50,10),100);const before=req.query.before&&!Number.isNaN(Date.parse(req.query.before))?new Date(req.query.before):null;const filter={conversationId:c._id};if(before)filter.createdAt={$lt:before};let messages=await Message.find(filter).sort({createdAt:-1}).limit(requested).populate("senderId","fullName profileImageURL").populate("replyTo","text senderId").populate("profileShareId","fullName profileImageURL bio isPrivate").lean();messages.reverse();const hasMore=messages.length===requested;const newest=messages[messages.length-1];if(!before&&newest)await Conversation.updateOne({_id:c._id},{$set:{lastMessage:newest._id,lastMessageAt:newest.createdAt}});await Message.updateMany({conversationId:c._id,receiverId:req.user._id,isRead:false},{$set:{isRead:true,status:"read"}});res.json({success:true,messages,hasMore,conversation:{...c,participants:c.participants.map(({blockedUsers,...p})=>p)}});}catch(e){console.error("conversation history:",e);res.status(500).json({success:false,message:"Unable to load messages"});}});
 router.post("/:messageId/like",auth,async(req,res)=>{try{if(!id(req.params.messageId))return res.status(400).json({success:false,message:"Invalid message"});const m=await Message.findOne({_id:req.params.messageId,$or:[{senderId:req.user._id},{receiverId:req.user._id}]});if(!m)return res.status(404).json({success:false,message:"Message not found"});const uid=req.user._id.toString();const liked=m.likes.some(x=>x.toString()===uid);if(liked)m.likes.pull(req.user._id);else m.likes.push(req.user._id);await m.save();res.json({success:true,liked:!liked,likes:m.likes.length});}catch(e){res.status(500).json({success:false,message:"Unable to like message"});}});
 router.delete("/:messageId",auth,async(req,res)=>{try{if(!id(req.params.messageId))return res.status(400).json({success:false,message:"Invalid message"});const m=await Message.findOne({_id:req.params.messageId,senderId:req.user._id});if(!m)return res.status(404).json({success:false,message:"Message not found"});m.text="Message deleted";m.mediaUrl="";m.mediaType="";m.profileShareId=null;m.deleted=true;await m.save();res.json({success:true});}catch(e){res.status(500).json({success:false,message:"Unable to delete message"});}});
 module.exports=router;
