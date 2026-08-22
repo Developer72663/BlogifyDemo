@@ -2,15 +2,12 @@
 (() => {
   'use strict';
 
-  // massage.ejs owns the detailed message UI. This bootstrap guarantees that
-  // the page uses the authenticated Socket.IO endpoint/token injected by app.js
-  // instead of opening an unauthenticated default connection.
-  const getSocketConfig = () => ({
+  // Create exactly one authenticated Socket.IO connection for the chat UI.
+  const config = {
     url: window.__BLOGIFY_SOCKET_URL || window.location.origin,
     token: window.__BLOGIFY_SOCKET_TOKEN || ''
-  });
+  };
 
-  const config = getSocketConfig();
   if (!window.io || window.__blogifyLiveSocket) return;
 
   const options = {
@@ -27,9 +24,6 @@
 
   const socket = window.io(config.url, options);
   window.__blogifyLiveSocket = socket;
-
-  // Expose a tiny stable API for massage.ejs. The page can use this instead of
-  // creating a second socket, which was the source of refresh-only delivery.
   window.BlogifyLiveChat = {
     socket,
     connected: () => socket.connected,
