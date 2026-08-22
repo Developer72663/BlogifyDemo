@@ -69,3 +69,4 @@
 
     (function(){ const saved=document.documentElement.dataset.theme || localStorage.getItem('blogify-theme'); const theme=saved || 'system'; const dark=theme==='dark' || (theme==='system' && window.matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.dataset.theme=dark?'dark':'light'; if(theme==='system') window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',e=>document.documentElement.dataset.theme=e.matches?'dark':'light'); })();
 </script>
+<script src="/js/messaging-enhancements.js" defer></script>
