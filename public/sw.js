@@ -1,4 +1,4 @@
-const BLOGIFY_SW_VERSION = "blogify-push-v2";
+const BLOGIFY_SW_VERSION = "blogify-push-v3";
 
 self.addEventListener("install", event => {
     event.waitUntil(self.skipWaiting());
@@ -16,17 +16,23 @@ self.addEventListener("push", event => {
         data = { title: "Blogify", body: event.data ? event.data.text() : "You have a new notification." };
     }
 
+    const nested = data.data && typeof data.data === "object" ? data.data : {};
+    const type = data.type || nested.type || "notification";
+    const messageId = data.messageId || nested.messageId || null;
     const title = data.title || "Blogify";
     const options = {
         body: data.body || "You have a new notification.",
         icon: data.icon || "/imgs/default.png",
         badge: data.badge || "/imgs/default.png",
-        tag: data.tag || "blogify-notification",
-        renotify: Boolean(data.renotify),
+        tag: data.tag || (type === "message" && messageId ? `blogify-message-${messageId}` : "blogify-notification"),
+        renotify: type === "message" ? false : Boolean(data.renotify),
         data: {
-            url: data.url || data.data?.url || "/notifications",
-            type: data.type || data.data?.type || "notification",
-            notificationId: data.notificationId || data.data?.notificationId || null,
+            url: data.url || nested.url || "/notifications",
+            type,
+            conversationId: data.conversationId || nested.conversationId || null,
+            senderId: data.senderId || nested.senderId || null,
+            messageId,
+            notificationId: data.notificationId || nested.notificationId || null,
             serviceWorkerVersion: BLOGIFY_SW_VERSION
         }
     };
@@ -37,7 +43,12 @@ self.addEventListener("push", event => {
 self.addEventListener("notificationclick", event => {
     event.notification.close();
     const targetUrl = event.notification?.data?.url || "/notifications";
-    const absoluteUrl = new URL(targetUrl, self.location.origin).href;
+    let absoluteUrl;
+    try {
+        absoluteUrl = new URL(targetUrl, self.location.origin).href;
+    } catch (_) {
+        absoluteUrl = new URL("/notifications", self.location.origin).href;
+    }
 
     event.waitUntil((async () => {
         const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
