@@ -8,12 +8,6 @@ const {
 } = require("./email");
 const { sendToUser } = require("./webPush");
 
-const messagePopulate = {
-    path: "messageRef",
-    select: "text senderId receiverId likes createdAt status isRead deleted",
-    populate: { path: "senderId", select: "_id fullName profileImageURL" }
-};
-
 const pushSettingForType = {
     message: "pushOnMessage",
     comment: "pushOnComment",
@@ -37,24 +31,16 @@ const emailSettingForType = {
 function getAppUrl() {
     const configured = String(process.env.APP_URL || "").trim().replace(/\/$/, "");
     if (configured) return configured;
-
     const vercelUrl = String(process.env.VERCEL_URL || "").trim();
     if (vercelUrl) return `https://${vercelUrl}`;
-
     return "http://localhost:8000";
 }
 
 function getNotificationUrl(type, data = {}) {
     if (data.url) return data.url;
-    if (type === "message" && data.conversationId) {
-        return `/messages?conversation=${data.conversationId}`;
-    }
-    if ((type === "comment" || type === "reply" || type === "like" || type === "blog_post") && data.blog) {
-        return `/blogs/${data.blog}`;
-    }
-    if (type === "follow" || type === "follow_request" || type === "mention") {
-        return data.actor ? `/profile/${data.actor}` : "/notifications";
-    }
+    if (type === "message" && data.conversationId) return `/messages?conversation=${data.conversationId}`;
+    if (["comment", "reply", "like", "blog_post"].includes(type) && data.blog) return `/blogs/${data.blog}`;
+    if (["follow", "follow_request", "mention"].includes(type)) return data.actor ? `/profile/${data.actor}` : "/notifications";
     return "/notifications";
 }
 
@@ -67,27 +53,31 @@ function absoluteUrl(pathOrUrl) {
 async function sendPushForNotification(recipientId, type, data = {}) {
     try {
         const setting = pushSettingForType[type];
-        if (!setting) return;
+        if (!setting) return { sent: 0, skipped: true };
 
         const user = await User.findById(recipientId)
             .select(`notificationSettings.${setting} notificationSettings.pushEnabled`)
             .lean();
 
         if (!user?.notificationSettings?.pushEnabled || user.notificationSettings[setting] === false) {
-            return;
+            return { sent: 0, skipped: true };
         }
 
-        await sendToUser(recipientId, {
+        return await sendToUser(recipientId, {
             title: data.pushTitle || data.title || "Blogify",
             body: data.pushMessage || data.message || "You have a new notification",
             icon: "/imgs/default.png",
             badge: "/imgs/default.png",
             tag: `blogify-${type}-${data.blog || data.messageRef || data.actor || Date.now()}`,
+            renotify: true,
             data: { url: getNotificationUrl(type, data), type }
+        }, {
+            urgency: type === "message" ? "high" : "normal",
+            ttl: 300
         });
     } catch (error) {
-        // Push is a secondary delivery channel. It must never break the main action.
         console.error("Web Push notification error:", error.message);
+        return { sent: 0, failed: 1, error: error.message };
     }
 }
 
@@ -95,25 +85,15 @@ async function sendEmailForNotification(recipientId, type, data = {}) {
     try {
         const setting = emailSettingForType[type];
         if (!setting) return;
-
         const user = await User.findById(recipientId)
             .select("fullName email profileImageURL notificationSettings")
             .lean();
-
-        if (!user?.email) return;
-        if (user.notificationSettings?.[setting] === false) return;
+        if (!user?.email || user.notificationSettings?.[setting] === false) return;
 
         let actor = null;
-        if (data.actor) {
-            actor = await User.findById(data.actor)
-                .select("fullName profileImageURL")
-                .lean();
-        }
-
+        if (data.actor) actor = await User.findById(data.actor).select("fullName profileImageURL").lean();
         let blog = null;
-        if (data.blog) {
-            blog = await Blog.findById(data.blog).select("title slug").lean();
-        }
+        if (data.blog) blog = await Blog.findById(data.blog).select("title slug").lean();
 
         const actorName = actor?.fullName || data.actorName || "Someone";
         const blogTitle = blog?.title || data.blogTitle || "your blog";
@@ -131,7 +111,6 @@ async function sendEmailForNotification(recipientId, type, data = {}) {
                     blogLink
                 });
                 break;
-
             case "follow":
                 await sendFollowNotificationEmail(user.email, {
                     followerName: actorName,
@@ -139,36 +118,19 @@ async function sendEmailForNotification(recipientId, type, data = {}) {
                     profileLink
                 });
                 break;
-
             case "like":
-                await sendEmail(
-                    user.email,
-                    `${actorName} liked your blog "${blogTitle}"`,
-                    `<p><strong>${actorName}</strong> liked your blog <strong>"${blogTitle}"</strong>.</p><p><a href="${blogLink}">View your blog</a></p>`
-                );
+                await sendEmail(user.email, `${actorName} liked your blog "${blogTitle}"`, `<p><strong>${actorName}</strong> liked your blog <strong>"${blogTitle}"</strong>.</p><p><a href="${blogLink}">View your blog</a></p>`);
                 break;
-
             case "follow_request":
-                await sendEmail(
-                    user.email,
-                    `${actorName} requested to follow you`,
-                    `<p><strong>${actorName}</strong> requested to follow you on Blogify.</p><p><a href="${absoluteUrl("/notifications")}">Review the follow request</a></p>`
-                );
+                await sendEmail(user.email, `${actorName} requested to follow you`, `<p><strong>${actorName}</strong> requested to follow you on Blogify.</p><p><a href="${absoluteUrl("/notifications")}">Review the follow request</a></p>`);
                 break;
-
             case "mention":
-                await sendEmail(
-                    user.email,
-                    `${actorName} mentioned you on Blogify`,
-                    `<p><strong>${actorName}</strong> mentioned you on Blogify.</p><p><a href="${absoluteUrl(getNotificationUrl(type, data))}">View notification</a></p>`
-                );
+                await sendEmail(user.email, `${actorName} mentioned you on Blogify`, `<p><strong>${actorName}</strong> mentioned you on Blogify.</p><p><a href="${absoluteUrl(getNotificationUrl(type, data))}">View notification</a></p>`);
                 break;
-
             default:
                 break;
         }
     } catch (error) {
-        // Email must never make comments, likes, follows, etc. fail.
         console.error(`Email notification error (${type}):`, error.message);
     }
 }
@@ -187,7 +149,8 @@ class NotificationService {
             conversationId: data.conversationId || null
         });
 
-        // Keep all delivery channels behind one notification entry point.
+        // This is the single delivery entry point. Notification.js intentionally
+        // has no push hook, so one in-app notification produces at most one push.
         await Promise.allSettled([
             sendPushForNotification(recipientId, type, data),
             sendEmailForNotification(recipientId, type, data)
@@ -198,10 +161,7 @@ class NotificationService {
 
     static async createBlogPostNotifications(authorId, blogId, blogTitle) {
         try {
-            const author = await User.findById(authorId)
-                .select("fullName followers")
-                .lean();
-
+            const author = await User.findById(authorId).select("fullName followers").lean();
             if (!author?.followers?.length) return;
 
             const data = {
@@ -211,27 +171,24 @@ class NotificationService {
                 actor: authorId
             };
 
-            await Notification.insertMany(
-                author.followers.map(recipientId => ({
-                    recipient: recipientId,
-                    type: "blog_post",
-                    title: data.title,
-                    message: data.message,
-                    blog: blogId,
-                    actor: authorId
-                }))
-            );
+            await Notification.insertMany(author.followers.map(recipientId => ({
+                recipient: recipientId,
+                type: "blog_post",
+                title: data.title,
+                message: data.message,
+                blog: blogId,
+                actor: authorId
+            })));
 
-            await Promise.allSettled(
-                author.followers.map(recipientId => sendPushForNotification(recipientId, "blog_post", data))
-            );
+            await Promise.allSettled(author.followers.map(recipientId =>
+                sendPushForNotification(recipientId, "blog_post", data)
+            ));
         } catch (error) {
             console.error("Error creating blog post notifications:", error.message);
         }
     }
 
     static async sendEmailNotification(user, type, data = {}) {
-        // Backward-compatible public method for existing callers.
         if (!user?._id) return;
         return sendEmailForNotification(user._id, type, data);
     }
@@ -241,26 +198,16 @@ class NotificationService {
             limit = Math.min(Math.max(parseInt(limit) || 20, 1), 50);
             page = Math.max(parseInt(page) || 1, 1);
             const skip = (page - 1) * limit;
-
             const [notifications, total] = await Promise.all([
-                Notification.find({ recipient: userId })
-                    .sort({ createdAt: -1 })
-                    .skip(skip)
-                    .limit(limit)
+                Notification.find({ recipient: userId }).sort({ createdAt: -1 }).skip(skip).limit(limit)
                     .populate("actor", "_id fullName profileImageURL email")
                     .populate("blog", "title slug coverImageURL createdAt")
                     .populate("request")
-                    .populate(messagePopulate)
+                    .populate({ path: "messageRef", select: "text senderId receiverId likes createdAt status isRead deleted", populate: { path: "senderId", select: "_id fullName profileImageURL" } })
                     .lean(),
                 Notification.countDocuments({ recipient: userId })
             ]);
-
-            return {
-                notifications,
-                total,
-                pages: Math.ceil(total / limit),
-                currentPage: page
-            };
+            return { notifications, total, pages: Math.ceil(total / limit), currentPage: page };
         } catch (error) {
             console.error("Error getting notifications:", error.message);
             return { notifications: [], total: 0, pages: 0, currentPage: 1 };
@@ -268,18 +215,11 @@ class NotificationService {
     }
 
     static async markAsRead(notificationId, userId) {
-        return Notification.findOneAndUpdate(
-            { _id: notificationId, recipient: userId },
-            { $set: { isRead: true } },
-            { new: true }
-        );
+        return Notification.findOneAndUpdate({ _id: notificationId, recipient: userId }, { $set: { isRead: true } }, { new: true });
     }
 
     static async markAllAsRead(userId) {
-        return Notification.updateMany(
-            { recipient: userId, isRead: false },
-            { $set: { isRead: true } }
-        );
+        return Notification.updateMany({ recipient: userId, isRead: false }, { $set: { isRead: true } });
     }
 
     static async getUnreadCount(userId) {
@@ -301,7 +241,7 @@ class NotificationService {
             .populate("actor", "_id fullName profileImageURL")
             .populate("blog", "title slug coverImageURL")
             .populate("request")
-            .populate(messagePopulate)
+            .populate({ path: "messageRef", select: "text senderId receiverId likes createdAt status isRead deleted", populate: { path: "senderId", select: "_id fullName profileImageURL" } })
             .lean();
     }
 }
