@@ -22,6 +22,10 @@ const messageSchema = new mongoose.Schema(
     isRead: { type: Boolean, default: false, index: true },
     edited: { type: Boolean, default: false },
     deleted: { type: Boolean, default: false },
+    // Per-user soft deletion. The message document remains available to the
+    // other participant and can still be unsent for everyone by its sender.
+    deletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "user", index: true }],
+    savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "user", index: true }],
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
     reactions: { type: [reactionSchema], default: [] },
   },
@@ -30,5 +34,6 @@ const messageSchema = new mongoose.Schema(
 
 messageSchema.index({ conversationId: 1, createdAt: 1 });
 messageSchema.index({ receiverId: 1, isRead: 1 });
+messageSchema.index({ conversationId: 1, deletedFor: 1, createdAt: 1 });
 
 module.exports = mongoose.model("Message", messageSchema);
