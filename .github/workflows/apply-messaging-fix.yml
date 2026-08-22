@@ -1,0 +1,93 @@
+name: Apply messaging fix
+on:
+  push:
+    branches: ["fix/realtime-messaging-push"]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - name: Patch messaging stack
+        shell: python
+        run: |
+          from pathlib import Path
+          def edit(path, fn):
+              p=Path(path); s=p.read_text(); n=fn(s)
+              if n==s: raise SystemExit(f'No change made to {path}')
+              p.write_text(n)
+          def app(s):
+              s=s.replace('jwt.sign({_id:req.user._id,purpose:"blogify-socket"},process.env.JWT_SECRET,{expiresIn:"5m",algorithm:"HS256"})','jwt.sign({_id:req.user._id,purpose:"blogify-socket"},process.env.JWT_SECRET,{expiresIn:"15m",algorithm:"HS256"})',1)
+              s=s.replace('const boot=`<script>window.__BLOGIFY_SOCKET_URL=${JSON.stringify(socketUrl)};window.__BLOGIFY_SOCKET_TOKEN=${JSON.stringify(socketToken)};</script>`;','const boot=`<script>window.__BLOGIFY_SOCKET_URL=${JSON.stringify(socketUrl)};window.__BLOGIFY_SOCKET_TOKEN=${JSON.stringify(socketToken)};window.__BLOGIFY_DEBUG=${JSON.stringify(process.env.BLOGIFY_DEBUG==="true")};</script>`;',1)
+              old='if(req.path==="/messages")html=html.replace(/<\\/body>/i,\'<script src="/js/messageEnhancements.js" defer></script></body>\');'
+              new='if(req.path==="/messages"){html=html.replace(/<\\/body>/i,\'<script src="/js/messageEnhancements.js" defer></script></body>\');html=html.replace(/<script src="\\/socket\\.io\\/socket\\.io\\.js"><\\/script>/g,\'<script src="/socket.io/socket.io.js"></script><script src="/js/socketManager.js"></script>\');html=html.replace(/\\n\\s*async function load\\(\\)\\{/g,\'\\n      window.BlogifyRenderMessage=renderMessage;\\n\\n      async function load(){\');}'
+              if old not in s: raise SystemExit('app.js message render hook not found')
+              s=s.replace(old,new,1)
+              old2='html=html.replace(/window\\.io\\(\\s*\\{\\s*withCredentials\\s*:\\s*true\\s*\\}\\)/g,\'window.io(window.__BLOGIFY_SOCKET_URL||undefined,{withCredentials:true,auth:{token:window.__BLOGIFY_SOCKET_TOKEN||undefined}})\');'
+              new2='html=html.replace(/window\\.io\\(\\s*\\{\\s*withCredentials\\s*:\\s*true\\s*\\}\\)/g,\'window.BlogifySocket.getSocket()\');'
+              if old2 not in s: raise SystemExit('app.js socket rewrite hook not found')
+              return s.replace(old2,new2,1)
+          edit('app.js',app)
+          def message_route(s):
+              if 'const jwt=require("jsonwebtoken");' not in s: s=s.replace('const mongoose=require("mongoose");\n','const mongoose=require("mongoose");\nconst jwt=require("jsonwebtoken");\n',1)
+              route='router.get("/socket-token",auth,(req,res)=>{try{if(!process.env.JWT_SECRET)return res.status(503).json({success:false,message:"Socket authentication is not configured"});const token=jwt.sign({_id:req.user._id,purpose:"blogify-socket"},process.env.JWT_SECRET,{expiresIn:"15m",algorithm:"HS256"});res.json({success:true,token});}catch(e){console.error("Socket token refresh error:",e.message);res.status(500).json({success:false,message:"Unable to refresh chat authentication"});}});'
+              if route not in s: s=s.replace('router.get("/unread/count",auth,async(req,res)=>',route+'router.get("/unread/count",auth,async(req,res)=>',1)
+              return s
+          edit('routes/Message.js',message_route)
+          Path('public/js/socketManager.js').write_text(r'''(()=>{'use strict';if(window.BlogifySocket)return;const socketUrl=window.__BLOGIFY_SOCKET_URL||window.location.origin;let socket=null,refreshing=false,hasConnected=false,lastConversationId=null;const debug=(...args)=>{if(window.__BLOGIFY_DEBUG)console.debug('[BlogifySocket]',...args)};async function refreshToken(){if(refreshing)return;refreshing=true;try{const r=await fetch('/messages/socket-token',{credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});if(!r.ok)throw new Error(`socket token refresh failed (${r.status})`);const d=await r.json();if(!d.success||!d.token)throw new Error('socket token refresh returned no token');if(socket)socket.auth={...(socket.auth||{}),token:d.token};debug('SOCKET_AUTH_REFRESHED')}finally{refreshing=false}}async function syncMissedMessages(){const conversationId=lastConversationId,render=window.BlogifyRenderMessage;if(!conversationId||typeof render!=='function')return;try{const r=await fetch(`/messages/${encodeURIComponent(conversationId)}?limit=100`,{credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});if(!r.ok)return;const d=await r.json();if(!d.success||!Array.isArray(d.messages))return;let lastDate='',added=0;for(const m of d.messages){const id=String(m?._id||'');if(!id||document.querySelector(`[data-id="${CSS.escape(id)}"]`))continue;lastDate=render(m,true,lastDate)||lastDate;added++}if(added){const a=document.getElementById('messagesArea');if(a)a.scrollTop=a.scrollHeight;debug('MISSED_MESSAGES_SYNCED',{conversationId,count:added})}}catch(e){debug('MISSED_MESSAGE_SYNC_FAILED',e?.message||e)}}function createSocket(){const token=window.__BLOGIFY_SOCKET_TOKEN||'';socket=window.io(socketUrl,{transports:['websocket','polling'],withCredentials:true,reconnection:true,reconnectionAttempts:Infinity,reconnectionDelay:500,reconnectionDelayMax:5000,timeout:10000,auth:token?{token}:{}});const originalEmit=socket.emit.bind(socket);socket.emit=(event,payload,...rest)=>{if((event==='conversation:join'||event==='conversation:active')&&payload){const id=typeof payload==='string'?payload:payload.conversationId;if(id)lastConversationId=String(id)}return originalEmit(event,payload,...rest)};socket.on('connect',async()=>{debug(hasConnected?'SOCKET_RECONNECTED':'SOCKET_CONNECTED',socket.id,socketUrl);if(hasConnected)await syncMissedMessages();hasConnected=true});socket.on('disconnect',reason=>debug('SOCKET_DISCONNECTED',reason));socket.on('connect_error',async error=>{debug('SOCKET_AUTH_FAILED',error?.message||error);try{await refreshToken();if(socket&&!socket.connected)socket.connect()}catch(e){debug('SOCKET_AUTH_REFRESH_FAILED',e?.message||e)}});return socket}window.BlogifySocket={getSocket(){if(typeof window.io!=='function')throw new Error('Socket.IO client is unavailable');if(!socket)createSocket();return socket},get socket(){return socket},url:socketUrl}})();''')
+          def enhancements(s):
+              s=s.replace("function getSocket(){if(typeof window.io!=='function')throw new Error('Chat connection is unavailable');return window.io(window.__BLOGIFY_SOCKET_URL||undefined,{withCredentials:true,auth:{token:window.__BLOGIFY_SOCKET_TOKEN||undefined}});}","function getSocket(){if(!window.BlogifySocket?.getSocket)throw new Error('Chat connection is unavailable');return window.BlogifySocket.getSocket();}",1)
+              return s.replace('if(socket)socket.disconnect();sending=false;send.disabled=false;','sending=false;send.disabled=false;',1)
+          edit('public/js/messageEnhancements.js',enhancements)
+          def notif(s):
+              s=s.replace('if(type === "message" && data.conversationId) return `/messages?conversation=${data.conversationId}`;','if(type === "message") { const senderId=data.sender || data.actor || data.senderId; if(senderId) return `/messages?user=${encodeURIComponent(String(senderId))}`; if(data.conversationId) return "/messages/chatlog"; }',1)
+              return s.replace('data: { url: getNotificationUrl(type, data), type }','data: { url: getNotificationUrl(type, data), type, conversationId: data.conversationId || null, senderId: data.actor || data.sender || data.senderId || null, messageId: data.messageRef || data.messageId || null }',1)
+          edit('services/notificationService.js',notif)
+          def sw(s):
+              s=s.replace('tag: data.tag || "blogify-notification",\n        renotify: Boolean(data.renotify),','tag: data.tag || (data.type === "message" && (data.messageId || data.data?.messageId) ? `blogify-message-${data.messageId || data.data.messageId}` : "blogify-notification"),\n        renotify: data.type === "message" ? false : Boolean(data.renotify),',1)
+              return s.replace('notificationId: data.notificationId || data.data?.notificationId || null,\n            serviceWorkerVersion:','notificationId: data.notificationId || data.data?.notificationId || null,\n            conversationId: data.conversationId || data.data?.conversationId || null,\n            senderId: data.senderId || data.data?.senderId || null,\n            messageId: data.messageId || data.data?.messageId || null,\n            serviceWorkerVersion:',1)
+          edit('public/sw.js',sw)
+          def socket_patch(s):
+              if 'const DEBUG=process.env.BLOGIFY_DEBUG==="true"' not in s:s='const DEBUG=process.env.BLOGIFY_DEBUG==="true";const debug=(event,data={})=>{if(DEBUG)console.log(`[Blogify] ${event}`,data)};\n'+s
+              s=s.replace('function setupMessageSocket(io){io.on("connection",socket=>{','function setupMessageSocket(io){global.__BLOGIFY_IO=io;io.on("connection",socket=>{',1)
+              s=s.replace('onlineUsers.set(userId,current);activeChatBySocket.set(socket.id,{userId,conversationId:null});socket.join(`user:${userId}`);io.emit("user:online",{userId});','onlineUsers.set(userId,current);activeChatBySocket.set(socket.id,{userId,conversationId:null});socket.join(`user:${userId}`);debug("SOCKET_CONNECTED",{socketId:socket.id,userId});io.emit("user:online",{userId});',1)
+              s=s.replace('socket.join(`conversation:${conversationId}`);activeChatBySocket.set(socket.id,{userId,conversationId:String(conversationId)});return true;','socket.join(`conversation:${conversationId}`);activeChatBySocket.set(socket.id,{userId,conversationId:String(conversationId)});debug("CONVERSATION_JOINED",{socketId:socket.id,userId,conversationId:String(conversationId)});return true;',1)
+              s=s.replace('const m=await Message.create({conversationId,senderId:userId,receiverId,text:cleanText,mediaUrl:validMedia?cleanMediaUrl:"",mediaType:profileShareId?"profile":validMedia?mediaType:"",profileShareId:profileShareId||null,replyTo:replyMessage?._id||null});','const m=await Message.create({conversationId,senderId:userId,receiverId,text:cleanText,mediaUrl:validMedia?cleanMediaUrl:"",mediaType:profileShareId?"profile":validMedia?mediaType:"",profileShareId:profileShareId||null,replyTo:replyMessage?._id||null});debug("MESSAGE_SAVED",{messageId:String(m._id),conversationId:String(conversationId),senderId:userId,receiverId:String(receiverId)});',1)
+              s=s.replace('io.to(`user:${userId}`).emit("message:new",payload);\nio.to(`user:${receiverId}`).emit("message:new",payload);','io.to(`user:${userId}`).emit("message:new",payload);\nio.to(`user:${receiverId}`).emit("message:new",payload);debug("MESSAGE_EMITTED",{messageId:String(m._id),conversationId:String(conversationId),recipientRoom:`user:${String(receiverId)}`});',1)
+              s=s.replace('if(!messageLimiter())return socket.emit("message:error",{message:"You are sending messages too quickly. Please slow down."});try{','if(!messageLimiter())return socket.emit("message:error",{message:"You are sending messages too quickly. Please slow down."});debug("MESSAGE_SENT",{socketId:socket.id,userId,conversationId:String(conversationId||"")});try{',1)
+              s=s.replace('socket.on("disconnect",()=>{activeChatBySocket.delete(socket.id);','socket.on("disconnect",reason=>{debug("SOCKET_DISCONNECTED",{socketId:socket.id,userId,reason});activeChatBySocket.delete(socket.id);',1)
+              return s
+          edit('sockets/messageSocket.js',socket_patch)
+          def push_patch(s):
+              if 'const DEBUG=process.env.BLOGIFY_DEBUG==="true"' not in s:s='const DEBUG=process.env.BLOGIFY_DEBUG==="true";const debug=(event,data={})=>{if(DEBUG)console.log(`[Blogify] ${event}`,data)};\n'+s
+              s=s.replace('return saved;','debug("PUSH_SUBSCRIPTION_CREATED",{subscriptionId:String(saved._id),userId:String(userId)});\n    return saved;',1)
+              s=s.replace('return { sent: true };','debug("PUSH_SENT",{subscriptionId:String(subscriptionDoc._id)});\n        return { sent: true };',1)
+              return s.replace('console.error("Web Push send error:", error.statusCode || "", error.message);','debug("PUSH_FAILED",{subscriptionId:String(subscriptionDoc._id),statusCode:error.statusCode||null});\n        console.error("Web Push send error:", error.statusCode || "", error.message);',1)
+          edit('services/webPush.js',push_patch)
+          edit('.env.example',lambda s:s if 'BLOGIFY_DEBUG=' in s else s.replace('SOCKET_URL=https://your-realtime-server.example\n','SOCKET_URL=https://your-realtime-server.example\nBLOGIFY_DEBUG=false\n',1))
+          Path('tests/messaging-regression.js').write_text("const fs=require('fs');const assert=require('assert');const read=f=>fs.readFileSync(f,'utf8');const app=read('app.js'),manager=read('public/js/socketManager.js'),socket=read('sockets/messageSocket.js'),push=read('services/webPush.js'),notification=read('services/notificationService.js'),sw=read('public/sw.js'),enhancements=read('public/js/messageEnhancements.js');assert(app.includes('/js/socketManager.js'));assert(app.includes('window.BlogifySocket.getSocket()'));assert(manager.includes(\"transports:['websocket','polling']\"));assert(manager.includes('/messages/socket-token'));assert(manager.includes('MISSED_MESSAGES_SYNCED'));assert(socket.includes('io.to(`user:${receiverId}`).emit(\"message:new\",payload)'));assert(push.includes('error.statusCode === 404 || error.statusCode === 410'));assert(push.includes('PUSH_SUBSCRIPTION_CREATED'));assert(notification.includes('/messages?user=${encodeURIComponent(String(senderId))}'));assert(sw.includes('conversationId')&&sw.includes('senderId')&&sw.includes('messageId'));assert(enhancements.includes('window.BlogifySocket?.getSocket'));assert(!enhancements.includes('socket.disconnect();sending=false;'));console.log('Messaging regression test passed.');\n")
+      - name: Install and test
+        run: |
+          npm install
+          node --check app.js
+          node --check routes/Message.js
+          node --check sockets/messageSocket.js
+          node --check services/webPush.js
+          node --check services/notificationService.js
+          node --check public/js/socketManager.js
+          node --check public/sw.js
+          node --check public/js/messageEnhancements.js
+          node tests/messaging-regression.js
+          npm test
+      - name: Commit patched application
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js routes/Message.js public/js/socketManager.js public/js/messageEnhancements.js services/notificationService.js services/webPush.js public/sw.js sockets/messageSocket.js .env.example tests/messaging-regression.js .github/workflows/apply-messaging-fix.yml
+          git rm .github/workflows/apply-messaging-fix.yml
+          git commit -m "fix: harden realtime messaging and web push"
+          git push origin HEAD:fix/realtime-messaging-push
