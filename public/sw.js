@@ -1,3 +1,13 @@
+const BLOGIFY_SW_VERSION = "blogify-push-v2";
+
+self.addEventListener("install", event => {
+    event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", event => {
+    event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("push", event => {
     let data = {};
     try {
@@ -14,7 +24,10 @@ self.addEventListener("push", event => {
         tag: data.tag || "blogify-notification",
         renotify: Boolean(data.renotify),
         data: {
-            url: data.url || data.data?.url || "/notifications"
+            url: data.url || data.data?.url || "/notifications",
+            type: data.type || data.data?.type || "notification",
+            notificationId: data.notificationId || data.data?.notificationId || null,
+            serviceWorkerVersion: BLOGIFY_SW_VERSION
         }
     };
 
@@ -23,7 +36,6 @@ self.addEventListener("push", event => {
 
 self.addEventListener("notificationclick", event => {
     event.notification.close();
-
     const targetUrl = event.notification?.data?.url || "/notifications";
     const absoluteUrl = new URL(targetUrl, self.location.origin).href;
 
@@ -38,7 +50,6 @@ self.addEventListener("notificationclick", event => {
             if ("navigate" in sameOrigin) await sameOrigin.navigate(absoluteUrl);
             return;
         }
-
         await clients.openWindow(absoluteUrl);
     })());
 });
