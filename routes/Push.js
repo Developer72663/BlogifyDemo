@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getPublicKey, configureWebPush, saveSubscription, removeSubscription, removeAllSubscriptions, sendTestNotification } = require("../services/webPush");
+const { getPublicKey, configureWebPush, getConfigurationError, saveSubscription, removeSubscription, removeAllSubscriptions, sendTestNotification } = require("../services/webPush");
 const PushSubscription = require("../models/PushSubscription");
 const User = require("../models/user");
 
@@ -11,20 +11,27 @@ function requireUser(req, res, next) {
 
 router.get("/public-key", requireUser, (req, res) => {
     const publicKey = getPublicKey();
-    if (!publicKey) return res.status(503).json({ success: false, error: "Web Push is not configured" });
+    if (!publicKey || !configureWebPush()) {
+        return res.status(503).json({
+            success: false,
+            error: "Web Push is not configured",
+            detail: getConfigurationError() || "Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT."
+        });
+    }
     res.json({ success: true, publicKey });
 });
 
-// Safe diagnostics for the current user's push setup. Never returns subscription keys.
 router.get("/status", requireUser, async (req, res) => {
     try {
         const [user, subscriptionCount] = await Promise.all([
             User.findById(req.user._id).select("notificationSettings.pushEnabled").lean(),
             PushSubscription.countDocuments({ user: req.user._id })
         ]);
+        const configuredNow = Boolean(getPublicKey()) && configureWebPush();
         res.json({
             success: true,
-            configured: Boolean(getPublicKey()) && configureWebPush(),
+            configured: configuredNow,
+            configurationError: configuredNow ? null : getConfigurationError(),
             pushEnabled: Boolean(user?.notificationSettings?.pushEnabled),
             subscriptionCount
         });
@@ -87,7 +94,7 @@ router.get("/subscriptions", requireUser, async (req, res) => {
 router.post("/test", requireUser, async (req, res) => {
     try {
         const result = await sendTestNotification(req.user._id);
-        if (result.skipped) return res.status(503).json({ success: false, error: "Web Push is not configured", result });
+        if (result.skipped) return res.status(503).json({ success: false, error: result.error || getConfigurationError() || "Web Push is not configured", result });
         if (!result.sent && !result.failed) return res.status(404).json({ success: false, error: "No active push subscription found", result });
         if (result.failed && !result.sent) return res.status(502).json({ success: false, error: "Push provider rejected the notification", result });
         res.json({ success: true, result });
