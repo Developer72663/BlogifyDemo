@@ -17,7 +17,11 @@ function getAppUrl() {
 
 function getNotificationUrl(type, data = {}) {
     if (data.url) return data.url;
-    if (type === "message" && data.conversationId) return `/messages?conversation=${data.conversationId}`;
+    if (type === "message") {
+        const senderId = data.sender || data.actor || data.senderId;
+        if (senderId) return `/messages?user=${encodeURIComponent(String(senderId))}`;
+        if (data.conversationId) return "/messages/chatlog";
+    }
     if (["comment", "reply", "like", "blog_post"].includes(type) && data.blog) return `/blogs/${data.blog}`;
     if (["follow", "follow_request", "mention"].includes(type)) return data.actor ? `/profile/${data.actor}` : "/notifications";
     return "/notifications";
@@ -53,22 +57,23 @@ async function sendPushForNotification(recipientId, type, data = {}) {
         if (!setting) return { sent: 0, skipped: true };
         const user = await User.findById(recipientId).select(`notificationSettings.${setting} notificationSettings.pushEnabled`).lean();
         if (!user?.notificationSettings?.pushEnabled || user.notificationSettings[setting] === false) return { sent: 0, skipped: true };
-
-        // Web Push icons must be reachable by the browser. Use the actor's actual
-        // profile image and convert relative/Cloudinary URLs to an absolute URL.
-        // Fall back to the Blogify default avatar when no profile image exists.
         const actorImage = await getPushActorImage(data.actor);
         const icon = normalizePushImage(data.pushIcon || actorImage);
-
         return await sendToUser(recipientId, {
             title: data.pushTitle || data.title || "Blogify",
             body: data.pushMessage || data.message || "You have a new notification",
             icon,
             badge: normalizePushImage(data.pushBadge || "/imgs/default.png"),
             image: data.pushImage ? normalizePushImage(data.pushImage) : undefined,
-            tag: `blogify-${type}-${data.blog || data.messageRef || data.actor || Date.now()}`,
-            renotify: true,
-            data: { url: getNotificationUrl(type, data), type }
+            tag: type === "message" && data.messageRef ? `blogify-message-${String(data.messageRef)}` : `blogify-${type}-${data.blog || data.messageRef || data.actor || Date.now()}`,
+            renotify: type !== "message",
+            data: {
+                url: getNotificationUrl(type, data),
+                type,
+                conversationId: data.conversationId || null,
+                senderId: data.actor || data.sender || data.senderId || null,
+                messageId: data.messageRef || data.messageId || null
+            }
         }, { urgency: type === "message" ? "high" : "normal", ttl: 300 });
     } catch (error) {
         console.error("Web Push notification error:", error.message);
@@ -144,7 +149,6 @@ class NotificationService {
             limit = Math.min(Math.max(parseInt(limit) || 20, 1), 50);
             page = Math.max(parseInt(page) || 1, 1);
             const skip = (page - 1) * limit;
-            // Chat messages are intentionally excluded from the notification center.
             const notificationFilter = { recipient: userId, type: { $ne: "message" } };
             const [notifications, total] = await Promise.all([
                 Notification.find(notificationFilter).sort({ createdAt: -1 }).skip(skip).limit(limit)
